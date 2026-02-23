@@ -361,7 +361,7 @@ const Home = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2023 StarCast India Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 StarCast India Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
         </div>
       </footer>
     </>
