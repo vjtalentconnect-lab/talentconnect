@@ -18,7 +18,7 @@ const Home = () => {
             </div>
             <div className="hidden md:flex items-center space-x-4">
               <button className="bg-primary hover:bg-yellow-600 text-white dark:text-black font-semibold px-6 py-2.5 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-primary/30">
-                Sign In
+                <a href="/loginPage">Sign In</a>
               </button>
               <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => document.documentElement.classList.toggle('dark')}>
                 <span className="material-icons text-gray-600 dark:text-gray-300">brightness_4</span>
@@ -51,14 +51,14 @@ const Home = () => {
             The premier marketplace connecting exceptional talent with visionary directors across Bollywood, Tollywood, and the Ad Film industry.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6">
-            <a className="group relative px-8 py-4 bg-primary text-black font-bold rounded-lg overflow-hidden shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all transform hover:-translate-y-1" href="#">
+            <a className="group relative px-8 py-4 bg-primary text-black font-bold rounded-lg overflow-hidden shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all transform hover:-translate-y-1" href="/register/actor">
               <div className="absolute inset-0 w-0 bg-white transition-all duration-[250ms] ease-out group-hover:w-full opacity-20"></div>
               <span className="relative flex items-center justify-center gap-2">
                 I am an Artist
                 <span className="material-icons text-sm">arrow_forward</span>
               </span>
             </a>
-            <a className="group px-8 py-4 bg-transparent border-2 border-white/30 text-white font-bold rounded-lg hover:bg-white/10 hover:border-white transition-all backdrop-blur-sm" href="#">
+            <a className="group px-8 py-4 bg-transparent border-2 border-white/30 text-white font-bold rounded-lg hover:bg-white/10 hover:border-white transition-all backdrop-blur-sm" href="/register/director">
               <span className="flex items-center justify-center gap-2">
                 I am a Director
                 <span className="material-icons text-sm">movie</span>
@@ -361,7 +361,7 @@ const Home = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2023 StarCast India Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 StarCast India Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
         </div>
       </footer>
     </>

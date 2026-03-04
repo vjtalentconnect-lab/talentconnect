@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const Login = () => {
+const LoginPage = () => {
   const [userType, setUserType] = useState('artist');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -215,7 +215,7 @@ const Login = () => {
               <p className="text-slate-400">
                 Don't have an account?{' '}
                 <Link
-                  to={userType === 'actor' || userType === 'artist' ? "/register/actor" : "/register/director"}
+                  to="/register"
                   className="text-primary font-bold hover:underline"
                 >
                   Sign up for free
@@ -247,4 +247,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginPage;
