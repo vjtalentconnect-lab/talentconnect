@@ -1,3 +1,7 @@
+import React from 'react';
+import RegionalSpotlight from '../components/RegionalSpotlight';
+import ForumSection from '../components/ForumSection';
+
 const Home = () => {
   return (
     <>
@@ -191,6 +195,9 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      <RegionalSpotlight />
+      <ForumSection />
 
       <section className="py-20 bg-secondary relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>

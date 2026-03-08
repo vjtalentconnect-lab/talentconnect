@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const ArtistDashboard = () => {
   return (
@@ -15,34 +16,42 @@ const ArtistDashboard = () => {
           </div>
         </div>
         <nav className="flex-1 px-4 mt-4 space-y-1">
-          <a className="sidebar-active flex items-center gap-3 px-4 py-3 rounded-xl transition-all" href="#">
+          <Link className="sidebar-active flex items-center gap-3 px-4 py-3 rounded-xl transition-all" to="/dashboard/talent">
             <span className="material-symbols-outlined fill-1">dashboard</span>
             <span className="text-sm font-semibold">Dashboard</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" href="#">
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/talent/portfolio">
             <span className="material-symbols-outlined">person</span>
             <span className="text-sm font-medium">My Profile</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" href="#">
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/talent/analytics">
+            <span className="material-symbols-outlined">analytics</span>
+            <span className="text-sm font-medium">Analytics</span>
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/talent/applied-projects">
             <span className="material-symbols-outlined">work</span>
             <span className="text-sm font-medium">Applied Projects</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" href="#">
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/talent/audition-invites">
             <span className="material-symbols-outlined">event_available</span>
             <span className="text-sm font-medium">Audition Invites</span>
             <span className="ml-auto bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" href="#">
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/talent/messages">
             <span className="material-symbols-outlined">chat</span>
             <span className="text-sm font-medium">Messages</span>
-          </a>
+          </Link>
           <div className="pt-8 pb-2 px-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600">Preferences</p>
           </div>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" href="#">
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/talent/settings">
             <span className="material-symbols-outlined">settings</span>
             <span className="text-sm font-medium">Settings</span>
-          </a>
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all" to="/support">
+            <span className="material-symbols-outlined">help</span>
+            <span className="text-sm font-medium">Support</span>
+          </Link>
         </nav>
         <div className="p-4 mt-auto">
           <div className="bg-primary/10 dark:bg-primary/5 border border-primary/20 rounded-2xl p-4">
@@ -51,7 +60,7 @@ const ArtistDashboard = () => {
               <span className="text-xs font-bold text-primary uppercase tracking-wider">Pro Artist</span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Upgrade to get featured in top agency searches.</p>
-            <button className="w-full py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors">Upgrade Plan</button>
+            <Link className="w-full py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors text-center block" to="/talent/upgrade">Upgrade Plan</Link>
           </div>
         </div>
       </aside>
@@ -323,7 +332,7 @@ const ArtistDashboard = () => {
                   <div className="relative pl-6 border-l-2 border-slate-200 dark:border-border-dark">
                     <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
                     <p className="text-[10px] font-black text-slate-400 uppercase">Oct 26 • 11:30 AM</p>
-                    <h4 className="text-sm font-bold mt-0.5">Soft Drink Ad</h4>
+                    <p className="text-sm font-bold mt-0.5">Soft Drink Ad</p>
                     <p className="text-xs text-slate-500">Preliminary Screen Test • Virtual</p>
                     <div className="flex items-center gap-2 mt-3">
                       <button className="px-3 py-1 bg-slate-100 dark:bg-white/5 text-[10px] font-bold rounded-md">Join Zoom</button>

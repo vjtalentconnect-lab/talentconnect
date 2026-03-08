@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const DirectorDashboard = () => {
   return (
@@ -19,29 +20,29 @@ const DirectorDashboard = () => {
             <span className="material-symbols-outlined fill-1">dashboard</span>
             <span className="text-sm font-semibold">Dashboard</span>
           </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" href="#">
-            <span className="material-symbols-outlined">movie_filter</span>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" to="/director/my-projects">
+            <span className="material-symbols-outlined">folder</span>
             <span className="text-sm font-medium">My Projects</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" href="#">
-            <span className="material-symbols-outlined">star</span>
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" to="/director/shortlists">
+            <span className="material-symbols-outlined text-sm">star</span>
             <span className="text-sm font-medium">Shortlists</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" href="#">
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" to="/director/auditions">
             <span className="material-symbols-outlined">mic</span>
             <span className="text-sm font-medium">Audition Requests</span>
             <span className="ml-auto bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">8</span>
-          </a>
-          <a className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" href="#">
-            <span className="material-symbols-outlined">chat</span>
+          </Link>
+          <Link className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all font-semibold text-sm uppercase tracking-wider" to="/director/messages">
+            <span className="material-symbols-outlined text-sm">chat</span>
             <span className="text-sm font-medium">Messages</span>
-          </a>
+          </Link>
         </nav>
         <div className="p-4 mt-auto">
-          <button className="w-full py-3.5 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+          <Link to="/director/create-project/step1" className="w-full py-3.5 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
             <span className="material-symbols-outlined">add_circle</span>
             Create Project
-          </button>
+          </Link>
         </div>
       </aside>
 
@@ -261,18 +262,18 @@ const DirectorDashboard = () => {
               </div>
               <div className="flex gap-2">
                 <button className="flex items-center gap-2 bg-surface-dark border border-white/10 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-widest text-white hover:border-primary transition-all">
-                    <span className="material-symbols-outlined text-sm">filter_alt</span> Filter
-                            </button>
+                  <span className="material-symbols-outlined text-sm">filter_alt</span> Filter
+                </button>
                 <button className="flex items-center gap-2 bg-surface-dark border border-white/10 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-widest text-white hover:border-primary transition-all">
-                    <span className="material-symbols-outlined text-sm">sort</span> Sort
-                            </button>
+                  <span className="material-symbols-outlined text-sm">sort</span> Sort
+                </button>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Artist Card 1 */}
               <div className="bg-surface-dark rounded-2xl border border-white/5 overflow-hidden group hover:ring-2 hover:ring-primary/50 transition-all">
                 <div className="aspect-[3/4] relative overflow-hidden">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Professional actor headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLYp_XfeL-orI8XcrCRdO1AnTOKeAB7-yfwUGYVWhucYLUaG37OtJlNyL40rrBQ6modrbUj4bLYcYVSDkdBHVfcTLWKr4hcZSb7Ey78SL_-TNLGgng5UWRqlWSusV4UKVF5ZpHNVzdxRNDsqaAhz4u5QeG9xFv9BzrDAjAQNavfyfafA_THv6Dawi8FJj7g-AhWDAh-Na8xGac0mjxYs8FCAGH0CcIomPvkMpq1573qVYNQvhdW3njPRmyckqOHwM_gO-8JNXKKe72"/>
+                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Professional actor headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLYp_XfeL-orI8XcrCRdO1AnTOKeAB7-yfwUGYVWhucYLUaG37OtJlNyL40rrBQ6modrbUj4bLYcYVSDkdBHVfcTLWKr4hcZSb7Ey78SL_-TNLGgng5UWRqlWSusV4UKVF5ZpHNVzdxRNDsqaAhz4u5QeG9xFv9BzrDAjAQNavfyfafA_THv6Dawi8FJj7g-AhWDAh-Na8xGac0mjxYs8FCAGH0CcIomPvkMpq1573qVYNQvhdW3njPRmyckqOHwM_gO-8JNXKKe72" />
                   <div className="absolute top-3 left-3">
                     <span className="bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
                       <span className="material-symbols-outlined text-[10px] fill-current text-primary">star</span> 4.9
@@ -302,7 +303,7 @@ const DirectorDashboard = () => {
               {/* Artist Card 2 */}
               <div className="bg-surface-dark rounded-2xl border border-white/5 overflow-hidden group hover:ring-2 hover:ring-primary/50 transition-all">
                 <div className="aspect-[3/4] relative overflow-hidden">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Professional actress headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZBh7xbmWXrUAEm9h_1ydGDzcwhkdf2YsWZp51N2W5XLxLEDgcMM6_Q45uwNDRWlrN5uP1ZiIRnpXEF7ybhmP1q5LoCKX1DqTBo1iFqLVvULs9X9FwpvYjvqJYtCOABdgcjL3SaQFmqbvF0LMm5WIQSQZ5JJ_o3nx2j-eArSXFm8CzB1jHApIMexXGYK0s1pJ_lefBSJ0KF9s5HWKmGW0HD53HMUGYvJMLsDE0uJcZgi5VJ_N24uHuMDEfE1yzidlc_YOWqp8sEBL5"/>
+                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Professional actress headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZBh7xbmWXrUAEm9h_1ydGDzcwhkdf2YsWZp51N2W5XLxLEDgcMM6_Q45uwNDRWlrN5uP1ZiIRnpXEF7ybhmP1q5LoCKX1DqTBo1iFqLVvULs9X9FwpvYjvqJYtCOABdgcjL3SaQFmqbvF0LMm5WIQSQZ5JJ_o3nx2j-eArSXFm8CzB1jHApIMexXGYK0s1pJ_lefBSJ0KF9s5HWKmGW0HD53HMUGYvJMLsDE0uJcZgi5VJ_N24uHuMDEfE1yzidlc_YOWqp8sEBL5" />
                   <div className="absolute top-3 left-3">
                     <span className="bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
                       <span className="material-symbols-outlined text-[10px] fill-current text-primary">star</span> 4.8
@@ -331,7 +332,7 @@ const DirectorDashboard = () => {
               {/* Artist Card 3 */}
               <div className="bg-surface-dark rounded-2xl border border-white/5 overflow-hidden group hover:ring-2 hover:ring-primary/50 transition-all">
                 <div className="aspect-[3/4] relative overflow-hidden">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Charismatic actor headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY5_xh61Ha6V8MRXMuofOo64PTkj3IyPuYjk6uCHwk1p8iwU1ycCql7G9Y_EK0UrGH4vZ8a4OsgKiBrTHMuyuvUHgjCIAvige_W13Pr_WF1ofwzBggz6gxrQo_m_tUJb93iYB3BPxUqyBsI2d8VXKYptCgUaKc0EQP952hcMMX3BURzCIZupaaRNZA3W94MVoUg9_496eh6EB7sqILQ9jliHKAEotUfXq0160edcDKmPh5LPeT5Wbd3qyDL-oPKSDQ-8UbpglOkifn"/>
+                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Charismatic actor headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY5_xh61Ha6V8MRXMuofOo64PTkj3IyPuYjk6uCHwk1p8iwU1ycCql7G9Y_EK0UrGH4vZ8a4OsgKiBrTHMuyuvUHgjCIAvige_W13Pr_WF1ofwzBggz6gxrQo_m_tUJb93iYB3BPxUqyBsI2d8VXKYptCgUaKc0EQP952hcMMX3BURzCIZupaaRNZA3W94MVoUg9_496eh6EB7sqILQ9jliHKAEotUfXq0160edcDKmPh5LPeT5Wbd3qyDL-oPKSDQ-8UbpglOkifn" />
                   <div className="absolute top-3 left-3">
                     <span className="bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
                       <span className="material-symbols-outlined text-[10px] fill-current text-primary">star</span> 5.0
@@ -360,7 +361,7 @@ const DirectorDashboard = () => {
               {/* Artist Card 4 */}
               <div className="bg-surface-dark rounded-2xl border border-white/5 overflow-hidden group hover:ring-2 hover:ring-primary/50 transition-all">
                 <div className="aspect-[3/4] relative overflow-hidden">
-                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Upcoming actor headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-7VxJhRsdyxc3S1Qh3gTfaz00tdvqACWGZe4ncEGt6KNekxowT1I2Bu2vcTEXC9dWalq9zef51MN7uUpeMAEFztT0GFkm-8JHFph2yq6XvmqsHxIQDoRNbuLsNIYdKYCt2rX_oFszR3g3mAJTqrzVDtFTk7VM4GmaY0FroBKI3EENzIEjFFFeDHYGypVWzXbH-AUT5l5Oq0KA-uaBVKDkZvDdelrXnqnqT1iKxo8ma2D6Az8LSbxgX1eK4XJD1lRJl6F2BkuJpaft"/>
+                  <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Upcoming actor headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-7VxJhRsdyxc3S1Qh3gTfaz00tdvqACWGZe4ncEGt6KNekxowT1I2Bu2vcTEXC9dWalq9zef51MN7uUpeMAEFztT0GFkm-8JHFph2yq6XvmqsHxIQDoRNbuLsNIYdKYCt2rX_oFszR3g3mAJTqrzVDtFTk7VM4GmaY0FroBKI3EENzIEjFFFeDHYGypVWzXbH-AUT5l5Oq0KA-uaBVKDkZvDdelrXnqnqT1iKxo8ma2D6Az8LSbxgX1eK4XJD1lRJl6F2BkuJpaft" />
                   <div className="absolute top-3 left-3">
                     <span className="bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
                       <span className="material-symbols-outlined text-[10px] fill-current text-primary">star</span> 4.7

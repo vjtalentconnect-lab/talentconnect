@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const RegisterActor = () => {
     const [formData, setFormData] = useState({
@@ -20,9 +20,13 @@ const RegisterActor = () => {
         }));
     };
 
+    const navigate = useNavigate();
+
     const handleSubmit = (e) => {
         e.preventDefault();
         console.log('Actor Registration Data:', formData);
+        // After successful registration, redirect to verification
+        navigate('/talent/verify');
     };
 
     return (

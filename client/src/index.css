@@ -2,23 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global font overrides for artist dashboard */
-body {
-  font-family: 'Public Sans', sans-serif;
-}
-
-/* Project-specific styles used by the converted homepage */
-body {
-	font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+@layer base {
+	body {
+		@apply bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100;
+		font-family: 'Plus Jakarta Sans', sans-serif;
+	}
 }
 
 .font-display {
-	font-family: "Playfair Display", serif;
+	font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .gold-text-gradient {
 	background: linear-gradient(to right, #D4AF37, #F2D06B, #D4AF37);
 	-webkit-background-clip: text;
+	background-clip: text;
 	-webkit-text-fill-color: transparent;
 }
 
@@ -26,64 +24,60 @@ body {
 ::-webkit-scrollbar {
 	width: 8px;
 }
+
 ::-webkit-scrollbar-track {
 	background: #1A1A1A;
 }
+
 ::-webkit-scrollbar-thumb {
-	background: #D4AF37;
+	background: #ee2b3b;
 	border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-	background: #F2D06B;
+	background: #ff4d5a;
 }
 
 /* new utilities */
 .cinematic-gradient {
-    background: linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.9) 80%, rgba(10,10,10,1) 100%);
+	background: linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, rgba(10, 10, 10, 0.9) 80%, rgba(10, 10, 10, 1) 100%);
 }
+
 .glass-card {
-    background: rgba(42, 26, 20, 0.4);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(236, 91, 19, 0.2);
+	background: rgba(42, 26, 20, 0.4);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(238, 43, 59, 0.2);
 }
 
-.sidebar-active { background: #ec5b13; color: white; }
+.sidebar-active {
+	background: #ee2b3b;
+	color: white;
+}
 
-.glass-effect { background: rgba(236, 91, 19, 0.1); backdrop-filter: blur(8px); }
+.glass-effect {
+	background: rgba(238, 43, 59, 0.1);
+	backdrop-filter: blur(8px);
+}
 
 .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+	width: 6px;
+	height: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+	background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(236, 91, 19, 0.2);
-    border-radius: 10px;
+	background: rgba(238, 43, 59, 0.2);
+	border-radius: 10px;
 }
 
-.font-display {
-	font-family: "Playfair Display", serif;
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
 }
 
-.gold-text-gradient {
-	background: linear-gradient(to right, #D4AF37, #F2D06B, #D4AF37);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-	width: 8px;
-}
-::-webkit-scrollbar-track {
-	background: #1A1A1A;
-}
-::-webkit-scrollbar-thumb {
-	background: #D4AF37;
-	border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-	background: #F2D06B;
+.no-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
 }
