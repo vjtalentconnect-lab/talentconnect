@@ -14,7 +14,7 @@ const MyProjects = () => {
                             <span className="material-symbols-outlined">movie</span>
                         </div>
                         <div>
-                            <h1 className="font-bold text-lg leading-tight tracking-tight">StarCast India</h1>
+                            <h1 className="font-bold text-lg leading-tight tracking-tight">TalentConnect</h1>
                             <p className="text-xs text-slate-500 dark:text-primary/70 uppercase font-semibold">Director Dashboard</p>
                         </div>
                     </div>

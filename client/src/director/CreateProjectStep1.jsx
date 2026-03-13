@@ -51,7 +51,7 @@ const CreateProjectStep1 = () => {
                         <div className="space-y-8">
                             <div className="space-y-2">
                                 <h1 className="text-3xl font-bold">Tell us about your next masterpiece</h1>
-                                <p className="text-slate-600 dark:text-slate-400">Fill in the core details to start your scouting process on StarCast India.</p>
+                                <p className="text-slate-600 dark:text-slate-400">Fill in the core details to start your scouting process on TalentConnect.</p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
@@ -162,13 +162,13 @@ const CreateProjectStep1 = () => {
                         />
                         <div className="absolute bottom-4 left-4 z-20">
                             <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Featured Production</p>
-                            <p className="text-white text-xs font-medium">Bollywood Nights (2024)</p>
+                            <p className="text-white text-xs font-medium">Bollywood Nights (2026)</p>
                         </div>
                     </div>
                 </aside>
 
                 <footer className="py-6 px-10 text-center text-slate-400 text-xs border-t border-slate-200 dark:border-primary/10 mt-auto">
-                    &copy; 2024 StarCast India &bull; Premiere Casting for the Indian Film Industry
+                    &copy; 2026 TalentConnect India &bull; Premiere Casting for the Indian Film Industry
                 </footer>
             </div>
         </div>

@@ -49,7 +49,7 @@ const ProfileVerification = () => {
                             <div className="text-primary">
                                 <span className="material-symbols-outlined text-4xl">movie_filter</span>
                             </div>
-                            <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight uppercase italic">StarCast India</h2>
+                            <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight uppercase italic">TalentConnect</h2>
                         </div>
                         <button onClick={handleDashboard} className="flex items-center justify-center rounded-xl h-10 w-10 bg-slate-200 dark:bg-primary/10 text-slate-900 dark:text-primary transition-colors hover:bg-primary/20">
                             <span className="material-symbols-outlined font-bold">close</span>
@@ -60,7 +60,7 @@ const ProfileVerification = () => {
                     </main>
                     {/* Footer Small */}
                     <footer className="py-10 text-center text-slate-500 text-sm">
-                        © 2026 StarCast India. All Rights Reserved.
+                        © 2026 TalentConnect. All Rights Reserved.
                     </footer>
                 </div>
             </div>

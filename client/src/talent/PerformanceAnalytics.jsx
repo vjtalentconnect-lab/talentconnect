@@ -11,7 +11,7 @@ const PerformanceAnalytics = () => {
                         <div className="bg-primary p-1.5 rounded-lg text-white">
                             <span className="material-symbols-outlined text-2xl">theater_comedy</span>
                         </div>
-                        <h2 className="text-xl font-bold tracking-tight text-slate-100">StarCast <span className="text-primary text-sm align-top">India</span></h2>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-100">TalentConnect <span className="text-primary text-sm align-top">India</span></h2>
                     </div>
                     <nav className="flex-1 px-4 py-4 space-y-1">
                         <Link className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-white/5 rounded-xl transition-colors" to="/dashboard/talent">

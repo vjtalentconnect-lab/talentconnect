@@ -13,7 +13,7 @@ const ContactUs = () => {
                                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">StarCast India</h2>
+                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">TalentConnect</h2>
                     </div>
                     <div className="hidden md:flex flex-1 justify-end gap-10 items-center">
                         <nav className="flex items-center gap-8">
@@ -97,7 +97,7 @@ const ContactUs = () => {
                                         </div>
                                         <div className="pt-4 border-t border-primary/10">
                                             <p className="text-sm font-bold text-slate-900 dark:text-white mb-1">Direct Email</p>
-                                            <p className="text-primary text-sm font-medium">support@starcast.in</p>
+                                            <p className="text-primary text-sm font-medium">support@TalentConnect.in</p>
                                         </div>
                                         <div className="pt-4 border-t border-primary/10">
                                             <p className="text-sm font-bold text-slate-900 dark:text-white mb-1">Helpline</p>
@@ -142,7 +142,7 @@ const ContactUs = () => {
                                     <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                                 </svg>
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">© 2024 StarCast India. All Rights Reserved.</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">© 2026 TalentConnect. All Rights Reserved.</p>
                         </div>
                         <div className="flex gap-8">
                             <a className="text-xs text-slate-500 hover:text-primary" href="#">Privacy Policy</a>

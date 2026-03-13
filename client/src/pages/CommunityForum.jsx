@@ -12,7 +12,7 @@ const CommunityForum = () => {
                         <div className="bg-primary p-1.5 rounded-lg text-white">
                             <span className="material-symbols-outlined block">theaters</span>
                         </div>
-                        <h1 className="text-xl font-extrabold tracking-tight hidden md:block">StarCast <span className="text-primary text-sm font-medium ml-1 bg-primary/10 px-2 py-0.5 rounded">FORUM</span></h1>
+                        <h1 className="text-xl font-extrabold tracking-tight hidden md:block">TalentConnect <span className="text-primary text-sm font-medium ml-1 bg-primary/10 px-2 py-0.5 rounded">FORUM</span></h1>
                     </Link>
                     {/* Nav Links */}
                     <nav className="hidden lg:flex items-center gap-6">
@@ -270,7 +270,7 @@ const CommunityForum = () => {
                     <div>
                         <h4 className="font-bold text-lg mb-4">Forum Guidelines</h4>
                         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                            StarCast Forum is a professional space for industry growth. Be respectful, share constructive advice, and maintain artist privacy at all times.
+                            TalentConnect Forum is a professional space for industry growth. Be respectful, share constructive advice, and maintain artist privacy at all times.
                         </p>
                     </div>
                     <div>
@@ -297,7 +297,7 @@ const CommunityForum = () => {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-xs text-slate-500">© 2024 StarCast India. A Cinematic Experience.</p>
+                    <p className="text-xs text-slate-500">© 2026 TalentConnect. A Cinematic Experience.</p>
                     <div className="flex gap-6">
                         <a className="text-xs text-slate-500 hover:text-primary" href="#">Support</a>
                         <a className="text-xs text-slate-500 hover:text-primary" href="#">Contact</a>

@@ -11,7 +11,7 @@ const ArtistSettings = () => {
                         <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
                             <span className="material-symbols-outlined text-xl">movie_filter</span>
                         </div>
-                        <h2 className="text-xl font-bold tracking-tight">StarCast India</h2>
+                        <h2 className="text-xl font-bold tracking-tight">TalentConnect</h2>
                     </div>
                     <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
                         <Link className="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors" to="/dashboard/talent">

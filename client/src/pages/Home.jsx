@@ -11,7 +11,7 @@ const Home = () => {
             <div className="flex-shrink-0 flex items-center gap-2">
               <span className="material-icons text-primary text-3xl">movie_filter</span>
               <span className="font-display font-bold text-2xl tracking-wide text-gray-900 dark:text-white">
-                StarCast<span className="text-primary">India</span>
+                TalentConnect
               </span>
             </div>
             <div className="hidden md:flex space-x-8 items-center">
@@ -212,7 +212,7 @@ const Home = () => {
                 <span className="material-icons text-black text-3xl">verified_user</span>
               </div>
               <h3 className="text-xl font-bold text-white mb-3">Verified Profiles</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Every artist on StarCast India undergoes a strict verification process to ensure authenticity and professionalism.</p>
+              <p className="text-gray-400 text-sm leading-relaxed">Every artist on TalentConnect undergoes a strict verification process to ensure authenticity and professionalism.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-primary/50 transition-colors">
               <div className="w-16 h-16 mx-auto bg-primary rounded-full flex items-center justify-center mb-6">
@@ -331,7 +331,7 @@ const Home = () => {
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
                 <span className="material-icons text-primary text-2xl">movie_filter</span>
-                <span className="font-display font-bold text-xl tracking-wide text-white">StarCast<span className="text-primary">India</span></span>
+                <span className="font-display font-bold text-xl tracking-wide text-white">TalentConnect<span className="text-primary">India</span></span>
               </div>
               <p className="text-sm leading-relaxed mb-6">India's most trusted platform for discovering talent and casting for films, ads, and web series.</p>
               <div className="flex gap-4">
@@ -362,13 +362,13 @@ const Home = () => {
             <div>
               <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Contact</h4>
               <ul className="space-y-3 text-sm">
-                <li className="flex items-center gap-2"><span className="material-icons text-xs">email</span> support@starcast.in</li>
+                <li className="flex items-center gap-2"><span className="material-icons text-xs">email</span> support@TalentConnect.in</li>
                 <li className="flex items-center gap-2"><span className="material-icons text-xs">phone</span> +91 22 4567 8900</li>
                 <li className="flex items-center gap-2"><span className="material-icons text-xs">place</span> Film City, Goregaon, Mumbai</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 StarCast India Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 TalentConnect Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
         </div>
       </footer>
     </>

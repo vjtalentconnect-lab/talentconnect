@@ -10,7 +10,7 @@ const PaymentSuccess = () => {
                         <div className="size-8 flex items-center justify-center bg-primary/10 rounded-lg">
                             <span className="material-symbols-outlined text-primary text-2xl">movie</span>
                         </div>
-                        <h2 className="text-slate-900 dark:text-slate-100 text-xl font-black leading-tight tracking-tight uppercase">StarCast India</h2>
+                        <h2 className="text-slate-900 dark:text-slate-100 text-xl font-black leading-tight tracking-tight uppercase">TalentConnect</h2>
                     </div>
                     <div className="flex items-center gap-4">
                         <button className="flex items-center justify-center rounded-full h-10 w-10 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary/20 transition-colors">
@@ -33,7 +33,7 @@ const PaymentSuccess = () => {
                         </div>
                         <div className="space-y-4 mb-10">
                             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">Payment Successful!</h1>
-                            <p className="text-slate-600 dark:text-slate-400 text-lg">Your cinematic journey has been upgraded. Welcome to <span className="text-primary font-bold">StarCast India Pro</span>.</p>
+                            <p className="text-slate-600 dark:text-slate-400 text-lg">Your cinematic journey has been upgraded. Welcome to <span className="text-primary font-bold">TalentConnect Pro</span>.</p>
                         </div>
                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 mb-10 border border-slate-100 dark:border-slate-800">
                             <h3 className="text-primary text-xs font-bold uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
@@ -74,7 +74,7 @@ const PaymentSuccess = () => {
                     </div>
                 </main>
                 <footer className="mt-auto py-8 text-center text-xs text-slate-500 dark:text-slate-500 border-t border-slate-200 dark:border-slate-800">
-                    <p>© 2024 StarCast India. All premium rights reserved.</p>
+                    <p>© 2026 TalentConnect. All premium rights reserved.</p>
                 </footer>
             </div>
         </div>

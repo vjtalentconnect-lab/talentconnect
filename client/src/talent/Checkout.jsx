@@ -13,7 +13,7 @@ const Checkout = () => {
                                     <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                                 </svg>
                             </div>
-                            <h2 className="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight">StarCast India</h2>
+                            <h2 className="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight">TalentConnect</h2>
                         </div>
                         <div className="flex flex-1 justify-end gap-8 items-center">
                             <div className="hidden md:flex items-center gap-8">
@@ -130,7 +130,7 @@ const Checkout = () => {
                         </div>
                     </main>
                     <footer className="px-6 lg:px-40 py-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-slate-500 dark:text-slate-500 text-[10px] md:text-xs">© 2024 StarCast India Entertainment. All rights reserved.</p>
+                        <p className="text-slate-500 dark:text-slate-500 text-[10px] md:text-xs">© 2026 TalentConnect Entertainment. All rights reserved.</p>
                         <div className="flex gap-6">
                             <a className="text-slate-500 dark:text-slate-500 text-xs hover:text-primary transition-colors" href="#">Privacy Policy</a>
                             <a className="text-slate-500 dark:text-slate-500 text-xs hover:text-primary transition-colors" href="#">Terms of Service</a>

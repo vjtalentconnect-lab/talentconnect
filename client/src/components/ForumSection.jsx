@@ -45,7 +45,7 @@ const ForumSection = () => {
                             <div className="space-y-4">
                                 {[
                                     { title: "Tips for first Netflix India audition?", replies: "42", views: "1.2k" },
-                                    { title: "Mumbai Casting Directors to avoid in 2024", replies: "156", views: "8.4k" },
+                                    { title: "Mumbai Casting Directors to avoid in 2026", replies: "156", views: "8.4k" },
                                     { title: "Transitioning from TV to OTT", replies: "28", views: "890" }
                                 ].map((topic, i) => (
                                     <div key={topic.title} className={`p-4 rounded-xl transition-all hover:bg-white dark:hover:bg-background-dark cursor-pointer group`}>

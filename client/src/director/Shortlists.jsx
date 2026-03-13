@@ -13,7 +13,7 @@ const Shortlists = () => {
                         <span className="material-symbols-outlined text-white">movie_filter</span>
                     </div>
                     <div>
-                        <h1 className="font-bold text-lg leading-tight tracking-tight">StarCast India</h1>
+                        <h1 className="font-bold text-lg leading-tight tracking-tight">TalentConnect</h1>
                         <p className="text-xs text-slate-500 dark:text-primary/60 uppercase font-bold tracking-widest">Director Portal</p>
                     </div>
                 </div>
@@ -270,7 +270,7 @@ const Shortlists = () => {
                 </section>
 
                 <footer className="mt-auto py-6 px-8 border-t border-slate-200 dark:border-primary/20 text-center">
-                    <p className="text-xs text-slate-400 font-medium">© 2024 StarCast India Entertainment. All rights reserved. Casting Partner: Cinematic Solutions.</p>
+                    <p className="text-xs text-slate-400 font-medium">© 2026 TalentConnect Entertainment. All rights reserved. Casting Partner: Cinematic Solutions.</p>
                 </footer>
             </main>
 

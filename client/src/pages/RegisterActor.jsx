@@ -41,7 +41,7 @@ const RegisterActor = () => {
                                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">StarCast India</h2>
+                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">TalentConnect</h2>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Already have an account?</span>
@@ -225,7 +225,7 @@ const RegisterActor = () => {
 
                 {/* Footer Small */}
                 <footer className="px-6 lg:px-40 py-6 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 dark:text-slate-500">
-                    <p>© 2026 StarCast India. All Rights Reserved.</p>
+                    <p>© 2026 TalentConnect. All Rights Reserved.</p>
                     <div className="flex gap-6">
                         <Link className="hover:text-primary transition-colors" to="#">Help Center</Link>
                         <Link className="hover:text-primary transition-colors" to="#">Artist Guidelines</Link>

@@ -12,7 +12,7 @@ const AuditionInvites = () => {
                             <span className="material-symbols-outlined text-white">movie_filter</span>
                         </div>
                         <div>
-                            <h1 className="font-bold text-lg tracking-tight leading-none text-white">StarCast India</h1>
+                            <h1 className="font-bold text-lg tracking-tight leading-none text-white">TalentConnect</h1>
                             <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest">Artist Dashboard</p>
                         </div>
                     </div>

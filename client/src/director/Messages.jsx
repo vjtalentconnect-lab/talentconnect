@@ -13,7 +13,7 @@ const Messages = () => {
                             <Link to="/dashboard/director" className="size-8 bg-primary rounded flex items-center justify-center">
                                 <span className="material-symbols-outlined text-white text-xl">star</span>
                             </Link>
-                            <h2 className="text-xl font-bold tracking-tight">StarCast India</h2>
+                            <h2 className="text-xl font-bold tracking-tight">TalentConnect</h2>
                         </div>
                         <div className="relative">
                             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>

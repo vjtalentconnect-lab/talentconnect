@@ -13,7 +13,7 @@ const UpgradePlan = () => {
                                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z"></path>
                             </svg>
                         </div>
-                        <h2 className="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight uppercase">StarCast India</h2>
+                        <h2 className="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight uppercase">TalentConnect</h2>
                     </div>
                     <div className="hidden md:flex flex-1 justify-end gap-10">
                         <nav className="flex items-center gap-8">
@@ -206,9 +206,9 @@ const UpgradePlan = () => {
                                     <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z"></path>
                                 </svg>
                             </div>
-                            <span className="text-slate-900 dark:text-white font-black uppercase tracking-widest text-sm">StarCast India</span>
+                            <span className="text-slate-900 dark:text-white font-black uppercase tracking-widest text-sm">TalentConnect</span>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">© 2024 StarCast India. Empowering the next generation of Indian cinema.</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">© 2026 TalentConnect. Empowering the next generation of Indian cinema.</p>
                         <div className="flex gap-6">
                             <a className="text-slate-400 hover:text-primary" href="#"><span className="material-symbols-outlined">public</span></a>
                             <a className="text-slate-400 hover:text-primary" href="#"><span className="material-symbols-outlined">alternate_email</span></a>

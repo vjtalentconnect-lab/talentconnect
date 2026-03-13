@@ -11,7 +11,7 @@ const DirectorDashboard = () => {
             <span className="material-symbols-outlined font-bold">movie</span>
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tight leading-none text-slate-900 dark:text-white">STARCAST</h1>
+            <h1 className="text-lg font-black tracking-tight leading-none text-slate-900 dark:text-white">TalentConnect</h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">India • Admin</p>
           </div>
         </div>

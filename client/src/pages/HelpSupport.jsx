@@ -12,10 +12,10 @@ const HelpSupport = () => {
                             <div className="bg-primary p-1.5 rounded-lg">
                                 <span className="material-symbols-outlined text-white text-2xl">theaters</span>
                             </div>
-                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">StarCast <span className="text-primary">India</span></h1>
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect <span className="text-primary">India</span></h1>
                         </div>
                         <nav className="hidden md:flex items-center gap-8">
-                            <Link className="text-sm font-medium hover:text-primary transition-colors" to="/talent/dashboard">Dashboard</Link>
+                            <Link className="text-sm font-medium hover:text-primary transition-colors" to="/dashboard/talent">Dashboard</Link>
                             <Link className="text-sm font-medium hover:text-primary transition-colors" to="/projects">Projects</Link>
                             <Link className="text-sm font-medium text-primary border-b-2 border-primary pb-1" to="/support">Support</Link>
                         </nav>
@@ -111,11 +111,11 @@ const HelpSupport = () => {
                             </details>
                             <details className="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden transition-all duration-300">
                                 <summary className="flex items-center justify-between p-5 cursor-pointer list-none">
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200">What are the benefits of StarCast Pro?</span>
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">What are the benefits of TalentConnect Pro?</span>
                                     <span className="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
                                 </summary>
                                 <div className="p-5 pt-0 text-slate-600 dark:text-slate-400 text-sm leading-relaxed border-t border-slate-100 dark:border-border-dark/50">
-                                    StarCast Pro users get priority audition slots, unlimited showreel uploads, a verified blue tick, and direct messaging access to verified casting directors across major Indian production hubs.
+                                    TalentConnect Pro users get priority audition slots, unlimited showreel uploads, a verified blue tick, and direct messaging access to verified casting directors across major Indian production hubs.
                                 </div>
                             </details>
                             <details className="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden transition-all duration-300">
@@ -129,7 +129,7 @@ const HelpSupport = () => {
                             </details>
                             <details className="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden transition-all duration-300">
                                 <summary className="flex items-center justify-between p-5 cursor-pointer list-none">
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200">Is my personal data secure on StarCast India?</span>
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">Is my personal data secure on TalentConnect?</span>
                                     <span className="material-symbols-outlined group-open:rotate-180 transition-transform">expand_more</span>
                                 </summary>
                                 <div className="p-5 pt-0 text-slate-600 dark:text-slate-400 text-sm leading-relaxed border-t border-slate-100 dark:border-border-dark/50">
@@ -184,7 +184,7 @@ const HelpSupport = () => {
                                 <div className="bg-primary p-1 rounded-lg">
                                     <span className="material-symbols-outlined text-white text-xl">theaters</span>
                                 </div>
-                                <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">StarCast India</h1>
+                                <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect</h1>
                             </div>
                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed mb-6">
                                 India's premier digital talent marketplace connecting aspiring actors with the country's leading casting directors and production houses.
@@ -224,7 +224,7 @@ const HelpSupport = () => {
                         </div>
                     </div>
                     <div className="pt-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-xs text-slate-500">© 2024 StarCast India. All rights reserved.</p>
+                        <p className="text-xs text-slate-500">© 2026 TalentConnect. All rights reserved.</p>
                         <div className="flex items-center gap-6">
                             <span className="flex items-center gap-1 text-xs text-slate-500"><span className="material-symbols-outlined text-sm">language</span> English (India)</span>
                             <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">Made with <span className="material-symbols-outlined text-sm text-primary">favorite</span> for Indian Cinema</span>

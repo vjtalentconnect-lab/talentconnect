@@ -12,7 +12,7 @@ const DirectorPortfolio = () => {
                             <div className="size-8 flex items-center justify-center">
                                 <span className="material-symbols-outlined text-3xl">movie</span>
                             </div>
-                            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">StarCast India</h2>
+                            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">TalentConnect</h2>
                         </div>
                         <nav className="hidden md:flex items-center gap-8">
                             <Link className="text-sm font-medium hover:text-primary transition-colors" to="#">Talent</Link>
@@ -209,7 +209,7 @@ const DirectorPortfolio = () => {
                     <div className="col-span-1 md:col-span-1 space-y-6">
                         <div className="flex items-center gap-3 text-primary">
                             <span className="material-symbols-outlined text-3xl">movie</span>
-                            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">StarCast India</h2>
+                            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">TalentConnect</h2>
                         </div>
                         <p className="text-sm text-slate-500 leading-relaxed">
                             India's premier digital platform connecting talent with the biggest names in the cinematic industry.
@@ -248,7 +248,7 @@ const DirectorPortfolio = () => {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-xs text-slate-500">© 2026 StarCast India. All rights reserved.</p>
+                    <p className="text-xs text-slate-500">© 2026 TalentConnect. All rights reserved.</p>
                     <div className="flex gap-6 text-xs text-slate-500">
                         <span>Mumbai, India</span>
                         <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span> 10:00 AM - 7:00 PM IST</span>

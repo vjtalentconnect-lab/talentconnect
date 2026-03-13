@@ -15,7 +15,7 @@ const TalentPortfolio = () => {
               </svg>
             </div>
             <h1 className="text-xl font-extrabold tracking-tighter uppercase">
-              StarCast <span className="text-primary">India</span>
+              TalentConnect <span className="text-primary">India</span>
             </h1>
           </div>
           <nav className="hidden md:flex items-center gap-10">
@@ -328,7 +328,7 @@ const TalentPortfolio = () => {
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter">Ready for the Next Blockbuster</h2>
             <p className="text-white/80 text-xl font-medium max-w-2xl mx-auto">
-              Currently accepting leads for character-driven features and international series. For booking and availability, contact StarCast India agents.
+              Currently accepting leads for character-driven features and international series. For booking and availability, contact TalentConnect agents.
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <button className="bg-black text-white px-10 py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-zinc-900 transition-all shadow-2xl">
@@ -350,7 +350,7 @@ const TalentPortfolio = () => {
                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z"></path>
               </svg>
             </div>
-            <h1 className="text-sm font-extrabold tracking-tighter uppercase opacity-50">StarCast India</h1>
+            <h1 className="text-sm font-extrabold tracking-tighter uppercase opacity-50">TalentConnect</h1>
           </div>
           <div className="flex gap-8">
             <a className="text-slate-500 hover:text-white transition-colors" href="#">
@@ -363,7 +363,7 @@ const TalentPortfolio = () => {
               <span className="material-symbols-outlined">movie_edit</span>
             </a>
           </div>
-          <p className="text-slate-500 text-xs font-medium uppercase tracking-[0.2em]">© 2026 StarCast India Portfolio. All Rights Reserved.</p>
+          <p className="text-slate-500 text-xs font-medium uppercase tracking-[0.2em]">© 2026 TalentConnect Portfolio. All Rights Reserved.</p>
         </div>
       </footer>
 

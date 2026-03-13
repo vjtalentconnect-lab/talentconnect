@@ -15,7 +15,7 @@ const AuditionRequests = () => {
                                 <span className="material-symbols-outlined text-white">movie_filter</span>
                             </div>
                             <div>
-                                <h1 className="font-display font-bold text-lg leading-none">StarCast India</h1>
+                                <h1 className="font-display font-bold text-lg leading-none">TalentConnect</h1>
                                 <p className="text-xs text-slate-500 dark:text-primary/70 uppercase tracking-widest font-semibold mt-1">Director's Hub</p>
                             </div>
                         </div>
@@ -287,7 +287,7 @@ const AuditionRequests = () => {
                                             <tr>
                                                 <td className="px-6 py-4 font-semibold">Availability</td>
                                                 <td className="px-6 py-4 text-green-500 font-bold">Immediate</td>
-                                                <td className="px-6 py-4 text-yellow-500 font-bold">Post Dec 2024</td>
+                                                <td className="px-6 py-4 text-yellow-500 font-bold">Post Dec 2026</td>
                                             </tr>
                                         </tbody>
                                     </table>

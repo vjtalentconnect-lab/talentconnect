@@ -12,7 +12,7 @@ const ProjectDetails = () => {
                     <div className="flex items-center gap-8">
                         <Link to="/dashboard/director" className="flex items-center gap-2 text-primary">
                             <span className="material-symbols-outlined text-3xl font-bold">movie_filter</span>
-                            <h2 className="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight">StarCast India</h2>
+                            <h2 className="text-slate-900 dark:text-white text-xl font-extrabold tracking-tight">TalentConnect</h2>
                         </Link>
                         <nav className="hidden md:flex items-center gap-6">
                             <Link to="/director/my-projects" className="text-slate-600 dark:text-slate-300 text-sm font-semibold hover:text-primary transition-colors">Projects</Link>
@@ -283,7 +283,7 @@ const ProjectDetails = () => {
                 <div className="max-w-7xl mx-auto px-4 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-2 opacity-50">
                         <span className="material-symbols-outlined text-xl">movie_filter</span>
-                        <span className="text-xs font-bold uppercase tracking-tighter">StarCast India © 2024</span>
+                        <span className="text-xs font-bold uppercase tracking-tighter">TalentConnect © 2026</span>
                     </div>
                     <div className="flex gap-8">
                         <a className="text-xs font-bold text-slate-400 hover:text-primary transition-colors uppercase tracking-widest" href="#">Privacy</a>

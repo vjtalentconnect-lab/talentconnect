@@ -25,7 +25,7 @@ const CreateProjectStep2 = () => {
                                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-tight">StarCast India</h2>
+                        <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-tight">TalentConnect</h2>
                     </div>
                     <div className="flex flex-1 justify-end gap-8 items-center">
                         <nav className="hidden md:flex items-center gap-9">

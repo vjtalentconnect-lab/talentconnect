@@ -43,7 +43,7 @@ const LoginPage = () => {
               </span>
             </div>
             <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
-              StarCast{' '}
+              TalentConnect{' '}
               <span className="text-primary">India</span>
             </h1>
           </div>
@@ -228,7 +228,7 @@ const LoginPage = () => {
         {/* Footer */}
         <footer className="w-full px-6 py-8 text-center">
           <p className="text-slate-500 text-xs">
-            © 2026 StarCast India. All Rights Reserved. Private &amp; Confidential.
+            © 2026 TalentConnect. All Rights Reserved. Private &amp; Confidential.
           </p>
           <div className="mt-2 flex justify-center gap-4 text-xs text-slate-500">
             <Link className="hover:text-primary transition-colors" to="#">

@@ -12,7 +12,7 @@ const AppliedProjects = () => {
                             <span className="material-symbols-outlined">theater_comedy</span>
                         </div>
                         <div>
-                            <h1 className="font-bold text-lg leading-none">StarCast</h1>
+                            <h1 className="font-bold text-lg leading-none">TalentConnect</h1>
                             <p className="text-xs text-primary font-medium uppercase tracking-wider">Artist Dashboard</p>
                         </div>
                     </div>

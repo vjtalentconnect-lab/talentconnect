@@ -41,7 +41,7 @@ const RegisterDirector = () => {
               <div className="bg-primary p-2 rounded-lg">
                 <span className="material-symbols-outlined text-white text-3xl">movie_filter</span>
               </div>
-              <h1 className="text-white text-3xl font-black tracking-tighter uppercase">StarCast India</h1>
+              <h1 className="text-white text-3xl font-black tracking-tighter uppercase">TalentConnect</h1>
             </div>
             <h2 className="text-white text-5xl font-black leading-tight mb-4">Empowering Visionary <span className="text-primary">Storytellers</span></h2>
             <p className="text-slate-300 text-lg max-w-md">Connect with India's finest talent pool and bring your creative visions to life with our premium casting infrastructure.</p>
@@ -54,7 +54,7 @@ const RegisterDirector = () => {
             {/* Mobile Branding */}
             <div className="flex items-center gap-2 mb-8 lg:hidden">
               <span className="material-symbols-outlined text-primary text-3xl">movie_filter</span>
-              <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold">StarCast India</h2>
+              <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold">TalentConnect</h2>
             </div>
 
             <div className="mb-10">
@@ -193,7 +193,7 @@ const RegisterDirector = () => {
                   className="mt-1 rounded text-primary focus:ring-primary"
                 />
                 <label className="text-xs text-slate-600 dark:text-slate-400 leading-tight" htmlFor="terms">
-                  By signing up, I agree to StarCast India's <a className="text-primary hover:underline" href="#">Terms of Service</a> and <a className="text-primary hover:underline" href="#">Privacy Policy</a>.
+                  By signing up, I agree to TalentConnect<a className="text-primary hover:underline" href="#">Terms of Service</a> and <a className="text-primary hover:underline" href="#">Privacy Policy</a>.
                 </label>
               </div>
 
