@@ -9,10 +9,8 @@ const HelpSupport = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-3">
-                            <div className="bg-primary p-1.5 rounded-lg">
-                                <span className="material-symbols-outlined text-white text-2xl">theaters</span>
-                            </div>
-                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect <span className="text-primary">India</span></h1>
+                            <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect</h1>
                         </div>
                         <nav className="hidden md:flex items-center gap-8">
                             <Link className="text-sm font-medium hover:text-primary transition-colors" to="/dashboard/talent">Dashboard</Link>
@@ -71,7 +69,7 @@ const HelpSupport = () => {
                         {/* Casting & Projects */}
                         <div className="group p-6 rounded-2xl border border-slate-200 dark:border-border-dark bg-white dark:bg-surface-dark hover:border-primary/50 transition-all cursor-pointer">
                             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
-                                <span className="material-symbols-outlined text-primary group-hover:text-white">movie</span>
+                                <img src="/TC Logo.png" alt="Logo" className="h-6 w-auto" />
                             </div>
                             <h4 className="text-lg font-bold mb-2">Casting & Projects</h4>
                             <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Finding roles, applying to auditions, and managing submissions.</p>
@@ -181,9 +179,7 @@ const HelpSupport = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-12">
                         <div className="col-span-2 lg:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="bg-primary p-1 rounded-lg">
-                                    <span className="material-symbols-outlined text-white text-xl">theaters</span>
-                                </div>
+                                <img src="/TC Logo.png" alt="Logo" className="h-6 w-auto" />
                                 <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect</h1>
                             </div>
                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed mb-6">

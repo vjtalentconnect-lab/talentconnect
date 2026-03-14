@@ -7,9 +7,7 @@ const PaymentSuccess = () => {
             <div className="layout-container flex h-full grow flex-col">
                 <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-6 py-4 md:px-20 lg:px-40 bg-background-light dark:bg-background-dark">
                     <div className="flex items-center gap-3 text-primary">
-                        <div className="size-8 flex items-center justify-center bg-primary/10 rounded-lg">
-                            <span className="material-symbols-outlined text-primary text-2xl">movie</span>
-                        </div>
+                        <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
                         <h2 className="text-slate-900 dark:text-slate-100 text-xl font-black leading-tight tracking-tight uppercase">TalentConnect</h2>
                     </div>
                     <div className="flex items-center gap-4">

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { register } from '../services/authService';
 
 const RegisterDirector = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +13,9 @@ const RegisterDirector = () => {
     password: '',
     agreeTerms: false
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -20,9 +25,34 @@ const RegisterDirector = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Director Registration Data:', formData);
+    setLoading(true);
+    setError('');
+
+    if (!formData.agreeTerms) {
+      setError('Please agree to the terms and conditions');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const userData = {
+        email: formData.email,
+        password: formData.password,
+        role: 'director',
+        fullName: formData.fullName,
+        companyName: formData.productionName,
+      };
+
+      const data = await register(userData);
+      console.log('Director Registration successful:', data);
+      navigate('/dashboard/director');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,8 +68,8 @@ const RegisterDirector = () => {
           />
           <div className="relative z-20 flex flex-col justify-end p-16 h-full">
             <div className="flex items-center gap-3 mb-8">
-              <div className="bg-primary p-2 rounded-lg">
-                <span className="material-symbols-outlined text-white text-3xl">movie_filter</span>
+              <div className="p-1">
+                <img src="/TC Logo.png" alt="Logo" className="h-12 w-auto" />
               </div>
               <h1 className="text-white text-3xl font-black tracking-tighter uppercase">TalentConnect</h1>
             </div>
@@ -53,7 +83,7 @@ const RegisterDirector = () => {
           <div className="max-w-md w-full mx-auto lg:mx-0">
             {/* Mobile Branding */}
             <div className="flex items-center gap-2 mb-8 lg:hidden">
-              <span className="material-symbols-outlined text-primary text-3xl">movie_filter</span>
+              <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
               <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold">TalentConnect</h2>
             </div>
 
@@ -197,8 +227,18 @@ const RegisterDirector = () => {
                 </label>
               </div>
 
-              <button className="w-full py-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary/20" type="submit">
-                Create Professional Account
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl text-sm mb-4">
+                  {error}
+                </div>
+              )}
+
+              <button
+                className={`w-full py-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary/20 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? 'SETTING UP THE STAGE...' : 'Create Professional Account'}
               </button>
             </form>
 

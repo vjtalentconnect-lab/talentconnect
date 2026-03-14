@@ -9,9 +9,7 @@ const CommunityForum = () => {
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-3 shrink-0">
-                        <div className="bg-primary p-1.5 rounded-lg text-white">
-                            <span className="material-symbols-outlined block">theaters</span>
-                        </div>
+                        <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
                         <h1 className="text-xl font-extrabold tracking-tight hidden md:block">TalentConnect <span className="text-primary text-sm font-medium ml-1 bg-primary/10 px-2 py-0.5 rounded">FORUM</span></h1>
                     </Link>
                     {/* Nav Links */}

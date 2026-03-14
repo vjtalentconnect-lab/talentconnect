@@ -4,7 +4,7 @@
 
 @layer base {
 	body {
-		@apply bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100;
+		@apply bg-[#F7F5F0] dark:bg-[#0A0F1E] text-[#0A0F1E] dark:text-[#F7F5F0];
 		font-family: 'Plus Jakarta Sans', sans-serif;
 	}
 }
@@ -30,12 +30,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #ee2b3b;
+	background: #c9a84c;
 	border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #ff4d5a;
+	background: #dfc067;
 }
 
 /* new utilities */
@@ -46,16 +46,16 @@
 .glass-card {
 	background: rgba(42, 26, 20, 0.4);
 	backdrop-filter: blur(12px);
-	border: 1px solid rgba(238, 43, 59, 0.2);
+	border: 1px solid rgba(201, 168, 76, 0.2);
 }
 
 .sidebar-active {
-	background: #ee2b3b;
-	color: white;
+	background: #c9a84c;
+	color: #0A0F1E;
 }
 
 .glass-effect {
-	background: rgba(238, 43, 59, 0.1);
+	background: rgba(201, 168, 76, 0.1);
 	backdrop-filter: blur(8px);
 }
 
@@ -69,7 +69,7 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-	background: rgba(238, 43, 59, 0.2);
+	background: rgba(201, 168, 76, 0.3);
 	border-radius: 10px;
 }
 

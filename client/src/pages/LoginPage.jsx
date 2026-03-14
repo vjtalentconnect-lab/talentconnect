@@ -37,11 +37,7 @@ const LoginPage = () => {
         {/* Top Navigation / Logo */}
         <header className="w-full px-6 py-6 lg:px-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg">
-              <span className="material-symbols-outlined text-white text-3xl">
-                movie
-              </span>
-            </div>
+            <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
             <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
               TalentConnect{' '}
               <span className="text-primary">India</span>

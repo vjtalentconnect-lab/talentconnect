@@ -46,8 +46,8 @@ const ProfileVerification = () => {
                     {/* Top Navigation Bar */}
                     <header className="flex items-center justify-between border-b border-primary/20 px-6 py-4 md:px-40 bg-background-light dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
                         <div className="flex items-center gap-4">
-                            <div className="text-primary">
-                                <span className="material-symbols-outlined text-4xl">movie_filter</span>
+                            <div className="flex items-center">
+                                <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
                             </div>
                             <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight uppercase italic">TalentConnect</h2>
                         </div>

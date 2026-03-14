@@ -8,15 +8,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#ee2b3b',
-        secondary: '#1A1A1A',
-        'background-light': '#f8f6f6',
-        'background-dark': '#221012',
-        'surface-light': '#FFFFFF',
-        'surface-dark': '#1E1E1E',
-        'accent-dark': '#2a1a14',
-        'card-dark': '#1e1410',
-        'border-dark': '#3d2b22',
+        primary: '#0A0F1E',
+        accent: '#C9A84C',
+        surface: '#F7F5F0',
+        'text-primary': '#0A0F1E',
+        'text-secondary': '#6B6B6B',
+        'text-on-dark': '#F7F5F0',
+        success: '#1A7F5A',
+        danger: '#C0392B',
+        border: '#E2DDD6',
       },
       fontFamily: {
         display: ['Plus Jakarta Sans', 'sans-serif'],

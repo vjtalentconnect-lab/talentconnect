@@ -1,82 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { getMyProfile } from '../services/profileService';
+import { DIRECTOR_MENU } from '../constants/navigation';
 
 const MyProjects = () => {
     const navigate = useNavigate();
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const response = await getMyProfile();
+                setProfile(response.data);
+            } catch (err) {
+                console.error('Error fetching director profile:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
+
+    const userData = {
+        name: profile?.fullName || 'Rohan Mehra',
+        roleTitle: `${profile?.companyName || 'Lead Director'} • ${profile?.location || 'Mumbai, IN'}`,
+        avatar: profile?.profilePicture === 'no-photo.jpg' 
+            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User') 
+            : (profile?.profilePicture || "https://lh3.googleusercontent.com/aida-public/AB6AXuC-8S-aeuR2cORz2aKmlcoRCZG0vX3wrCerglNjBZAeRTyWFtdCwCVgW2iau6r9ehLrZVdI8FCvYXugQN5g0iwxAp0y0a9DKiit2XmW7WKPzqsjSZb23GH1WfBIs3CwD2BV5JgiHEA7RJccg4NGPWqIKlO7EjA6wyORiH7n3g1MwegFrrf7ovbugGps3ElIcbYbaEJb-Rgshm_LVUyOQQOsWt3Lf1te1KVr8F6VcVTewalCyMztq1GlKktZMvh7wHTp2HgBgHIXuiFI")
+    };
 
     return (
-        <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen">
-            <div className="flex h-screen overflow-hidden">
-                {/* Sidebar Navigation */}
-                <aside className="w-72 flex-shrink-0 bg-white dark:bg-slate-900/50 border-r border-slate-200 dark:border-primary/10 flex flex-col">
-                    <div className="p-6 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white">
-                            <span className="material-symbols-outlined">movie</span>
-                        </div>
-                        <div>
-                            <h1 className="font-bold text-lg leading-tight tracking-tight">TalentConnect</h1>
-                            <p className="text-xs text-slate-500 dark:text-primary/70 uppercase font-semibold">Director Dashboard</p>
-                        </div>
+        <DashboardLayout
+            menuItems={DIRECTOR_MENU}
+            userRole="India • Director"
+            userData={userData}
+            headerTitle="My Projects"
+            headerSubtitle="Track and manage your active film and media productions."
+            searchPlaceholder="Search projects..."
+        >
+            <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center h-[60vh]">
+                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary mb-4"></div>
+                        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Loading Projects...</p>
                     </div>
-                    <nav className="flex-1 px-4 py-6 space-y-2">
-                        <Link to="/dashboard/director" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined">dashboard</span>
-                            <span className="font-medium">Dashboard</span>
-                        </Link>
-                        <Link to="/director/my-projects" className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/20 border-r-4 border-primary text-primary transition-colors">
-                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>folder_open</span>
-                            <span className="font-medium">My Projects</span>
-                        </Link>
-                        <Link to="/director/shortlists" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined">star</span>
-                            <span className="font-medium">Shortlists</span>
-                        </Link>
-                        <Link to="/director/auditions" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined">settings_voice</span>
-                            <span className="font-medium">Audition Requests</span>
-                        </Link>
-                        <Link to="/director/messages" className="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined text-sm">chat</span>
-                            <span className="font-medium">Messages</span>
-                        </Link>
-                    </nav>
-                    <div className="p-4 mt-auto border-t border-slate-200 dark:border-primary/10">
-                        <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-100 dark:bg-primary/5">
-                            <div className="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 bg-cover bg-center" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuCPObGVulXTKcyTtiSpoeAh_ymLCNKcx_gsC1AdNLKCgeQpcEdh2ec8Ir7KIVsn5TQltEGCk6K2jEXnsyR5vosfnX7qFf4SotLz3pdJphrjwuMjaowxarQmLyi6KUa4OoX8XLWTweX8n0YPMhvwyR0Iwzl2Wy2U8JX49hTlhpLCf0ocLz0TQ34AM6ogodd2suUJqsOPE9QvuvTqnpIlShrvsBsZoPjaCg4Hf65XuCw28rgeekhmAa9ZlhYk4ZmpU0I68X5Zp1kAqj4J')" }}></div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate">Rajiv Malhotra</p>
-                                <p className="text-xs text-slate-500 truncate">Premium Director</p>
-                            </div>
-                            <span className="material-symbols-outlined text-slate-400">settings</span>
-                        </div>
-                    </div>
-                </aside>
-                {/* Main Content Area */}
-                <main className="flex-1 flex flex-col overflow-hidden">
-                    {/* Top Header */}
-                    <header className="h-20 border-b border-slate-200 dark:border-primary/10 px-8 flex items-center justify-between bg-white/50 dark:bg-background-dark/50 backdrop-blur-md z-10">
-                        <div className="flex items-center gap-4 flex-1">
-                            <div className="relative w-full max-w-md">
-                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                                <input className="w-full bg-slate-100 dark:bg-primary/5 border-none rounded-xl py-2 pl-10 pr-4 focus:ring-2 focus:ring-primary text-sm outline-none" placeholder="Search projects, actors, scripts..." type="text" />
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button className="w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-primary/10">
-                                <span className="material-symbols-outlined">notifications</span>
-                            </button>
-                            <Link to="/director/create-project/step1" className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
-                                <span className="material-symbols-outlined text-sm">add</span>
-                                Create New Project
-                            </Link>
-                        </div>
-                    </header>
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto p-8">
-                        <div className="mb-8">
-                            <h2 className="text-4xl font-black tracking-tight mb-2">My Projects</h2>
-                            <p className="text-slate-500 dark:text-slate-400">Track and manage your active film and media productions across India.</p>
-                        </div>
+                ) : (
+                    <div className="flex-1 overflow-y-auto">
                         {/* Tabs/Filters */}
                         <div className="flex border-b border-slate-200 dark:border-primary/10 mb-8 gap-8">
                             <button className="pb-4 border-b-2 border-primary text-primary font-bold text-sm">All Projects (12)</button>
@@ -184,9 +155,9 @@ const MyProjects = () => {
                             </Link>
                         </div>
                     </div>
-                </main>
+                )}
             </div>
-        </div>
+        </DashboardLayout>
     );
 };
 

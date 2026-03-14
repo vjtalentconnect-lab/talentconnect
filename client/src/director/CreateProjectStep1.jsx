@@ -18,8 +18,8 @@ const CreateProjectStep1 = () => {
             <div className="relative flex min-h-screen flex-col overflow-x-hidden">
                 <header className="flex items-center justify-between border-b border-slate-200 dark:border-primary/20 px-6 py-4 lg:px-20 bg-background-light dark:bg-background-dark sticky top-0 z-50">
                     <div className="flex items-center gap-4">
-                        <div className="text-primary">
-                            <span className="material-symbols-outlined text-3xl">movie_filter</span>
+                        <div className="flex items-center">
+                            <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
                         </div>
                         <h2 className="text-xl font-bold tracking-tight">Create New Project</h2>
                     </div>
@@ -168,7 +168,7 @@ const CreateProjectStep1 = () => {
                 </aside>
 
                 <footer className="py-6 px-10 text-center text-slate-400 text-xs border-t border-slate-200 dark:border-primary/10 mt-auto">
-                    &copy; 2026 TalentConnect India &bull; Premiere Casting for the Indian Film Industry
+                    &copy; 2026 TalentConnect &bull; Where Global Talent Meets Opportunity
                 </footer>
             </div>
         </div>

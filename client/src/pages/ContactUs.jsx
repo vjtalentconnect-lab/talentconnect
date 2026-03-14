@@ -122,7 +122,7 @@ const ContactUs = () => {
                                             <span className="material-symbols-outlined">public</span>
                                         </a>
                                         <a className="size-12 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white transition-all" href="#">
-                                            <span className="material-symbols-outlined">movie</span>
+                                            <img src="/TC Logo.png" alt="Logo" className="h-6 w-auto" />
                                         </a>
                                         <a className="size-12 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white transition-all" href="#">
                                             <span className="material-symbols-outlined">alternate_email</span>

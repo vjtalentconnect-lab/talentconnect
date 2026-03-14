@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { register } from '../services/authService';
 
 const RegisterActor = () => {
     const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ const RegisterActor = () => {
         password: '',
         agreeTerms: false
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -22,11 +25,34 @@ const RegisterActor = () => {
 
     const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Actor Registration Data:', formData);
-        // After successful registration, redirect to verification
-        navigate('/talent/verify');
+        setLoading(true);
+        setError('');
+
+        if (!formData.agreeTerms) {
+            setError('Please agree to the terms and conditions');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const userData = {
+                email: formData.email,
+                password: formData.password,
+                role: 'talent',
+                fullName: formData.fullName,
+                talentCategory: formData.category,
+            };
+
+            const data = await register(userData);
+            console.log('Registration successful:', data);
+            navigate('/talent/verify');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -35,12 +61,8 @@ const RegisterActor = () => {
             <div className="layout-container flex h-full grow flex-col">
                 {/* Navbar */}
                 <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/20 px-6 lg:px-40 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
-                    <div className="flex items-center gap-3 text-primary">
-                        <div className="size-6">
-                            <svg className="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
-                            </svg>
-                        </div>
+                    <div className="flex items-center gap-3">
+                        <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
                         <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">TalentConnect</h2>
                     </div>
                     <div className="flex items-center gap-4">
@@ -189,14 +211,21 @@ const RegisterActor = () => {
                                     />
                                 </div>
 
+                                {error && (
+                                    <div className="md:col-span-2 bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl text-sm mb-2">
+                                        {error}
+                                    </div>
+                                )}
+
                                 {/* Submit */}
                                 <div className="md:col-span-2 pt-4">
                                     <button
-                                        className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                                        className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                                         type="submit"
+                                        disabled={loading}
                                     >
-                                        <span>Sign Up Now</span>
-                                        <span className="material-symbols-outlined">arrow_forward</span>
+                                        <span>{loading ? 'TAKING THE STAGE...' : 'Sign Up Now'}</span>
+                                        {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
                                     </button>
                                 </div>
 

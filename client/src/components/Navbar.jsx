@@ -4,10 +4,13 @@ const Navbar = () => {
   return (
     <nav className="w-full fixed top-0 z-50 bg-white/20 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        
-        <h1 className="text-2xl font-extrabold text-white">
-          TalentConnect
-        </h1>
+
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
+          <h1 className="text-2xl font-extrabold text-white">
+            TalentConnect
+          </h1>
+        </Link>
 
         <div className="flex gap-6 items-center">
           <Link

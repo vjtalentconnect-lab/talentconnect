@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { login } from '../services/authService';
 
 const Login = () => {
   const [userType, setUserType] = useState('artist');
@@ -8,15 +9,33 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log({
-      userType,
-      email,
-      password,
-      rememberMe,
-    });
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await login(email, password);
+      console.log('Login successful:', data);
+
+      // Redirect based on role
+      const role = data.user.role;
+      if (role === 'talent') {
+        navigate('/dashboard/talent');
+      } else if (role === 'director') {
+        navigate('/dashboard/director');
+      } else if (role === 'admin') {
+        navigate('/dashboard/admin');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,14 +56,9 @@ const Login = () => {
         {/* Top Navigation / Logo */}
         <header className="w-full px-6 py-6 lg:px-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg">
-              <span className="material-symbols-outlined text-white text-3xl">
-                movie
-              </span>
-            </div>
+            <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
             <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
               TalentConnect{' '}
-              <span className="text-primary">India</span>
             </h1>
           </div>
           <div className="hidden md:block">
@@ -163,12 +177,19 @@ const Login = () => {
                 </label>
               </div>
 
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-lg text-sm mb-4">
+                  {error}
+                </div>
+              )}
+
               <button
-                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+                className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 type="submit"
+                disabled={loading}
               >
-                <span>ENTER THE STAGE</span>
-                <span className="material-symbols-outlined">chevron_right</span>
+                <span>{loading ? 'OPENING GATES...' : 'ENTER THE STAGE'}</span>
+                {!loading && <span className="material-symbols-outlined">chevron_right</span>}
               </button>
             </form>
 

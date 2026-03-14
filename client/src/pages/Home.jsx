@@ -9,7 +9,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex-shrink-0 flex items-center gap-2">
-              <span className="material-icons text-primary text-3xl">movie_filter</span>
+              <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
               <span className="font-display font-bold text-2xl tracking-wide text-gray-900 dark:text-white">
                 TalentConnect
               </span>
@@ -52,7 +52,7 @@ const Home = () => {
             <span className="gold-text-gradient">Indian Cinema</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto font-light">
-            The premier marketplace connecting exceptional talent with visionary directors across Bollywood, Tollywood, and the Ad Film industry.
+            Where Global Talent Meets Opportunity
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6">
             <a className="group relative px-8 py-4 bg-primary text-black font-bold rounded-lg overflow-hidden shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all transform hover:-translate-y-1" href="/register/actor">
@@ -330,8 +330,8 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
-                <span className="material-icons text-primary text-2xl">movie_filter</span>
-                <span className="font-display font-bold text-xl tracking-wide text-white">TalentConnect<span className="text-primary">India</span></span>
+                <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
+                <span className="font-display font-bold text-xl tracking-wide text-white">TalentConnect</span>
               </div>
               <p className="text-sm leading-relaxed mb-6">India's most trusted platform for discovering talent and casting for films, ads, and web series.</p>
               <div className="flex gap-4">
@@ -368,7 +368,7 @@ const Home = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 TalentConnect Pvt Ltd. All rights reserved. Privacy Policy | Terms of Service</div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 TalentConnect • Where Global Talent Meets Opportunity | Privacy Policy | Terms of Service</div>
         </div>
       </footer>
     </>
