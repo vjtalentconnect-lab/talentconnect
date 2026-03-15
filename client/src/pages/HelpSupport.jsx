@@ -10,7 +10,7 @@ const HelpSupport = () => {
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-3">
                             <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
-                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect</h1>
+                            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">TALENT<span className="text-primary">CONNECT</span></h1>
                         </div>
                         <nav className="hidden md:flex items-center gap-8">
                             <Link className="text-sm font-medium hover:text-primary transition-colors" to="/dashboard/talent">Dashboard</Link>
@@ -180,7 +180,7 @@ const HelpSupport = () => {
                         <div className="col-span-2 lg:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
                                 <img src="/TC Logo.png" alt="Logo" className="h-6 w-auto" />
-                                <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">TalentConnect</h1>
+                                <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">TALENT<span className="text-primary">CONNECT</span></h1>
                             </div>
                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed mb-6">
                                 India's premier digital talent marketplace connecting aspiring actors with the country's leading casting directors and production houses.
@@ -220,7 +220,7 @@ const HelpSupport = () => {
                         </div>
                     </div>
                     <div className="pt-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-xs text-slate-500">© 2026 TalentConnect. All rights reserved.</p>
+                        <p className="text-xs text-slate-500">© 2026 TALENT<span className="text-primary">CONNECT</span>. All rights reserved.</p>
                         <div className="flex items-center gap-6">
                             <span className="flex items-center gap-1 text-xs text-slate-500"><span className="material-symbols-outlined text-sm">language</span> English (India)</span>
                             <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">Made with <span className="material-symbols-outlined text-sm text-primary">favorite</span> for Indian Cinema</span>

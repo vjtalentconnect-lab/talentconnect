@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        verificationStatus: {
+            type: String,
+            enum: ['none', 'pending', 'verified', 'rejected'],
+            default: 'none',
+        },
         profile: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Profile',
@@ -38,9 +43,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);

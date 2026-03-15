@@ -70,7 +70,7 @@ const Login = () => {
 
         {/* Main Login Container */}
         <main className="flex-1 flex items-center justify-center px-4 py-12">
-          <div className="w-full max-w-[480px] bg-[rgba(45,30,22,0.6)] backdrop-blur-[12px] border border-[rgba(236,91,19,0.1)] rounded-xl p-8 shadow-2xl">
+          <div className="w-full max-w-[480px] bg-[rgba(45,30,22,0.6)] backdrop-blur-[12px] border border-primary/10 rounded-xl p-8 shadow-2xl">
             <div className="mb-8 text-center">
               <h2 className="text-3xl font-bold text-white mb-2">
                 Welcome Back

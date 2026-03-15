@@ -13,7 +13,7 @@ const NotFound = () => {
                                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <h2 className="text-xl font-bold tracking-tight text-white">TalentConnect</h2>
+                        <h2 className="text-xl font-bold tracking-tight text-white">TALENT<span className="text-primary">CONNECT</span></h2>
                     </div>
                     <button className="flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white p-2 transition-colors border border-white/10">
                         <span className="material-symbols-outlined">menu</span>
@@ -106,7 +106,7 @@ const NotFound = () => {
                 {/* Footer */}
                 <footer className="px-6 py-8 md:px-10 lg:px-40 bg-background-dark/50 border-t border-white/5">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-slate-500 text-sm">© 2026 TalentConnect. All Rights Reserved.</p>
+                        <p className="text-slate-500 text-sm">© 2026 TALENT<span className="text-primary">CONNECT</span>. All Rights Reserved.</p>
                         <div className="flex items-center gap-6">
                             <a className="text-slate-500 hover:text-white transition-colors" href="#"><span className="material-symbols-outlined">public</span></a>
                             <a className="text-slate-500 hover:text-white transition-colors" href="#"><span className="material-symbols-outlined">alternate_email</span></a>

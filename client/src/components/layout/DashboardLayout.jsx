@@ -7,6 +7,7 @@ const DashboardLayout = ({
     menuItems,
     userRole,
     userData,
+    verificationStatus,
     headerTitle,
     headerSubtitle,
     headerActions,
@@ -15,7 +16,7 @@ const DashboardLayout = ({
 }) => {
     return (
         <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark">
-            <Sidebar menuItems={menuItems} userRole={userRole} />
+            <Sidebar menuItems={menuItems} userRole={userRole} verificationStatus={verificationStatus} />
 
             <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
                 <Header

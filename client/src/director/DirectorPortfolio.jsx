@@ -2,33 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getMyProfile } from '../services/profileService';
+import { getMyProjects } from '../services/projectService';
 import { DIRECTOR_MENU } from '../constants/navigation';
 
 const DirectorPortfolio = () => {
     const [profile, setProfile] = useState(null);
+    const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             try {
-                const response = await getMyProfile();
-                setProfile(response.data);
+                const [profileRes, projectsRes] = await Promise.all([
+                    getMyProfile(),
+                    getMyProjects()
+                ]);
+                setProfile(profileRes.data);
+                setProjects(projectsRes.data || []);
             } catch (err) {
-                console.error('Error fetching director profile:', err);
+                console.error('Error fetching director portfolio data:', err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProfile();
+        fetchData();
     }, []);
 
     const userData = {
-        name: profile?.fullName || 'Karan Malhotra',
-        roleTitle: `${profile?.companyName || 'Dharma Productions'} • ${profile?.location || 'India'}`,
+        name: profile?.fullName || 'Director',
+        roleTitle: `${profile?.companyName || 'Production House'} • ${profile?.location || 'India'}`,
         avatar: profile?.profilePicture === 'no-photo.jpg' 
             ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User') 
-            : (profile?.profilePicture || "https://lh3.googleusercontent.com/aida-public/AB6AXuCQTIhlAB-uIKbENopksNnXCYEJaIIo0P1oDGkSJHRJH1dqunSM1hmNuQtLzZOV5mYeBc0t1-2fxOiij01r6S4qLIwaUoolXKDsRfpM2masOz1ZVp4ZpAaup_Gd1O_uqZyrodc5HfvouztqYV7cd5z2K8AJVKHnUw_Va1-WN5RkEeE4JFxCnLcEFtIJkvoq4d0qqfbZbNjkQR_p8mmVjLSmN0JG7Lhn6dVJSzNf8WSJegZblLi0s8mBr1JlZjxDwFIi9-38Fqmct2wY")
+            : (profile?.profilePicture || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80")
     };
+
+    const activeProjects = projects.filter(p => p.status === 'open').slice(0, 3);
 
     return (
         <DashboardLayout
@@ -52,8 +60,8 @@ const DirectorPortfolio = () => {
                             <div className="absolute inset-0">
                                 <img
                                     className="w-full h-full object-cover object-center opacity-70"
-                                    alt="Director Karan Malhotra on a movie set"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBUzoJM47v_dGy2wKweh7iwDgZwcNZ5fx__VM3MLBmMtFXsHQP3Hg7yvq0rQIgkYcDUMPrSN8GwDYbxnbmzZYENI1xUPBuAmhRoF9seqZ7_GUtpSFoWkpgQ8MSwgqpMRKa-vQphcffXQBq2i48QmzlIPpOTMo4ym67FNy62wndCKUo0LbYojSxCcwtC-bHp1CGdzX0mWcP8nd-HUnBNZ_zCx65Y9ysDCzioP9hNRDOOY1v7Fm8422TrqTjFTsuZB3C0QG5bbzLN1kV"
+                                    alt="Director on a movie set"
+                                    src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-background-light dark:from-background-dark via-transparent to-transparent"></div>
                             </div>
@@ -110,9 +118,9 @@ const DirectorPortfolio = () => {
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                                             {[
-                                                { title: "Shershaah", year: "2021", role: "Director", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAojjC5r_mA01ClvytLEqpr9XJAfQ_AJIidlXqyLtddvHrcBlJAmnAI_4Ti5najdCGowN7oOviLtPyr3OoLIzKOOLBj_uMv7J5ZNQ3DjL8K5Zfs_DcCQLW_tNZehiIXd4h5o_Op8XEFsdgL855n0usAPQK2EuChC6hSqVDkhVieoM-NI7z5A1wiwwqPkTNJAX8PNM_iT_ydIZKwR6AdqwwVkLzOUZhllxAhtysOkl3Nyr-n4FFx-Q1wDwrEqnfDUKj9zNIToUEYuS4i" },
-                                                { title: "Agneepath", year: "2012", role: "Director", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDVbHALZrpm_9SfiKLB6vtCIjidCsIfNDFMWlu42xI92LqwR8jq-yJWnEyW1k6pukltGQP00_f4G0it1FKx-PnAEt1ICQ5GUK3Q0ezvuUGd2EB-L8rNSWBdndsxRfmU4PCf5zym32WWGMOI5dTM1-KIqirkxrOJA7cGH0aKvJNPufbgDqoSChpMVVczVte4WrRPgwMCRLwX5wQFgvr5Ycv_2Wi_vNs4wmAH2DyH2M7FP9bSKqxAr01iKKpHmO82Af2oUynYME1snYqx" },
-                                                { title: "Brothers", year: "2015", role: "Director", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAwM9xubAqxxmCbqLQ8VtlUENz1gGSCaTXuN5OS9yOs12H0k6V8POQgYRJKpdudei0BoLkXfbrrTUbO_-B_3mnZJxWmxNnkR-Y34PLgrfn6qntVWHYUkGlLn8AEUONeP7UBhTYlOM83yCcZMO91iW-7k0ssqMquGb-2i6LwNJufeFKbkMyyaVtGn2RWm0zdc3dyvxgDbp1dm5oqQZkisQch5LpT6-PlD4fXU5R8ST7hqo42l2ouV_uWxlYQ-FXAklqlQnjbJ6fu069Y" }
+                                                { title: "Shershaah", year: "2021", role: "Director", img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80" },
+                                                { title: "Agneepath", year: "2012", role: "Director", img: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?auto=format&fit=crop&q=80" },
+                                                { title: "Brothers", year: "2015", role: "Director", img: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80" }
                                             ].map((film, i) => (
                                                 <div key={i} className="group cursor-pointer">
                                                     <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-slate-100 dark:bg-white/5 relative mb-4">
@@ -135,8 +143,8 @@ const DirectorPortfolio = () => {
                                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-70">Experience Stats</h4>
                                         <div className="grid grid-cols-2 gap-8">
                                             <div>
-                                                <p className="text-4xl font-black">12</p>
-                                                <p className="text-[10px] uppercase font-bold opacity-70">Major Films</p>
+                                                <p className="text-4xl font-black">{projects.length}</p>
+                                                <p className="text-[10px] uppercase font-bold opacity-70">Total Projects</p>
                                             </div>
                                             <div>
                                                 <p className="text-4xl font-black">4</p>
@@ -159,22 +167,23 @@ const DirectorPortfolio = () => {
                                             <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black rounded-full">LIVE</span>
                                         </div>
                                         <div className="space-y-4">
-                                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-transparent hover:border-primary/30 transition-all cursor-pointer group">
-                                                <p className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">Untitled Action Drama</p>
-                                                <p className="text-xs text-slate-500 font-medium">Lead Female (22-28 yrs) • Delhi</p>
-                                                <div className="mt-4 flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase">3 Days Remaining</span>
-                                                    <span className="material-symbols-outlined text-primary">arrow_forward</span>
-                                                </div>
-                                            </div>
-                                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-transparent hover:border-primary/30 transition-all cursor-pointer group">
-                                                <p className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">Historical Epic Series</p>
-                                                <p className="text-xs text-slate-500 font-medium">Supporting Male • Martial Arts</p>
-                                                <div className="mt-4 flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Immediate Casting</span>
-                                                    <span className="material-symbols-outlined text-primary">arrow_forward</span>
-                                                </div>
-                                            </div>
+                                            {activeProjects.length > 0 ? activeProjects.map(project => {
+                                                const daysUntilDue = Math.ceil((new Date(project.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+                                                return (
+                                                    <Link to={`/director/project/${project._id}`} key={project._id} className="block p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-transparent hover:border-primary/30 transition-all cursor-pointer group">
+                                                        <p className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">{project.title}</p>
+                                                        <p className="text-xs text-slate-500 font-medium truncate">{project.roles?.[0]?.title || 'Multiple Roles'} • {project.location}</p>
+                                                        <div className="mt-4 flex items-center justify-between">
+                                                            <span className={`text-[10px] font-bold ${daysUntilDue < 0 ? 'text-red-500' : 'text-slate-400'} uppercase`}>
+                                                                {daysUntilDue < 0 ? 'Closed' : `${daysUntilDue} Days Remaining`}
+                                                            </span>
+                                                            <span className="material-symbols-outlined text-primary">arrow_forward</span>
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            }) : (
+                                                <p className="text-sm text-slate-500 italic text-center py-4">No active projects right now.</p>
+                                            )}
                                         </div>
                                     </div>
 

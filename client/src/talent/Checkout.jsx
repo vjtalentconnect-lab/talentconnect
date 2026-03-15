@@ -1,144 +1,220 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import { TALENT_MENU } from '../constants/navigation';
+import { getMyProfile } from '../services/profileService';
+
+const PAYMENT_METHODS = ['Card', 'UPI'];
+
+const formatCardNumber = (val) =>
+    val.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim();
+const formatExpiry = (val) =>
+    val.replace(/\D/g, '').slice(0, 4).replace(/(.{2})/, '$1/');
 
 const Checkout = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const plan = location.state?.plan || { name: 'Pro Artist', price: 999, billing: 'monthly' };
+
+    const [profile, setProfile] = useState(null);
+    const [activeTab, setActiveTab] = useState('Card');
+    const [cardForm, setCardForm] = useState({ number: '', expiry: '', cvv: '', name: '' });
+    const [upiId, setUpiId] = useState('');
+    const [errors, setErrors] = useState({});
+    const [paying, setPaying] = useState(false);
+
+    useEffect(() => {
+        getMyProfile().then(res => setProfile(res.data)).catch(console.error);
+    }, []);
+
+    const validate = () => {
+        const e = {};
+        if (activeTab === 'Card') {
+            if (cardForm.number.replace(/\s/g, '').length < 16) e.number = 'Enter a valid 16-digit card number';
+            if (cardForm.expiry.length < 5) e.expiry = 'Enter a valid expiry (MM/YY)';
+            if (cardForm.cvv.length < 3) e.cvv = 'CVV must be 3 digits';
+            if (!cardForm.name.trim()) e.name = 'Cardholder name is required';
+        } else {
+            if (!upiId.includes('@')) e.upiId = 'Enter a valid UPI ID (e.g. name@upi)';
+        }
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    const handlePay = async () => {
+        if (!validate()) return;
+        setPaying(true);
+        await new Promise(r => setTimeout(r, 1800));
+        setPaying(false);
+        navigate('/talent/payment-success', {
+            state: {
+                plan: plan.name,
+                price: plan.price,
+                billing: plan.billing,
+                orderId: '#TCA-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+            }
+        });
+    };
+
+    const userData = {
+        name: profile?.fullName || 'Artist',
+        roleTitle: `${profile?.talentCategory || 'Actor'} • ${profile?.location || 'India'}`,
+        avatar: profile?.profilePicture === 'no-photo.jpg'
+            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User')
+            : profile?.profilePicture,
+    };
+
+    const getCardBrand = () => {
+        const n = cardForm.number.replace(/\s/g, '');
+        if (n.startsWith('4')) return '💳 Visa';
+        if (n.startsWith('5')) return '💳 Mastercard';
+        if (n.startsWith('6')) return '💳 RuPay';
+        return '💳';
+    };
+
     return (
-        <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
-            <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
-                <div className="layout-container flex h-full grow flex-col">
-                    <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-6 lg:px-40 py-4 bg-background-light dark:bg-background-dark">
-                        <div className="flex items-center gap-3 text-primary">
-                            <div className="size-8">
-                                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
-                                </svg>
-                            </div>
-                            <h2 className="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight">TalentConnect</h2>
-                        </div>
-                        <div className="flex flex-1 justify-end gap-8 items-center">
-                            <div className="hidden md:flex items-center gap-8">
-                                <Link className="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" to="/dashboard/talent">Dashboard</Link>
-                                <Link className="text-slate-600 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" to="/talent/upgrade">Plans</Link>
-                            </div>
-                            <div className="bg-primary/20 rounded-full p-1 border border-primary/30">
-                                <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBV4sGnpUGNstxoonWP8v4gbgG1aLJJwOOiMDD2T05YU8ap3mh3uU_zgR5sgrFNEcsyI4GJLGvnjzIIgxvgCiPriAre5a2z371l4Zfyin0w5mjZ7eNWpxjiH7SIdIXHPd-FWgQItS8mLkuRP-rAidxPClNnmitIsxk6ezV76oLut8erHUdGi9XTvEoJ0Ls-HkYfaz25g3x_e3VRSmExdrn_bKXWcWW-z0mBM1KWkznrcX5FN_odI8bcQdrgch8SG49flKMqPH5uMtLa")' }}></div>
-                            </div>
-                        </div>
-                    </header>
-                    <main className="flex-1 flex flex-col items-center px-4 lg:px-40 py-10">
-                        <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-12 gap-10">
-                            {/* Left Column: Checkout Info */}
-                            <div className="lg:col-span-7 flex flex-col gap-8">
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest leading-tight">
-                                        <span className="material-symbols-outlined text-sm">lock</span>
-                                        Secure Checkout
-                                    </div>
-                                    <h1 className="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-tight leading-tight">Complete your subscription</h1>
-                                    <p className="text-slate-500 dark:text-slate-400 text-lg">You're just one step away from unlimited cinematic experiences.</p>
+        <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist" userData={userData}
+            headerTitle="Checkout" headerSubtitle={`Complete your ${plan.name} plan upgrade.`}>
+            <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-10 pb-24">
+                {/* Payment Form */}
+                <div className="lg:col-span-3 space-y-8">
+                    {/* Tab Selector */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-2 flex gap-2 shadow-sm">
+                        {PAYMENT_METHODS.map(tab => (
+                            <button key={tab} onClick={() => { setActiveTab(tab); setErrors({}); }}
+                                className={`flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                    activeTab === tab ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                }`}>
+                                <span className="material-symbols-outlined text-sm">{tab === 'Card' ? 'credit_card' : 'phone_android'}</span>
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
+
+                    {activeTab === 'Card' ? (
+                        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 p-8 shadow-sm space-y-6">
+                            <h3 className="text-xl font-black dark:text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">credit_card</span> Card Details
+                            </h3>
+                            {/* Card number */}
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">Card Number</label>
+                                <div className="relative">
+                                    <input
+                                        type="text" inputMode="numeric"
+                                        value={cardForm.number}
+                                        onChange={e => setCardForm(p => ({ ...p, number: formatCardNumber(e.target.value) }))}
+                                        placeholder="0000 0000 0000 0000"
+                                        className={`w-full bg-slate-100 dark:bg-zinc-800 rounded-xl px-4 py-3.5 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all ${errors.number ? 'ring-2 ring-red-500' : ''}`}
+                                    />
+                                    {cardForm.number.length > 4 && (
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">{getCardBrand()}</span>
+                                    )}
                                 </div>
-                                {/* Plan Summary Card */}
-                                <div className="p-1 rounded-xl bg-gradient-to-br from-primary/20 to-transparent">
-                                    <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-6 shadow-xl">
-                                        <div className="flex flex-col justify-between flex-1 gap-4">
-                                            <div className="flex flex-col gap-1">
-                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary w-fit">SELECTED PLAN</span>
-                                                <h3 className="text-slate-900 dark:text-white text-2xl font-bold mt-2 leading-tight">Pro Plan</h3>
-                                                <p className="text-slate-500 dark:text-slate-400 text-sm">Priority Placement • Unlimited Requests • AI Analytics</p>
-                                            </div>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-slate-900 dark:text-white text-3xl font-black">₹999</span>
-                                                <span className="text-slate-500 dark:text-slate-400 text-sm">/month</span>
-                                            </div>
-                                            <Link className="flex items-center justify-center rounded-lg h-10 px-6 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all w-fit" to="/talent/upgrade">
-                                                Change Plan
-                                            </Link>
-                                        </div>
-                                        <div className="hidden md:block w-48 bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-lg" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBjc1SvkyYE2OKBT2Wi0bFuVeKiW4RZWlV3fnW_VNx7QHJja0EZMblFqc-VzbvTOfiGNsWtb6y0Ywq4NfQfAG4IGPuY5DNfvUznWsBxWZokoW2Mrr_sY5N8K6b8PK7Eqm4h4tgutwZ7q3wW-_fqgxu2u4Z0rbvMfmalXmEROM1i2sHH4DuxGviKmLSw4NVx9W18MwPaI7jEFikCyKdJbh61UsagsubdNjdT_lZL0LhKQrijQkOG8Nln-0X3hFSmQaRJ4M__zm9Dj515")' }}></div>
-                                    </div>
+                                {errors.number && <p className="text-red-500 text-xs font-bold mt-1">{errors.number}</p>}
+                            </div>
+                            {/* Expiry + CVV */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">Expiry (MM/YY)</label>
+                                    <input type="text" inputMode="numeric"
+                                        value={cardForm.expiry}
+                                        onChange={e => setCardForm(p => ({ ...p, expiry: formatExpiry(e.target.value) }))}
+                                        placeholder="MM/YY"
+                                        className={`w-full bg-slate-100 dark:bg-zinc-800 rounded-xl px-4 py-3.5 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all ${errors.expiry ? 'ring-2 ring-red-500' : ''}`}
+                                    />
+                                    {errors.expiry && <p className="text-red-500 text-xs font-bold mt-1">{errors.expiry}</p>}
                                 </div>
-                                {/* Payment Tabs */}
-                                <div className="flex flex-col gap-6">
-                                    <h2 className="text-slate-900 dark:text-white text-xl font-bold border-l-4 border-primary pl-4">Payment Method</h2>
-                                    <div className="flex border-b border-slate-200 dark:border-slate-800 gap-8">
-                                        <button className="flex items-center gap-2 border-b-2 border-primary text-primary pb-4 px-2 font-bold transition-all">
-                                            <span className="material-symbols-outlined">credit_card</span>
-                                            <span className="text-sm">Card</span>
-                                        </button>
-                                        <button className="flex items-center gap-2 border-b-2 border-transparent text-slate-400 dark:text-slate-500 pb-4 px-2 font-medium hover:text-slate-600 dark:hover:text-slate-300 transition-all">
-                                            <span className="material-symbols-outlined">qr_code</span>
-                                            <span className="text-sm">UPI</span>
-                                        </button>
-                                    </div>
-                                    {/* Card Form */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-2 flex flex-col gap-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Cardholder Name</label>
-                                            <input className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="John Doe" type="text" />
-                                        </div>
-                                        <div className="col-span-2 flex flex-col gap-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Card Number</label>
-                                            <div className="relative">
-                                                <input className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 pl-12 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="0000 0000 0000 0000" type="text" />
-                                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">credit_card</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Expiry Date</label>
-                                            <input className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="MM/YY" type="text" />
-                                        </div>
-                                        <div className="flex flex-col gap-2">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">CVV</label>
-                                            <input className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="***" type="password" />
-                                        </div>
-                                    </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">CVV</label>
+                                    <input type="password" inputMode="numeric" maxLength={3}
+                                        value={cardForm.cvv}
+                                        onChange={e => setCardForm(p => ({ ...p, cvv: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
+                                        placeholder="•••"
+                                        className={`w-full bg-slate-100 dark:bg-zinc-800 rounded-xl px-4 py-3.5 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all ${errors.cvv ? 'ring-2 ring-red-500' : ''}`}
+                                    />
+                                    {errors.cvv && <p className="text-red-500 text-xs font-bold mt-1">{errors.cvv}</p>}
                                 </div>
                             </div>
-                            {/* Right Column: Order Summary & Pay */}
-                            <div className="lg:col-span-5">
-                                <div className="sticky top-10 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-2xl backdrop-blur-md">
-                                    <h3 className="text-slate-900 dark:text-white text-xl font-bold mb-6">Price Details</h3>
-                                    <div className="flex flex-col gap-4 mb-8">
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-slate-500 dark:text-slate-400">Pro Plan (Monthly)</span>
-                                            <span className="text-slate-900 dark:text-white font-medium">₹999.00</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-slate-500 dark:text-slate-400">Taxes & Fees</span>
-                                            <span className="text-slate-900 dark:text-white font-medium">₹179.82</span>
-                                        </div>
-                                        <div className="h-px bg-slate-200 dark:bg-slate-800 my-2"></div>
-                                        <div className="flex justify-between items-center text-xl font-black">
-                                            <span className="text-slate-900 dark:text-white">Total Amount</span>
-                                            <span className="text-primary">₹1,178.82</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-4">
-                                        <div className="flex items-start gap-3 p-3 bg-primary/5 rounded-lg border border-primary/10">
-                                            <span className="material-symbols-outlined text-primary">info</span>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                                Your subscription will automatically renew each month. You can cancel at any time from your settings.
-                                            </p>
-                                        </div>
-                                        <Link className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]" to="/talent/payment-success">
-                                            <span className="material-symbols-outlined">verified_user</span>
-                                            Pay Now
-                                        </Link>
-                                    </div>
-                                </div>
+                            {/* Cardholder Name */}
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">Name on Card</label>
+                                <input type="text"
+                                    value={cardForm.name}
+                                    onChange={e => setCardForm(p => ({ ...p, name: e.target.value }))}
+                                    placeholder="As printed on card"
+                                    className={`w-full bg-slate-100 dark:bg-zinc-800 rounded-xl px-4 py-3.5 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all ${errors.name ? 'ring-2 ring-red-500' : ''}`}
+                                />
+                                {errors.name && <p className="text-red-500 text-xs font-bold mt-1">{errors.name}</p>}
                             </div>
                         </div>
-                    </main>
-                    <footer className="px-6 lg:px-40 py-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-slate-500 dark:text-slate-500 text-[10px] md:text-xs">© 2026 TalentConnect Entertainment. All rights reserved.</p>
-                        <div className="flex gap-6">
-                            <a className="text-slate-500 dark:text-slate-500 text-xs hover:text-primary transition-colors" href="#">Privacy Policy</a>
-                            <a className="text-slate-500 dark:text-slate-500 text-xs hover:text-primary transition-colors" href="#">Terms of Service</a>
+                    ) : (
+                        <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 p-8 shadow-sm space-y-6">
+                            <h3 className="text-xl font-black dark:text-white uppercase italic tracking-tighter flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">phone_android</span> UPI Payment
+                            </h3>
+                            <div>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">UPI ID</label>
+                                <input type="text"
+                                    value={upiId}
+                                    onChange={e => { setUpiId(e.target.value); setErrors({}); }}
+                                    placeholder="yourname@upi"
+                                    className={`w-full bg-slate-100 dark:bg-zinc-800 rounded-xl px-4 py-3.5 text-sm font-bold dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all ${errors.upiId ? 'ring-2 ring-red-500' : ''}`}
+                                />
+                                {errors.upiId && <p className="text-red-500 text-xs font-bold mt-1">{errors.upiId}</p>}
+                            </div>
+                            <div className="bg-slate-50 dark:bg-zinc-800 rounded-xl p-4 text-sm text-slate-500 font-medium border border-dashed border-slate-200 dark:border-zinc-700">
+                                You will receive a UPI payment request on your registered mobile number.
+                            </div>
                         </div>
-                    </footer>
+                    )}
+
+                    {/* Pay Button */}
+                    <button onClick={handlePay} disabled={paying}
+                        className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-70 flex items-center justify-center gap-3 hover:scale-[1.01] active:scale-[0.99]">
+                        {paying ? (
+                            <><span className="material-symbols-outlined text-xl animate-spin">sync</span> Processing Payment...</>
+                        ) : (
+                            <><span className="material-symbols-outlined text-xl">lock</span> Pay ₹{plan.price?.toLocaleString()} Securely</>
+                        )}
+                    </button>
+                    <p className="text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                        🔒 256-bit SSL encrypted • PCI DSS compliant
+                    </p>
+                </div>
+
+                {/* Order Summary */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm space-y-6">
+                        <h3 className="text-xl font-black dark:text-white uppercase italic tracking-tighter">Order Summary</h3>
+                        <div className="flex items-center gap-4 p-5 bg-primary/5 rounded-2xl border border-primary/10">
+                            <div className="size-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                                <span className="material-symbols-outlined text-white text-2xl">stars</span>
+                            </div>
+                            <div>
+                                <p className="font-black dark:text-white uppercase italic tracking-tight">{plan.name}</p>
+                                <p className="text-[10px] font-black text-primary uppercase tracking-widest">{plan.billing === 'annual' ? 'Annual' : 'Monthly'} Subscription</p>
+                            </div>
+                        </div>
+                        <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                            <div className="flex justify-between text-sm font-bold text-slate-600 dark:text-slate-400">
+                                <span>Subtotal</span><span>₹{plan.price?.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-bold text-slate-600 dark:text-slate-400">
+                                <span>GST (18%)</span><span>₹{Math.round(plan.price * 0.18).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-base font-black dark:text-white pt-3 border-t border-slate-100 dark:border-zinc-800">
+                                <span className="uppercase italic tracking-tight">Total</span>
+                                <span className="text-primary">₹{Math.round(plan.price * 1.18).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                            Cancel anytime. No hidden charges.
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </DashboardLayout>
     );
 };
 

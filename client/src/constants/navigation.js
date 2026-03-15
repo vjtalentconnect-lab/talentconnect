@@ -1,19 +1,20 @@
 export const TALENT_MENU = [
-  { icon: 'dashboard', label: 'Dashboard', path: '/dashboard/talent' },
-  { icon: 'search', label: 'Discovery', path: '/talent/discovery' },
-  { icon: 'person', label: 'My Profile', path: '/talent/portfolio' },
-  { icon: 'analytics', label: 'Analytics', path: '/talent/analytics' },
-  { icon: 'work', label: 'Applied Projects', path: '/talent/applied-projects' },
+  { icon: 'dashboard',       label: 'Dashboard',       path: '/dashboard/talent' },
+  { icon: 'search',          label: 'Discovery',        path: '/talent/discovery',        requiresVerification: true },
+  { icon: 'person',          label: 'My Profile',       path: '/talent/portfolio' },
+  { icon: 'analytics',       label: 'Analytics',        path: '/talent/analytics',        requiresVerification: true },
+  { icon: 'work',            label: 'Applied Projects', path: '/talent/applied-projects', requiresVerification: true },
   {
     icon: 'event_available',
     label: 'Audition Invites',
     path: '/talent/audition-invites',
-    badge: '0'
+    requiresVerification: true,
   },
-  { icon: 'chat', label: 'Messages', path: '/talent/messages' },
+  { icon: 'chat',            label: 'Messages',         path: '/talent/messages',         requiresVerification: true },
+  { icon: 'workspace_premium', label: 'Upgrade Plan',  path: '/talent/upgrade' },
   { type: 'section', label: 'Preferences' },
-  { icon: 'settings', label: 'Settings', path: '/talent/settings' },
-  { icon: 'help', label: 'Support', path: '/support' },
+  { icon: 'settings',        label: 'Settings',         path: '/talent/settings' },
+  { icon: 'help',            label: 'Support',          path: '/support' },
 ];
 
 export const DIRECTOR_MENU = [

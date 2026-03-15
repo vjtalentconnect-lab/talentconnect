@@ -28,7 +28,8 @@ const TalentDiscovery = () => {
                 getProfiles(filters)
             ]);
             setProfile(profileData.data);
-            setTalents(talentsData.data);
+            const talentProfiles = talentsData.data.filter(t => t.user?.role === 'talent');
+            setTalents(talentProfiles);
         } catch (err) {
             console.error('Error fetching talent discovery data:', err);
         } finally {

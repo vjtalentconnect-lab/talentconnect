@@ -4,9 +4,22 @@ import { useNavigate } from 'react-router-dom';
 const CreateProjectStep1 = () => {
     const navigate = useNavigate();
 
+    const [formData, setFormData] = React.useState({
+        title: '',
+        category: '',
+        budget: '',
+        location: '',
+        deadline: '',
+        description: ''
+    });
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        navigate('/director/create-project/step2');
+        navigate('/director/create-project/step2', { state: { projectData: formData } });
     };
 
     const handleClose = () => {
@@ -24,12 +37,9 @@ const CreateProjectStep1 = () => {
                         <h2 className="text-xl font-bold tracking-tight">Create New Project</h2>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
-                            Save Draft
-                        </button>
                         <button
                             onClick={handleClose}
-                            className="flex items-center justify-center rounded-full p-2 bg-slate-100 dark:bg-primary/10 text-slate-900 dark:text-primary hover:bg-primary/20 transition-all"
+                            className="flex items-center justify-center rounded-full p-2 bg-slate-100 dark:bg-primary/10 text-slate-900 dark:text-primary hover:bg-primary/20 transition-all shadow-sm border border-slate-200 dark:border-primary/20"
                         >
                             <span className="material-symbols-outlined">close</span>
                         </button>
@@ -40,11 +50,11 @@ const CreateProjectStep1 = () => {
                     <div className="w-full max-w-2xl">
                         <div className="mb-10">
                             <div className="flex justify-between mb-2">
-                                <span className="text-sm font-semibold text-primary">Step 1 of 3: Project Essentials</span>
-                                <span className="text-sm text-slate-500">35% Complete</span>
+                                <span className="text-sm font-semibold text-primary">Step 1 of 2: Project Essentials</span>
+                                <span className="text-sm text-slate-500">50% Complete</span>
                             </div>
                             <div className="w-full h-2 bg-slate-200 dark:bg-primary/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary" style={{ width: '35%' }}></div>
+                                <div className="h-full bg-primary" style={{ width: '50%' }}></div>
                             </div>
                         </div>
 
@@ -58,8 +68,11 @@ const CreateProjectStep1 = () => {
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="project-title">Project Title</label>
                                     <input
-                                        className="w-full rounded-xl border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-lg focus:border-primary focus:ring-primary dark:text-white outline-none"
+                                        className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white outline-none"
                                         id="project-title"
+                                        name="title"
+                                        value={formData.title}
+                                        onChange={handleChange}
                                         placeholder="e.g. The Monsoon Wedding"
                                         type="text"
                                         required
@@ -68,12 +81,14 @@ const CreateProjectStep1 = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="industry-type">Industry Type</label>
+                                        <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="category">Category</label>
                                         <select
-                                            className="w-full rounded-xl border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 focus:border-primary focus:ring-primary dark:text-white outline-none appearance-none"
-                                            id="industry-type"
+                                            className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white outline-none appearance-none"
+                                            id="category"
+                                            name="category"
+                                            value={formData.category}
+                                            onChange={handleChange}
                                             required
-                                            defaultValue=""
                                             style={{
                                                 backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ec5b13' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                                                 backgroundPosition: 'right 0.5rem center',
@@ -82,20 +97,26 @@ const CreateProjectStep1 = () => {
                                             }}
                                         >
                                             <option disabled value="">Select Category</option>
-                                            <option value="film">Feature Film</option>
-                                            <option value="commercial">Commercial/AD</option>
-                                            <option value="web">Web Series</option>
-                                            <option value="short">Short Film</option>
+                                            <option value="Film">Feature Film</option>
+                                            <option value="Advertisement">Advertisement</option>
+                                            <option value="Music Video">Music Video</option>
+                                            <option value="Web Series">Web Series</option>
+                                            <option value="Short Film">Short Film</option>
+                                            <option value="Theatre">Theatre</option>
+                                            <option value="Other">Other</option>
                                         </select>
                                     </div>
 
                                     <div className="flex flex-col gap-2">
                                         <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="budget">Estimated Budget</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                                        <div className="relative flex items-center">
+                                            <span className="absolute left-4 text-slate-400">₹</span>
                                             <input
-                                                className="w-full rounded-xl border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 pl-8 focus:border-primary focus:ring-primary dark:text-white outline-none"
+                                                className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 pl-8 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white outline-none"
                                                 id="budget"
+                                                name="budget"
+                                                value={formData.budget}
+                                                onChange={handleChange}
                                                 placeholder="Budget in INR"
                                                 type="text"
                                             />
@@ -103,21 +124,43 @@ const CreateProjectStep1 = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="production-house">Production House</label>
-                                    <input
-                                        className="w-full rounded-xl border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 focus:border-primary focus:ring-primary dark:text-white outline-none"
-                                        id="production-house"
-                                        placeholder="Enter Production Company Name"
-                                        type="text"
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="location">Location</label>
+                                        <input
+                                            className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white outline-none"
+                                            id="location"
+                                            name="location"
+                                            required
+                                            value={formData.location}
+                                            onChange={handleChange}
+                                            placeholder="e.g. Mumbai, Maharashtra"
+                                            type="text"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="deadline">Application Deadline</label>
+                                        <input
+                                            className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white outline-none"
+                                            id="deadline"
+                                            name="deadline"
+                                            required
+                                            value={formData.deadline}
+                                            onChange={handleChange}
+                                            type="date"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="description">Project Description</label>
                                     <textarea
-                                        className="w-full rounded-xl border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 focus:border-primary focus:ring-primary dark:text-white resize-none outline-none"
+                                        className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white resize-none outline-none"
                                         id="description"
+                                        name="description"
+                                        required
+                                        value={formData.description}
+                                        onChange={handleChange}
                                         placeholder="Share a brief overview of the plot, vision, and scale of the project..."
                                         rows="5"
                                     ></textarea>
@@ -125,18 +168,18 @@ const CreateProjectStep1 = () => {
 
                                 <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-primary/10">
                                     <button
-                                        onClick={() => navigate('/dashboard/director')}
+                                        onClick={() => navigate('/director/my-projects')}
                                         className="flex items-center gap-2 px-6 py-3 font-semibold text-slate-500 dark:text-slate-400 hover:text-primary transition-colors"
                                         type="button"
                                     >
                                         <span className="material-symbols-outlined">arrow_back</span>
-                                        Back
+                                        Cancel
                                     </button>
                                     <button
                                         className="flex items-center gap-2 px-10 py-4 bg-primary text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(236,91,19,0.4)] transition-all transform hover:-translate-y-1"
                                         type="submit"
                                     >
-                                        Continue to Cast
+                                        Next: Requirements
                                         <span className="material-symbols-outlined">arrow_forward</span>
                                     </button>
                                 </div>

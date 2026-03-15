@@ -8,7 +8,7 @@ const Navbar = () => {
         <Link to="/" className="flex items-center gap-3">
           <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
           <h1 className="text-2xl font-extrabold text-white">
-            TalentConnect
+            TALENT<span className="text-primary">CONNECT</span>
           </h1>
         </Link>
 

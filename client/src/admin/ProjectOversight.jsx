@@ -1,235 +1,303 @@
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { useState, useEffect } from 'react';
-import { getAdminProjects } from '../services/adminService';
+import { useState, useEffect, useMemo } from 'react';
+import { getAdminProjects, getAdminStats, updateProjectStatus, deleteProject } from '../services/adminService';
 import { getMyProfile } from '../services/profileService';
+import { Link } from 'react-router-dom';
+import socket from '../services/socket';
 
 const ProjectOversight = () => {
-    const menuItems = [
-        { icon: 'dashboard', label: 'Overview', path: '/dashboard/admin' },
-        { icon: 'search', label: 'Global Search', path: '/admin/search' },
-        { type: 'section', label: 'Management' },
-        { icon: 'group', label: 'User Management', path: '/admin/users' },
-        { icon: 'verified_user', label: 'Verifications', path: '/admin/verifications', badge: '12' },
-        { icon: 'account_tree', label: 'Project Oversight', path: '/admin/projects', active: true },
-        { icon: 'admin_panel_settings', label: 'RBAC Settings', path: '/admin/rbac' },
-        { icon: 'vital_signs', label: 'System Health', path: '/admin/health' },
-        { type: 'section', label: 'Operations' },
-        { icon: 'payments', label: 'Financials', path: '/admin/financials' },
-        { icon: 'chat_bubble', label: 'Communication Center', path: '/admin/communication' },
-        { icon: 'settings', label: 'System Settings', path: '/admin/settings' },
-    ];
+  const [projects, setProjects] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [adminProfile, setAdminProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState({ search: '', category: 'all', status: 'all' });
 
-    const userData = {
-        name: 'Vikram Mehta',
-        roleTitle: 'Super Admin',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCcjBsGHAwrFmfb__gFpz6fDozkV4Agv70tpFl3ivGVraqnDPQWIx8PMDFLfqfAA1rgn9vueYt4bahKNUaNwDF05nJUU7IKKpuqspPTDR-ls9jvfk61q4h-WhCk3NhzKm6pCW7PukUTFxa5u2USsiBYmS2xipP0FPzvVTP5aeKxz29Mf37iCgqSg_TbovnbEoy9_cK695CEPxJrGyOxI4f5UAwXfBzuWM8SziTzX_hcV7ayuyqSkBfx2ILTnqIpdc_47h9OaEq0AD9s'
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [projectsRes, statsRes, profileRes] = await Promise.all([
+        getAdminProjects(),
+        getAdminStats(),
+        getMyProfile()
+      ]);
+      setProjects(projectsRes.data);
+      setStats(statsRes.data);
+      setAdminProfile(profileRes.data);
+    } catch (err) {
+      console.error('Error fetching oversight data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleProjectCreated = (project) => {
+      setProjects(prev => {
+        if (prev.find(p => p._id === project._id)) return prev;
+        return [project, ...prev];
+      });
+      setStats(prev => ({ ...prev, totalProjects: (prev?.totalProjects || 0) + 1 }));
     };
+    socket.on('projectCreated', handleProjectCreated);
+    return () => socket.off('projectCreated', handleProjectCreated);
+  }, []);
 
-    const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+      const matchesSearch = (project.title || '').toLowerCase().includes(filter.search.toLowerCase()) ||
+                          (project.director?.fullName || project.director?.email || '').toLowerCase().includes(filter.search.toLowerCase());
+      const matchesCategory = filter.category === 'all' || project.category === filter.category;
+      const matchesStatus = filter.status === 'all' || project.status === filter.status;
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [projects, filter]);
 
-    useEffect(() => {
-        const fetchProjects = async () => {
-            try {
-                // Mocking data since admin projects endpoint might not be fully seeded
-                setProjects([{
-                    title: 'Dharma Productions: Untitled',
-                    category: 'Feature Film',
-                    director: { email: 'karan@dharma.com' },
-                    budget: '₹45 Cr',
-                    location: 'Mumbai, India',
-                    status: 'In Audit'
-                }]);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProjects();
-    }, []);
+  const handleStatusChange = async (projectId, newStatus) => {
+    try {
+      await updateProjectStatus(projectId, newStatus);
+      fetchData();
+    } catch (err) {
+      alert('Status update failed: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
-    if (loading) return (
-        <div className="flex items-center justify-center h-screen bg-background-dark">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
-        </div>
-    );
+  const handleDelete = async (projectId) => {
+    if (window.confirm('Erase this project from platform history? All associated roles and applications will be purged.')) {
+      try {
+        await deleteProject(projectId);
+        fetchData();
+      } catch (err) {
+        alert('Deletion failed: ' + (err.response?.data?.message || err.message));
+      }
+    }
+  };
 
-    return (
-        <DashboardLayout
-            menuItems={menuItems}
-            userRole="Admin Control"
-            userData={userData}
-            headerTitle="Project Oversight"
-            headerSubtitle="Monitor and manage all platform projects."
-            searchPlaceholder="Search projects, directors..."
-        >
-            <div className="space-y-8">
-                {/* Stats Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col gap-1 shadow-sm">
-                        <div className="flex justify-between items-start">
-                            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Projects</span>
-                            <span className="material-symbols-outlined text-primary">movie</span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-black dark:text-white">1,284</p>
-                            <p className="text-emerald-500 text-xs font-bold flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">trending_up</span> +12%
-                            </p>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col gap-1 shadow-sm">
-                        <div className="flex justify-between items-start">
-                            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Active Casting</span>
-                            <span className="material-symbols-outlined text-primary">person_search</span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-black dark:text-white">456</p>
-                            <p className="text-emerald-500 text-xs font-bold flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">trending_up</span> +5%
-                            </p>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col gap-1 shadow-sm">
-                        <div className="flex justify-between items-start">
-                            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Production Value</span>
-                            <span className="material-symbols-outlined text-primary">payments</span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-black dark:text-white">₹45.2 Cr</p>
-                            <p className="text-emerald-500 text-xs font-bold flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">trending_up</span> +18%
-                            </p>
-                        </div>
-                    </div>
-                    <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark flex flex-col gap-1 shadow-sm">
-                        <div className="flex justify-between items-start">
-                            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Completed</span>
-                            <span className="material-symbols-outlined text-primary">check_circle</span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-black dark:text-white">828</p>
-                            <p className="text-emerald-500 text-xs font-bold flex items-center gap-1">
-                                <span className="material-symbols-outlined text-xs">trending_up</span> +7%
-                            </p>
-                        </div>
-                    </div>
+  const menuItems = [
+    { icon: 'dashboard', label: 'Overview', path: '/dashboard/admin' },
+    { icon: 'search', label: 'Global Search', path: '/admin/search' },
+    { type: 'section', label: 'Management' },
+    { icon: 'group', label: 'User Management', path: '/admin/users' },
+    { icon: 'verified_user', label: 'Verifications', path: '/admin/verifications', badge: stats?.pendingVerifications?.toString() },
+    { icon: 'account_tree', label: 'Project Oversight', path: '/admin/projects', active: true },
+    { icon: 'admin_panel_settings', label: 'RBAC Settings', path: '/admin/rbac' },
+    { icon: 'vital_signs', label: 'System Health', path: '/admin/health' },
+    { type: 'section', label: 'Operations' },
+    { icon: 'payments', label: 'Financials', path: '/admin/financials' },
+    { icon: 'chat_bubble', label: 'Communication Center', path: '/admin/communication' },
+    { icon: 'settings', label: 'System Settings', path: '/admin/settings' },
+  ];
+
+  const userData = {
+    name: adminProfile?.fullName || 'Admin',
+    roleTitle: 'Super Admin',
+    avatar: adminProfile?.profilePicture && adminProfile.profilePicture !== 'no-photo.jpg' 
+      ? adminProfile.profilePicture 
+      : `https://ui-avatars.com/api/?name=${adminProfile?.fullName || 'Admin'}&background=ee2b3b&color=fff`
+  };
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen bg-background-dark text-white">
+      <div className="relative size-24">
+        <div className="absolute inset-0 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin"></div>
+        <span className="material-symbols-outlined absolute inset-0 m-auto size-fit text-4xl text-primary animate-pulse">account_tree</span>
+      </div>
+      <p className="mt-8 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Syncing Production Assets...</p>
+    </div>
+  );
+
+  return (
+    <DashboardLayout
+      menuItems={menuItems}
+      userRole="Admin Control"
+      userData={userData}
+      headerTitle="Project Oversight"
+      headerSubtitle={`Auditing ${projects.length} active creative pipelines.`}
+    >
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+        {/* Intelligence Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: 'Platform Projects', value: stats?.totalProjects || '0', icon: 'movie', color: 'primary' },
+            { label: 'Active Pipeline', value: projects.filter(p => p.status === 'active').length, icon: 'bolt', color: 'emerald' },
+            { label: 'Moderation Queue', value: projects.filter(p => p.status === 'audit' || p.status === 'pending').length, icon: 'policy', color: 'amber' },
+            { label: 'Market Value', value: '₹' + (stats?.totalProductionValue || '0') + ' Cr', icon: 'token', color: 'blue' }
+          ].map((card, idx) => (
+            <div key={idx} className="bg-white dark:bg-card-dark p-6 rounded-[2rem] border border-slate-200 dark:border-border-dark flex flex-col gap-4 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-500 group">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">{card.label}</span>
+                <div className={`size-10 rounded-xl bg-${card.color}-500/10 text-${card.color}-500 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <span className="material-symbols-outlined text-xl">{card.icon}</span>
                 </div>
-
-                {/* Table Content */}
-                <div className="bg-white dark:bg-card-dark rounded-2xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-slate-200 dark:border-border-dark flex flex-wrap gap-4 items-center justify-between">
-                        <div className="flex gap-2">
-                            <button className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20">All Projects</button>
-                            <button className="px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-bold transition-all dark:text-slate-300">Film</button>
-                            <button className="px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-bold transition-all dark:text-slate-300">Advertisement</button>
-                            <button className="px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-bold transition-all dark:text-slate-300">Web Series</button>
-                        </div>
-                        <div className="flex gap-2">
-                            <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl text-xs font-bold dark:text-slate-300">
-                                <span className="material-symbols-outlined text-lg">filter_list</span>
-                                Filter
-                            </button>
-                            <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl text-xs font-bold dark:text-slate-300">
-                                <span className="material-symbols-outlined text-lg">file_download</span>
-                                Export
-                            </button>
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-white/5">
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Project</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Lead Team</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Budget Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Casting Progress</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-sm">
-                                {projects.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="px-6 py-8 text-center text-slate-500">No projects found.</td>
-                                    </tr>
-                                ) : (
-                                    projects.map((project, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-12 rounded-xl bg-primary/20 overflow-hidden shrink-0 border border-primary/10 flex items-center justify-center">
-                                                        <span className="material-symbols-outlined text-primary">movie</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold dark:text-white uppercase tracking-tight">{project.title}</p>
-                                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{project.category}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex flex-col">
-                                                    <p className="font-bold dark:text-slate-200">{project.director?.email || 'N/A'}</p>
-                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Director Account</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2 text-emerald-500">
-                                                    <span className="material-symbols-outlined text-base">payments</span>
-                                                    <span className="text-xs font-black uppercase tracking-tight">{project.budget}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 min-w-[200px]">
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                                        <span className="text-primary">Status: {project.status || 'Active'}</span>
-                                                        <span className="text-slate-500">{project.location}</span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-100 dark:bg-white/5 h-1.5 rounded-full overflow-hidden">
-                                                        <div className="bg-primary h-full rounded-full shadow-[0_0_8px_rgba(236,91,19,0.3)]" style={{ width: '50%' }}></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-500 border border-blue-500/20">Active</span>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <button className="p-2 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-colors">
-                                                        <span className="material-symbols-outlined text-xl">visibility</span>
-                                                    </button>
-                                                    <button className="p-2 hover:bg-amber-500/10 rounded-lg text-slate-400 hover:text-amber-500 transition-colors">
-                                                        <span className="material-symbols-outlined text-xl">flag</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="p-6 border-t border-slate-200 dark:border-white/5 flex items-center justify-between">
-                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Showing 1 to 10 of 1,284 results</p>
-                        <div className="flex gap-1.5">
-                            <button className="size-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-500 hover:bg-primary hover:text-white transition-all">
-                                <span className="material-symbols-outlined text-lg">chevron_left</span>
-                            </button>
-                            <button className="size-8 rounded-lg flex items-center justify-center bg-primary text-white text-[10px] font-black shadow-lg shadow-primary/20">1</button>
-                            <button className="size-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-400 text-[10px] font-black hover:bg-slate-200 dark:hover:bg-white/10 transiton-all">2</button>
-                            <button className="size-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-400 text-[10px] font-black hover:bg-slate-200 dark:hover:bg-white/10 transiton-all">3</button>
-                            <span className="px-1 self-center text-slate-400 text-xs font-black">...</span>
-                            <button className="size-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-400 text-[10px] font-black">128</button>
-                            <button className="size-8 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-500 hover:bg-primary hover:text-white transition-all">
-                                <span className="material-symbols-outlined text-lg">chevron_right</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+              </div>
+              <p className="text-3xl font-black dark:text-white uppercase tracking-tighter">{card.value}</p>
             </div>
-        </DashboardLayout>
-    );
+          ))}
+        </div>
+
+        {/* Global Controls */}
+        <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-card-dark p-6 rounded-[2.5rem] border border-slate-200 dark:border-border-dark shadow-sm">
+          <div className="relative flex-1 min-w-[300px]">
+             <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+             <input 
+              type="text" 
+              placeholder="Search pipelines by title or director..." 
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+              value={filter.search}
+              onChange={(e) => setFilter({...filter, search: e.target.value})}
+             />
+          </div>
+          <div className="flex gap-3">
+             <select 
+              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500"
+              value={filter.category}
+              onChange={(e) => setFilter({...filter, category: e.target.value})}
+             >
+                <option value="all">All Disciplines</option>
+                <option value="Feature Film">Feature Film</option>
+                <option value="Advertisement">Advertisement</option>
+                <option value="Web Series">Web Series</option>
+                <option value="Theater">Theater</option>
+             </select>
+             <select 
+              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500"
+              value={filter.status}
+              onChange={(e) => setFilter({...filter, status: e.target.value})}
+             >
+                <option value="all">Global Status</option>
+                <option value="active">Active</option>
+                <option value="audit">Under Audit</option>
+                <option value="closed">Closed</option>
+             </select>
+          </div>
+        </div>
+
+        {/* Fleet Management Table */}
+        <div className="bg-white dark:bg-card-dark rounded-[2.5rem] border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-white/2 uppercase tracking-[0.3em] text-[10px] font-black text-slate-400 border-b border-slate-200 dark:border-border-dark font-mono">
+                  <th className="px-10 py-6">Production ID & Title</th>
+                  <th className="px-10 py-6">Directorate</th>
+                  <th className="px-10 py-6">Operational Status</th>
+                  <th className="px-10 py-6 text-right">Moderation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                {filteredProjects.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-10 py-20 text-center">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic leading-relaxed">No production nodes match the current filter parameters.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <tr key={project._id} className="group/row hover:bg-slate-50 dark:hover:bg-white/2 transition-all duration-300">
+                      <td className="px-10 py-8">
+                        <div className="flex items-center gap-6">
+                           <div className="relative shrink-0">
+                              <div className="size-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-white/5 dark:to-white/10 flex items-center justify-center group-hover/row:scale-105 transition-transform duration-500 overflow-hidden border border-slate-200 dark:border-white/5 p-1">
+                                 {project.poster ? (
+                                    <img src={project.poster} className="w-full h-full object-cover rounded-[calc(1rem-4px)]" alt="" />
+                                 ) : (
+                                    <span className="material-symbols-outlined text-slate-400 text-3xl">movie_filter</span>
+                                 )}
+                              </div>
+                              <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary border-2 border-white dark:border-card-dark animate-pulse"></div>
+                           </div>
+                           <div>
+                              <p className="font-black dark:text-white uppercase tracking-tighter text-lg leading-none mb-1 group-hover/row:text-primary transition-colors">{project.title}</p>
+                              <div className="flex items-center gap-2">
+                                 <span className="text-[9px] font-black text-primary uppercase tracking-widest">{project.category}</span>
+                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">/ {project.location}</span>
+                              </div>
+                           </div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-8">
+                         <div className="flex items-center gap-3">
+                            <div className="size-10 rounded-xl border-2 border-slate-200 dark:border-white/5 overflow-hidden p-0.5">
+                               <img src={project.director?.profilePicture ? project.director.profilePicture : `https://ui-avatars.com/api/?name=${project.director?.fullName || 'Director'}&background=random`} className="w-full h-full object-cover rounded-lg" alt="" />
+                            </div>
+                            <div>
+                               <p className="font-black dark:text-slate-200 uppercase tracking-tight text-xs">{project.director?.fullName || project.director?.email || 'N/A'}</p>
+                               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest font-mono italic">Creator node</p>
+                            </div>
+                         </div>
+                      </td>
+                      <td className="px-10 py-8">
+                         <div className="space-y-3 max-w-[180px]">
+                            <div className="flex justify-between items-end">
+                               <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                                  project.status === 'active' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                  project.status === 'audit' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                  'bg-slate-500/10 text-slate-500 border-slate-500/20'
+                               }`}>
+                                  {project.status || 'Active'}
+                               </span>
+                               <span className="text-[10px] font-bold text-slate-400">{project.applications?.length || 0} Apps</span>
+                            </div>
+                            <div className="w-full h-1 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                               <div className="h-full bg-primary rounded-full" style={{ width: '45%' }}></div>
+                            </div>
+                         </div>
+                      </td>
+                      <td className="px-10 py-8 text-right">
+                         <div className="flex flex-col items-end gap-2">
+                            <div className="flex gap-2">
+                               <button 
+                                onClick={() => handleStatusChange(project._id, project.status === 'active' ? 'audit' : 'active')}
+                                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary hover:text-white transition-all shadow-lg active:scale-95"
+                               >
+                                  {project.status === 'active' ? 'Audit Mode' : 'Release'}
+                               </button>
+                               <button 
+                                onClick={() => handleDelete(project._id)}
+                                className="px-3 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-white transition-all active:scale-95"
+                                title="Purge Production"
+                               >
+                                  <span className="material-symbols-outlined text-lg">delete_sweep</span>
+                               </button>
+                            </div>
+                            <Link to={`/admin/projects/${project._id}`} className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-primary transition-colors hover:underline">Full Asset Review</Link>
+                         </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="p-10 border-t border-slate-200 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+               <span className="size-2 rounded-full bg-primary animate-ping"></span>
+               <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] font-mono">Platform Integrity Monitoring: Operational</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="px-5 py-3 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+                <span className="material-symbols-outlined text-lg">arrow_back_ios</span>
+              </button>
+              <div className="flex gap-1.5">
+                 {[1, 2, 3].map(n => (
+                    <button key={n} className={`size-12 rounded-2xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all ${n === 1 ? 'bg-primary text-white shadow-xl shadow-primary/25' : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary'}`}>
+                       {n}
+                    </button>
+                 ))}
+              </div>
+              <button className="px-5 py-3 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+                <span className="material-symbols-outlined text-lg">arrow_forward_ios</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
 };
 
 export default ProjectOversight;

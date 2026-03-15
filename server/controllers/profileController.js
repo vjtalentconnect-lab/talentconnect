@@ -1,12 +1,23 @@
 import Profile from '../models/Profile.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
+import { broadcastAdminEvent, sendNotification } from '../socket.js';
 
 // @desc    Get current user profile
 // @route   GET /api/profile/me
 // @access  Private
 export const getMyProfile = async (req, res) => {
     try {
-        const profile = await Profile.findOne({ user: req.user.id }).populate('user', 'email role');
+        const profile = await Profile.findOne({ user: req.user.id }).populate('user', 'email role isVerified verificationStatus');
         if (!profile) {
+            // Check if user is an admin and auto-generated without a profile
+            const user = await User.findById(req.user.id);
+            if (user && user.role === 'admin') {
+                 return res.status(200).json({ 
+                     success: true, 
+                     data: { fullName: 'Super Admin', _id: 'admin_profile', role: 'admin' } 
+                 });
+            }
             return res.status(404).json({ message: 'Profile not found' });
         }
         res.status(200).json({ success: true, data: profile });
@@ -25,9 +36,22 @@ export const updateProfile = async (req, res) => {
         if (!profile) {
             profile = await Profile.create({ ...req.body, user: req.user.id });
         } else {
+            // Prepare update data to handle nested objects correctly
+            const updateData = { ...req.body };
+            
+            // Handle nested objects by using dots to avoid overwriting
+            ['verificationState', 'socialLinks', 'physicalMetrics', 'privacySettings'].forEach(key => {
+                if (updateData[key]) {
+                    Object.keys(updateData[key]).forEach(subKey => {
+                        updateData[`${key}.${subKey}`] = updateData[key][subKey];
+                    });
+                    delete updateData[key];
+                }
+            });
+
             profile = await Profile.findOneAndUpdate(
                 { user: req.user.id },
-                req.body,
+                { $set: updateData },
                 { new: true, runValidators: true }
             );
         }
@@ -101,16 +125,67 @@ export const uploadMedia = async (req, res) => {
         if (type === 'profilePicture') {
             profile.profilePicture = fileUrl;
         } else if (type === 'portfolio') {
-            profile.portfolios.push({
+            profile.portfolio.push({
                 type: req.file.mimetype.startsWith('video') ? 'video' : 'image',
                 url: fileUrl,
                 title: req.body.title || 'Untitled',
                 description: req.body.description || ''
             });
+        } else if (['idFile', 'membershipCard', 'videoSelfie'].includes(type)) {
+            if (!profile.verificationState) profile.verificationState = {};
+            
+            if (type === 'idFile') {
+                profile.verificationState.idFileUrl = fileUrl;
+                profile.verificationState.idType = req.body.idType;
+            } else if (type === 'membershipCard') {
+                profile.verificationState.membershipCardUrl = fileUrl;
+                profile.verificationState.membershipId = req.body.membershipId;
+                profile.verificationState.associationName = req.body.associationName;
+            } else if (type === 'videoSelfie') {
+                profile.verificationState.videoSelfieUrl = fileUrl;
+            }
         }
 
         await profile.save();
         res.status(200).json({ success: true, data: profile });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+// @desc    Submit profile for verification (sets status to 'pending')
+// @route   POST /api/profile/submit-verification
+// @access  Private
+export const submitForVerification = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.verificationStatus = 'pending';
+        user.isVerified = false;
+        await user.save();
+
+        // Notify admins and emit realtime event
+        const admins = await User.find({ role: 'admin' }).select('_id');
+        const adminNotifications = admins.map((admin) =>
+            Notification.create({
+                user: admin._id,
+                type: 'verification',
+                title: 'Verification Requested',
+                message: `${user.email} submitted verification`,
+                link: '/admin/verifications'
+            })
+        );
+        const adminNotes = await Promise.all(adminNotifications);
+        adminNotes.forEach((note) => sendNotification(note.user, note));
+        broadcastAdminEvent({
+            type: 'verification_requested',
+            user: user.email,
+            userId: user._id,
+            createdAt: new Date().toISOString(),
+        });
+
+        res.status(200).json({ success: true, message: 'Profile submitted for verification.' });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }

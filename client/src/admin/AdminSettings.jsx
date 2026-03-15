@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { getMyProfile } from '../services/profileService';
+import { getAdminStats } from '../services/adminService';
 
 const AdminSettings = () => {
-    const [activeTab, setActiveTab] = useState('Platform Configuration');
+    const [adminProfile, setAdminProfile] = useState(null);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('Core Configuration');
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [profileRes, statsRes] = await Promise.all([
+                    getMyProfile(),
+                    getAdminStats()
+                ]);
+                setAdminProfile(profileRes.data);
+                setStats(statsRes.data);
+            } catch (err) {
+                console.error('Error fetching System context:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const menuItems = [
         { icon: 'dashboard', label: 'Overview', path: '/dashboard/admin' },
         { icon: 'search', label: 'Global Search', path: '/admin/search' },
         { type: 'section', label: 'Management' },
         { icon: 'group', label: 'User Management', path: '/admin/users' },
-        { icon: 'verified_user', label: 'Verifications', path: '/admin/verifications', badge: '12' },
+        { icon: 'verified_user', label: 'Verifications', path: '/admin/verifications', badge: stats?.pendingVerifications?.toString() },
         { icon: 'account_tree', label: 'Project Oversight', path: '/admin/projects' },
         { icon: 'admin_panel_settings', label: 'RBAC Settings', path: '/admin/rbac' },
         { icon: 'vital_signs', label: 'System Health', path: '/admin/health' },
@@ -17,96 +40,111 @@ const AdminSettings = () => {
         { icon: 'payments', label: 'Financials', path: '/admin/financials' },
         { icon: 'chat_bubble', label: 'Communication Center', path: '/admin/communication' },
         { icon: 'settings', label: 'System Settings', path: '/admin/settings', active: true },
-        { type: 'section', label: 'Saved Searches' },
-        { icon: 'history_edu', label: 'Lead Actors (Mumbai)', path: '#', compact: true, rightIcon: 'settings' },
-        { icon: 'history_edu', label: 'High Budget Sci-Fi', path: '#', compact: true, rightIcon: 'settings' },
     ];
 
     const userData = {
-        name: 'Rajesh Kumar',
+        name: adminProfile?.fullName || 'Admin',
         roleTitle: 'Super Admin',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBPx8UySd9sVgJf1rqVx-6QNT6YCZ5DdCnYXNoa4EufrCe6nwNsI6VEID6GOiIF0dN7_DUtYfEu07H-F-k1pZqte5NO2eFFVMtDRLY0MJS8bc2IxuXijBwSsE4lT_yEDsHUf0GnOoYSYPy3ObtR5gw5J_bNXK0niFOWLKhj6dI_QmOgfuCOUi7znQ7DMrio6m2vfm2yKOnfVp5dwgww4OKrACL8c4OdInmvtG8Mm__na8NQoQzGPFvjNBFQO5KksnTIc4FUXG-QEoPS'
+        avatar: adminProfile?.profilePicture && adminProfile.profilePicture !== 'no-photo.jpg' 
+            ? adminProfile.profilePicture 
+            : `https://ui-avatars.com/api/?name=${adminProfile?.fullName || 'Admin'}&background=ee2b3b&color=fff`
     };
 
     const tabs = [
-        'Platform Configuration',
-        'Security & Auth',
-        'RBAC',
-        'Logs & Audit',
-        'Email Templates'
+        { id: 'Core Configuration', icon: 'settings_input_component' },
+        { id: 'Security Parameters', icon: 'shield_lock' },
+        { id: 'Mesh Protocols', icon: 'hub' },
+        { id: 'Audit Nexus', icon: 'receipt_long' },
+        { id: 'Template Shards', icon: 'description' }
     ];
 
-    const auditLogs = [
-        { id: 1, timestamp: '2023-10-24 14:22:01', action: 'Changed API Config', admin: 'rajesh.kumar', status: 'Success' },
-        { id: 2, timestamp: '2023-10-24 13:10:45', action: 'Deleted Test Profile', admin: 'rajesh.kumar', status: 'Success' },
-        { id: 3, timestamp: '2023-10-24 12:05:12', action: 'Failed Login Attempt', admin: 'System', status: 'Alert' }
-    ];
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center h-screen bg-background-dark">
+            <div className="size-24 relative">
+                <div className="absolute inset-0 border-[6px] border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                <div className="absolute inset-4 border-[6px] border-primary/10 border-b-primary rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                <span className="material-symbols-outlined absolute inset-0 m-auto size-fit text-primary text-4xl animate-pulse">settings</span>
+            </div>
+            <p className="mt-10 text-slate-400 font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Calibrating Mesh Core...</p>
+        </div>
+    );
 
     return (
         <DashboardLayout
             menuItems={menuItems}
             userRole="Admin Console"
             userData={userData}
-            headerTitle="System Settings"
-            headerSubtitle="Global platform configuration for TalentConnect"
+            headerTitle="Mesh Configuration"
+            headerSubtitle="Global platform protocols and environmental shards"
             headerActions={
-                <button className="bg-primary hover:bg-primary/90 text-white text-[10px] font-black px-6 py-3 rounded-xl transition-all shadow-xl shadow-primary/20 uppercase tracking-widest">
-                    Save Changes
+                <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all active:scale-95">
+                    <span className="material-symbols-outlined text-sm">save</span>
+                    Persist Grid
                 </button>
             }
         >
-            <div className="max-w-5xl mx-auto space-y-12 py-6 pb-20">
-                {/* Section: Tabs */}
-                <div className="flex border-b border-slate-200 dark:border-white/5 gap-10 overflow-x-auto pb-px custom-scrollbar">
+            <div className="max-w-7xl mx-auto py-8 lg:px-4 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-24">
+                {/* Section: Advanced Tabs */}
+                <div className="flex p-2 bg-slate-100 dark:bg-white/5 rounded-[2rem] gap-2 overflow-x-auto scrollbar-hide">
                     {tabs.map(tab => (
                         <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`pb-5 px-1 text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-b-2 ${activeTab === tab
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-3 px-8 py-4 rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id
+                                ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]'
+                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-white/5'}`}
                         >
-                            {tab}
+                            <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+                            {tab.id}
                         </button>
                     ))}
                 </div>
 
-                {activeTab === 'Platform Configuration' && (
+                {activeTab === 'Core Configuration' && (
                     <div className="space-y-12">
                         {/* Maintenance Mode */}
-                        <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                            <div>
-                                <h3 className="text-lg font-black dark:text-white uppercase tracking-tight">Maintenance & Status</h3>
-                                <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">Control the global availability of the TalentConnect platform and toggle experimental features.</p>
+                        <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                            <div className="lg:col-span-4">
+                                <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight">System State</h3>
+                                <p className="text-[11px] font-bold text-slate-400 mt-3 uppercase tracking-widest leading-loose">Control the global availability of the infrastructure mesh and toggle experimental shards.</p>
                             </div>
-                            <div className="lg:col-span-2 space-y-4">
-                                <div className="bg-white dark:bg-card-dark p-6 rounded-3xl border border-slate-200 dark:border-white/5 flex items-center justify-between shadow-sm group hover:border-primary/20 transition-all">
-                                    <div>
-                                        <h4 className="text-sm font-black dark:text-white uppercase tracking-tight">Global Maintenance Mode</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Directs all users to a maintenance screen while allowing admin access.</p>
+                            <div className="lg:col-span-8 space-y-6">
+                                <div className="bg-white dark:bg-card-dark p-10 rounded-[3rem] border border-slate-200 dark:border-border-dark flex items-center justify-between shadow-sm group hover:border-primary/40 transition-all relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="flex items-center gap-8">
+                                        <div className="size-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                                            <span className="material-symbols-outlined text-3xl">construction</span>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-black dark:text-white uppercase tracking-tight">Global Maintenance Shard</h4>
+                                            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Intercept normal traffic with administrative override nodes.</p>
+                                        </div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
-                                        <input className="sr-only peer" type="checkbox" value="" />
-                                        <div className="w-12 h-6 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white dark:after:bg-slate-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                        <input className="sr-only peer" type="checkbox" />
+                                        <div className="w-16 h-8 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[6px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
                                     </label>
                                 </div>
 
-                                <div className="bg-white dark:bg-card-dark p-8 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm">
-                                    <h4 className="text-sm font-black dark:text-white uppercase tracking-tight mb-8 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-primary text-xl">flag</span>
-                                        Active Feature Flags
+                                <div className="bg-white dark:bg-card-dark p-12 rounded-[3.5rem] border border-slate-200 dark:border-border-dark shadow-sm">
+                                    <h4 className="text-lg font-black dark:text-white uppercase tracking-tight mb-10 flex items-center gap-4">
+                                        <div className="size-2 bg-primary rounded-full animate-pulse"></div>
+                                        Experimental Feature Shards
                                     </h4>
-                                    <div className="space-y-6">
+                                    <div className="space-y-8">
                                         {[
-                                            { label: 'AI Casting Recommendations', checked: true },
-                                            { label: 'Real-time Audition Feedback', checked: false },
-                                            { label: 'New Talent Dashboard UI (Beta)', checked: true }
+                                            { label: 'Neural Casting Analytics', desc: 'Predictive talent matching algorithms', checked: true },
+                                            { label: 'Real-time Telemetry Feedback', desc: 'Instant audition stream analytics', checked: false },
+                                            { label: 'Project Mesh v3 Interface', desc: 'Next-gen fluid oversight dashboard', checked: true }
                                         ].map((flag, idx) => (
                                             <div key={idx} className="flex items-center justify-between group">
-                                                <span className="text-[11px] font-black text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-widest transition-colors">{flag.label}</span>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-widest group-hover:text-primary transition-colors">{flag.label}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 opacity-60">{flag.desc}</span>
+                                                </div>
                                                 <label className="relative inline-flex items-center cursor-pointer scale-90">
-                                                    <input defaultChecked={flag.checked} className="sr-only peer" type="checkbox" value="" />
-                                                    <div className="w-12 h-6 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                                    <input defaultChecked={flag.checked} className="sr-only peer" type="checkbox" />
+                                                    <div className="w-14 h-7 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[5px] after:left-[5px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                                                 </label>
                                             </div>
                                         ))}
@@ -118,98 +156,54 @@ const AdminSettings = () => {
                         <hr className="border-slate-100 dark:border-white/5" />
 
                         {/* Security */}
-                        <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                            <div>
-                                <h3 className="text-lg font-black dark:text-white uppercase tracking-tight">Security & Auth</h3>
-                                <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">Manage API keys, enforce two-factor authentication, and set session policies.</p>
+                        <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                            <div className="lg:col-span-4">
+                                <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight">Access Control</h3>
+                                <p className="text-[11px] font-bold text-slate-400 mt-3 uppercase tracking-widest leading-loose">Automated encryption shards, key rotation, and administrative authentication protocols.</p>
                             </div>
-                            <div className="lg:col-span-2 space-y-4">
-                                <div className="bg-white dark:bg-card-dark p-8 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h4 className="text-sm font-black dark:text-white uppercase tracking-tight">Production API Keys</h4>
-                                        <button className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg hover:bg-primary/20 transition-all">
-                                            <span className="material-symbols-outlined text-sm">add</span> GENERATE KEY
+                            <div className="lg:col-span-8 space-y-6">
+                                <div className="bg-white dark:bg-card-dark p-12 rounded-[3.5rem] border border-slate-200 dark:border-border-dark shadow-sm relative overflow-hidden group">
+                                    <div className="absolute -top-10 -right-10 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/20 transition-colors"></div>
+                                    <div className="flex items-center justify-between mb-12">
+                                        <h4 className="text-lg font-black dark:text-white uppercase tracking-tight">Active API Shards</h4>
+                                        <button className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-3 px-6 py-2.5 bg-primary/10 rounded-2xl hover:bg-primary/20 transition-all border border-primary/5">
+                                            <span className="material-symbols-outlined text-lg">add_box</span> ROTATE KEYS
                                         </button>
                                     </div>
                                     <div className="space-y-4">
                                         {[
-                                            'sk_live_51M0L9SA9eR8X9',
-                                            'sk_test_48J2K1L9P0Q2X'
-                                        ].map((key, idx) => (
-                                            <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 group">
-                                                <span className="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">key</span>
-                                                <input className="bg-transparent border-none text-[10px] flex-1 focus:ring-0 font-black text-slate-500 dark:text-slate-400 font-mono" readOnly type="text" value={key} />
-                                                <button className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-primary transition-colors text-lg p-2 hover:bg-primary/10 rounded-xl">content_copy</button>
+                                            { key: 'sk_mesh_live_9x8z7y...6a5b', type: 'Production' },
+                                            { key: 'sk_mesh_test_4p3o2i...1m0n', type: 'Sandbox' }
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-white/2 rounded-3xl border border-slate-100 dark:border-white/5 group/key hover:border-primary/30 transition-all">
+                                                <div className="size-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover/key:text-primary transition-colors shadow-sm">
+                                                    <span className="material-symbols-outlined text-xl">vpn_key</span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.type} NODE</div>
+                                                    <input className="bg-transparent border-none p-0 text-[11px] w-full focus:ring-0 font-black dark:text-white font-mono tracking-tighter" readOnly type="text" value={item.key} />
+                                                </div>
+                                                <button className="size-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-all shadow-sm">
+                                                    <span className="material-symbols-outlined text-lg">content_copy</span>
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                                <div className="bg-white dark:bg-card-dark p-6 rounded-3xl border border-slate-200 dark:border-white/5 flex items-center justify-between shadow-sm group hover:border-primary/20 transition-all">
-                                    <div className="flex items-center gap-5">
-                                        <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                            <span className="material-symbols-outlined text-2xl">verified_user</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-black dark:text-white uppercase tracking-tight">Enforce 2FA for Admins</h4>
-                                            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Require all administrative accounts to use multi-factor authentication.</p>
-                                        </div>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input defaultChecked className="sr-only peer" type="checkbox" value="" />
-                                        <div className="w-12 h-6 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                                    </label>
-                                </div>
-                            </div>
-                        </section>
-
-                        <hr className="border-slate-100 dark:border-white/5" />
-
-                        {/* Audit Logs */}
-                        <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                            <div>
-                                <h3 className="text-lg font-black dark:text-white uppercase tracking-tight">Audit & Logging</h3>
-                                <p className="text-[11px] font-bold text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">Review recent administrative actions and system events.</p>
-                                <button className="mt-6 text-[10px] font-black text-primary flex items-center gap-2 group uppercase tracking-[0.2em]">
-                                    VIEW ALL LOGS <span className="material-symbols-outlined text-sm group-hover:translate-x-2 transition-transform">arrow_right_alt</span>
-                                </button>
-                            </div>
-                            <div className="lg:col-span-2">
-                                <div className="bg-white dark:bg-card-dark rounded-3xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="bg-slate-50 dark:bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 border-b border-slate-100 dark:border-white/5">
-                                                <th className="px-6 py-5">Timestamp</th>
-                                                <th className="px-6 py-5">Action</th>
-                                                <th className="px-6 py-5 text-center">Admin</th>
-                                                <th className="px-6 py-5 text-right">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50 dark:divide-white/5">
-                                            {auditLogs.map(log => (
-                                                <tr key={log.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
-                                                    <td className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{log.timestamp}</td>
-                                                    <td className="px-6 py-4 text-[11px] font-black dark:text-white uppercase tracking-widest">{log.action}</td>
-                                                    <td className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">{log.admin}</td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${log.status === 'Success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary'}`}>
-                                                            {log.status}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         </section>
                     </div>
                 )}
 
-                <div className="flex justify-end gap-4 pt-10 border-t border-slate-100 dark:border-white/5 mb-10">
-                    <button className="px-8 py-4 rounded-2xl text-slate-400 dark:text-slate-500 font-black text-[11px] uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-white/5 transition-all">Cancel Changes</button>
-                    <button className="px-10 py-4 rounded-2xl bg-primary text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all active:scale-95">Save All Settings</button>
+                <div className="flex justify-end gap-6 pt-12 border-t border-slate-200 dark:border-white/5 animate-pulse-slow">
+                    <button className="px-10 py-5 rounded-[2rem] text-slate-400 dark:text-slate-500 font-extrabold text-[11px] uppercase tracking-[0.3em] hover:bg-slate-100 dark:hover:bg-white/5 transition-all">Discard Buffer</button>
+                    <button className="px-14 py-5 rounded-[2rem] bg-primary text-white font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all active:scale-[0.98] leading-none">Force Nexus Update</button>
                 </div>
             </div>
+            <style dangerouslySetInnerHTML={{ __html: `
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+            ` }} />
         </DashboardLayout>
     );
 };

@@ -47,7 +47,7 @@ const RegisterDirector = () => {
 
       const data = await register(userData);
       console.log('Director Registration successful:', data);
-      navigate('/dashboard/director');
+      navigate('/checkout/director');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -71,7 +71,7 @@ const RegisterDirector = () => {
               <div className="p-1">
                 <img src="/TC Logo.png" alt="Logo" className="h-12 w-auto" />
               </div>
-              <h1 className="text-white text-3xl font-black tracking-tighter uppercase">TalentConnect</h1>
+              <h1 className="text-white text-3xl font-black tracking-tighter uppercase">TALENT<span className="text-primary">CONNECT</span></h1>
             </div>
             <h2 className="text-white text-5xl font-black leading-tight mb-4">Empowering Visionary <span className="text-primary">Storytellers</span></h2>
             <p className="text-slate-300 text-lg max-w-md">Connect with India's finest talent pool and bring your creative visions to life with our premium casting infrastructure.</p>
@@ -84,7 +84,7 @@ const RegisterDirector = () => {
             {/* Mobile Branding */}
             <div className="flex items-center gap-2 mb-8 lg:hidden">
               <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
-              <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold">TalentConnect</h2>
+               <h2 className="text-slate-900 dark:text-slate-100 text-xl font-bold">TALENT<span className="text-primary">CONNECT</span></h2>
             </div>
 
             <div className="mb-10">

@@ -22,11 +22,29 @@ const profileSchema = new mongoose.Schema(
         location: {
             type: String,
         },
+        mobile: {
+            type: String,
+        },
         socialLinks: {
             instagram: String,
             twitter: String,
             linkedin: String,
             website: String,
+            imdb: String,
+            wikipedia: String,
+        },
+        // Verification Data
+        verificationState: {
+            idType: String,
+            idFileUrl: String,
+            membershipCardUrl: String,
+            videoSelfieUrl: String,
+            imdbUrl: String,
+            wikipediaUrl: String,
+            showreelUrl: String,
+            membershipId: String,
+            associationName: String,
+            websiteUrl: String,
         },
         // Talent specific fields
         skills: [String],
@@ -56,6 +74,13 @@ const profileSchema = new mongoose.Schema(
         // Director specific fields
         companyName: String,
         previousProjects: [String],
+        // Privacy controls
+        privacySettings: {
+            profileSearchable: { type: Boolean, default: true },
+            showContactDetails: { type: Boolean, default: true },
+            showPortfolioPublic: { type: Boolean, default: true },
+            allowDirectMessages: { type: Boolean, default: true },
+        },
     },
     {
         timestamps: true,

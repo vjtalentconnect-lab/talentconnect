@@ -20,7 +20,31 @@ export const getPendingVerifications = async () => {
     return response.data;
 };
 
-export const verifyUser = async (userId, status) => {
-    const response = await api.put(`/admin/verify/${userId}`, { status });
+export const verifyUser = async (userId, data) => {
+    // data should be { verificationStatus: 'verified' | 'rejected' | 'pending' }
+    const response = await api.put(`/admin/verify/${userId}`, data);
+    return response.data;
+};
+export const updateProjectStatus = async (projectId, status) => {
+    const response = await api.put(`/admin/projects/${projectId}/status`, { status });
+    return response.data;
+};
+
+export const updateUserRole = async (userId, role) => {
+    const response = await api.put(`/admin/users/${userId}/role`, { role });
+    return response.data;
+};
+
+export const deleteUser = async (userId) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data;
+};
+export const deleteProject = async (projectId) => {
+    const response = await api.delete(`/admin/projects/${projectId}`);
+    return response.data;
+};
+
+export const getAdminProjectDetails = async (projectId) => {
+    const response = await api.get(`/admin/projects/${projectId}`);
     return response.data;
 };

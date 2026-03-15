@@ -19,20 +19,20 @@ const SkeletonLoader = () => {
             <div className="w-full max-w-4xl space-y-8">
                 {/* Header Skeleton */}
                 <div className="flex justify-between items-center mb-12">
-                    <div className="h-10 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded animate-shimmer w-1/4"></div>
-                    <div className="h-10 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded-full animate-shimmer w-10"></div>
+                    <div className="h-10 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded animate-shimmer w-1/4"></div>
+                    <div className="h-10 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded-full animate-shimmer w-10"></div>
                 </div>
 
                 {/* Main Content Area Skeletons */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2 space-y-6">
-                        <div className="h-48 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded-2xl animate-shimmer w-full"></div>
-                        <div className="h-32 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded-2xl animate-shimmer w-full"></div>
-                        <div className="h-32 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded-2xl animate-shimmer w-full"></div>
+                        <div className="h-48 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded-2xl animate-shimmer w-full"></div>
+                        <div className="h-32 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded-2xl animate-shimmer w-full"></div>
+                        <div className="h-32 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded-2xl animate-shimmer w-full"></div>
                     </div>
                     <div className="space-y-6">
-                        <div className="h-32 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded-2xl animate-shimmer w-full"></div>
-                        <div className="h-64 border border-[#C9A84C]/20 bg-[#C9A84C]/5 rounded-2xl animate-shimmer w-full"></div>
+                        <div className="h-32 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded-2xl animate-shimmer w-full"></div>
+                        <div className="h-64 border border-[#ee2b3b]/20 bg-[#ee2b3b]/5 rounded-2xl animate-shimmer w-full"></div>
                     </div>
                 </div>
             </div>

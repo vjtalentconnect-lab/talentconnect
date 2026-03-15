@@ -43,6 +43,8 @@ const RegisterActor = () => {
                 role: 'talent',
                 fullName: formData.fullName,
                 talentCategory: formData.category,
+                location: formData.location,
+                mobile: formData.mobile,
             };
 
             const data = await register(userData);
@@ -63,7 +65,7 @@ const RegisterActor = () => {
                 <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/20 px-6 lg:px-40 py-4 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
                     <div className="flex items-center gap-3">
                         <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
-                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">TalentConnect</h2>
+                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">TALENT<span className="text-primary">CONNECT</span></h2>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">Already have an account?</span>
@@ -168,9 +170,9 @@ const RegisterActor = () => {
                                         <option value="" disabled>Select Category</option>
                                         <option value="actor">Actor</option>
                                         <option value="model">Model</option>
-                                        <option value="singer">Singer</option>
+                                        <option value="musician">Singer</option>
                                         <option value="dancer">Dancer</option>
-                                        <option value="voiceover">Voiceover Artist</option>
+                                        <option value="voice_over">Voiceover Artist</option>
                                     </select>
                                 </div>
 

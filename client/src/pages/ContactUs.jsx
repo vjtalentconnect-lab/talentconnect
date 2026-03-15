@@ -13,7 +13,7 @@ const ContactUs = () => {
                                 <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">TalentConnect</h2>
+                        <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">TALENT<span className="text-primary">CONNECT</span></h2>
                     </div>
                     <div className="hidden md:flex flex-1 justify-end gap-10 items-center">
                         <nav className="flex items-center gap-8">
@@ -142,7 +142,7 @@ const ContactUs = () => {
                                     <path d="M44 4H30.6666V17.3334H17.3334V30.6666H4V44H44V4Z" fill="currentColor"></path>
                                 </svg>
                             </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">© 2026 TalentConnect. All Rights Reserved.</p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">© 2026 TALENT<span className="text-primary">CONNECT</span>. All Rights Reserved.</p>
                         </div>
                         <div className="flex gap-8">
                             <a className="text-xs text-slate-500 hover:text-primary" href="#">Privacy Policy</a>

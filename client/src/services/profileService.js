@@ -28,3 +28,8 @@ export const uploadMedia = async (formData) => {
   });
   return response.data;
 };
+
+export const submitForVerification = async () => {
+  const response = await api.post('/profile/submit-verification');
+  return response.data;
+};

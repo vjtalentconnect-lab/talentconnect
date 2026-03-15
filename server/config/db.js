@@ -6,7 +6,8 @@ dotenv.config();
 const connectDB = async () => {
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
-            maxPoolSize: 20
+            maxPoolSize: 20,
+            family: 4
         });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {

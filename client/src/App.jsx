@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { NotificationProvider } from "./context/NotificationContext";
 import SkeletonLoader from "./components/SkeletonLoader";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
@@ -44,6 +45,8 @@ const GlobalSearch = lazy(() => import("./admin/GlobalSearch"));
 const AdminSettings = lazy(() => import('./admin/AdminSettings'));
 const AdminRBAC = lazy(() => import('./admin/AdminRBAC'));
 const SystemHealth = lazy(() => import('./admin/SystemHealth'));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const DirectorCheckout = lazy(() => import("./pages/DirectorCheckout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 
@@ -59,6 +62,7 @@ function App() {
               <Route path="/loginPage" element={<Login />} />
               <Route path="/register/actor" element={<RegisterActor />} />
               <Route path="/register/director" element={<RegisterDirector />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
 
               {/* Dashboards */}
               <Route path="/dashboard/talent" element={<ArtistDashboard />} />
@@ -77,26 +81,27 @@ function App() {
               <Route path="/talent/checkout" element={<Checkout />} />
               <Route path="/talent/payment-success" element={<PaymentSuccess />} />
               <Route path="/dashboard/director" element={<DirectorDashboard />} />
-              <Route path="/dashboard/admin" element={<AdminDashboard />} />
-              <Route path="/admin/projects" element={<ProjectOversight />} />
-              <Route path="/admin/verifications" element={<VerificationReview />} />
-              <Route path="/admin/verifications/:id" element={<VerificationReview />} />
+              <Route path="/dashboard/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/projects" element={<ProtectedRoute requiredRole="admin"><ProjectOversight /></ProtectedRoute>} />
+              <Route path="/admin/verifications" element={<ProtectedRoute requiredRole="admin"><VerificationReview /></ProtectedRoute>} />
+              <Route path="/admin/verifications/:id" element={<ProtectedRoute requiredRole="admin"><VerificationReview /></ProtectedRoute>} />
               <Route path="/admin/verification" element={<Navigate to="/admin/verifications" replace />} />
               <Route path="/admin/verification/:id" element={<Navigate to="/admin/verifications/:id" replace />} />
-              <Route path="/admin/users" element={<UserDetail />} />
-              <Route path="/admin/users/:id" element={<UserDetail />} />
+              <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
+              <Route path="/admin/users/:id" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
               <Route path="/admin/user" element={<Navigate to="/admin/users" replace />} />
               <Route path="/admin/user/:id" element={<Navigate to="/admin/users/:id" replace />} />
               <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
-              <Route path="/admin/financials" element={<FinancialReports />} />
-              <Route path="/admin/communication" element={<CommunicationCenter />} />
-              <Route path="/admin/search" element={<GlobalSearch />} />
-              <Route path="/admin/settings" element={<AdminSettings />} />
-              <Route path="/admin/rbac" element={<AdminRBAC />} />
-              <Route path="/admin/health" element={<SystemHealth />} />
+              <Route path="/admin/financials" element={<ProtectedRoute requiredRole="admin"><FinancialReports /></ProtectedRoute>} />
+              <Route path="/admin/communication" element={<ProtectedRoute requiredRole="admin"><CommunicationCenter /></ProtectedRoute>} />
+              <Route path="/admin/search" element={<ProtectedRoute requiredRole="admin"><GlobalSearch /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+              <Route path="/admin/rbac" element={<ProtectedRoute requiredRole="admin"><AdminRBAC /></ProtectedRoute>} />
+              <Route path="/admin/health" element={<ProtectedRoute requiredRole="admin"><SystemHealth /></ProtectedRoute>} />
 
               {/* Portfolios */}
               <Route path="/talent/portfolio" element={<TalentPortfolio />} />
+              <Route path="/talent/:id" element={<TalentPortfolio />} />
               <Route path="/director/portfolio" element={<DirectorPortfolio />} />
 
               {/* Create Project Flow */}
@@ -109,6 +114,7 @@ function App() {
               <Route path="/director/messages" element={<Messages />} />
               <Route path="/director/discovery" element={<TalentDiscovery />} />
               <Route path="/director/settings" element={<DirectorSettings />} />
+              <Route path="/checkout/director" element={<DirectorCheckout />} />
 
               {/* Catch-all route for 404 */}
               <Route path="*" element={<NotFound />} />

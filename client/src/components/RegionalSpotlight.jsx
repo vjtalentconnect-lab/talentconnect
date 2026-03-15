@@ -6,7 +6,7 @@ const RegionalSpotlight = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Hero Section Header */}
                 <div className="mb-10">
-                    <span className="text-secondary dark:text-primary font-bold tracking-widest text-xs uppercase mb-2 block">Premium Discovery</span>
+                    <span className="text-primary font-bold tracking-widest text-xs uppercase mb-2 block">Premium Discovery</span>
                     <h1 className="text-slate-900 dark:text-slate-100 tracking-tight text-4xl md:text-5xl font-extrabold leading-tight mb-4">Regional Talent Spotlight</h1>
                     <p className="text-slate-600 dark:text-slate-400 max-w-2xl text-lg">Celebrating the rich diversity of Indian artistry. Discover emerging and established stars from every corner of the country.</p>
                 </div>

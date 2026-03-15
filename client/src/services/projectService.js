@@ -24,3 +24,25 @@ export const getProjectApplications = async (projectId) => {
     const response = await api.get(`/projects/${projectId}/applications`);
     return response.data;
 };
+
+export const getMyApplications = async () => {
+    const response = await api.get('/projects/my-applications');
+    return response.data;
+};
+
+// --- Director Specific Endpoints ---
+
+export const getMyProjects = async () => {
+    const response = await api.get('/projects/my-projects');
+    return response.data;
+};
+
+export const getDirectorApplications = async (status = '') => {
+    const response = await api.get('/projects/my-applications/director', { params: { status } });
+    return response.data;
+};
+
+export const updateApplicationStatus = async (appId, status) => {
+    const response = await api.put(`/projects/applications/${appId}/status`, { status });
+    return response.data;
+};

@@ -1,42 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
 import { getMyProfile } from '../services/profileService';
+import { getMyApplications } from '../services/projectService';
+
+const FILTERS = ['All', 'New', 'Accepted', 'Completed'];
+
+const STATUS_TO_FILTER = {
+    'auditioning': 'New',
+    'shortlisted': 'Accepted',
+    'selected': 'Completed',
+};
+
+const Toast = ({ message, type, onDone }) => {
+    useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, []);
+    return (
+        <div className={`fixed bottom-8 right-8 z-50 px-6 py-4 rounded-2xl shadow-2xl text-white text-sm font-bold flex items-center gap-3 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
+            <span className="material-symbols-outlined">{type === 'error' ? 'error' : 'check_circle'}</span>
+            {message}
+        </div>
+    );
+};
 
 const AuditionInvites = () => {
+    const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
+    const [invites, setInvites] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [decliningId, setDecliningId] = useState(null);
+    const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             try {
-                const res = await getMyProfile();
-                setProfile(res.data);
+                const [profileRes, appsRes] = await Promise.all([getMyProfile(), getMyApplications()]);
+                setProfile(profileRes.data);
+                // Only show applications that are auditioning, shortlisted, or selected
+                setInvites(appsRes.data.filter(a => ['auditioning', 'shortlisted', 'selected'].includes(a.status)));
             } catch (err) {
-                console.error('Error fetching profile:', err);
+                console.error('Error fetching invites:', err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProfile();
+        fetchData();
     }, []);
+
+    // Listen for real-time verification updates
+    window.addEventListener('userStateChange', fetchData);
+    return () => window.removeEventListener('userStateChange', fetchData);
+
+    const filteredInvites = invites.filter(inv => {
+        if (activeFilter === 'All') return true;
+        return STATUS_TO_FILTER[inv.status] === activeFilter;
+    });
+
+    const spotlight = invites.find(i => i.status === 'auditioning');
+
+    const handleAccept = (inv) => {
+        navigate('/talent/audition-details', { state: { projectId: inv.project?._id } });
+    };
+
+    const handleDecline = async (invId) => {
+        setDecliningId(invId);
+        await new Promise(r => setTimeout(r, 800));
+        setInvites(prev => prev.filter(i => i._id !== invId));
+        setToast({ message: 'Invite declined.', type: 'success' });
+        setDecliningId(null);
+    };
 
     const userData = {
         name: profile?.fullName || 'Artist',
         roleTitle: `${profile?.talentCategory || 'Actor'} • ${profile?.location || 'India'}`,
-        avatar: profile?.profilePicture === 'no-photo.jpg' 
-            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User') 
-            : profile?.profilePicture
+        avatar: profile?.profilePicture === 'no-photo.jpg'
+            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User')
+            : profile?.profilePicture,
     };
 
+    const verificationStatus = profile?.user?.verificationStatus || 'none';
+
     if (loading) return (
-        <DashboardLayout
-            menuItems={TALENT_MENU}
-            userRole="India • Artist"
-            userData={{ name: "...", roleTitle: "...", avatar: "" }}
-            headerTitle="Audition Invites"
-        >
+        <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist"
+            userData={{ name: '...', roleTitle: '...', avatar: '' }} headerTitle="Audition Invites">
             <div className="flex items-center justify-center py-20">
                 <span className="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
             </div>
@@ -44,110 +91,115 @@ const AuditionInvites = () => {
     );
 
     return (
-        <DashboardLayout
-            menuItems={TALENT_MENU}
-            userRole="India • Artist"
-            userData={userData}
-            headerTitle="Audition Invites"
-            headerSubtitle="Invitations for auditions and screen tests."
-            searchPlaceholder="Search invitations..."
-        >
-            <div className="space-y-8 pb-12">
+        <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist" userData={userData} verificationStatus={verificationStatus}
+            headerTitle="Audition Invites" headerSubtitle="Your exclusive audition invitations and call-backs.">
+            {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
+            <div className="space-y-8 pb-24">
                 {/* Spotlight Card */}
-                <section className="relative overflow-hidden rounded-2xl bg-white dark:bg-zinc-900 border border-primary/20 p-8 flex flex-col md:flex-row gap-8 items-center group">
-                    <div className="absolute top-0 right-0 bg-primary/10 px-4 py-1 rounded-bl-xl border-l border-b border-primary/20">
-                        <span className="text-[10px] font-bold text-primary tracking-widest uppercase">Immediate Next</span>
-                    </div>
-                    <div className="w-full md:w-64 aspect-[3/4] rounded-xl overflow-hidden bg-slate-800 relative shadow-2xl">
-                        <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Spotlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfPbvRsFuO3qrieaHqYV59RwcJPkw7nE9JBDxVIznBLReEbSBD6r7hmOXA_I1jzn8WZ2iJhempI9H2gK7C8rps1IvPOxTPuPbC1pUs5izsf1PYrzPYTMTSXmhx1czPJNQBo4To8qQpDIBewzkju5TG7G0JELx6tu-O5gGQaaWXkiereJ_HEaT_VXkod6hwmLVAFXmOYLfuXeF1_W8PAwpzPIF_ZlZGgVBx_Qn4tWJb7PP79xZtgB9DCb3I-aaLtwXQFxlYonl3yCnf" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                    </div>
-                    <div className="flex-1 space-y-4 text-center md:text-left">
-                        <div>
-                            <p className="text-primary text-xs font-bold tracking-[0.2em] mb-2 uppercase">Upcoming Spotlight</p>
-                            <h3 className="text-4xl font-black uppercase italic tracking-tighter dark:text-white leading-tight">The Last Dynasty</h3>
-                            <p className="text-slate-500 mt-2 font-medium">Empire Films Production | Dir. Sanjay Leela</p>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 border-y border-slate-100 dark:border-zinc-800">
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-primary">person</span>
-                                <div>
-                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Role</p>
-                                    <p className="text-sm font-bold dark:text-slate-200">Lead Actor - Vikram</p>
-                                </div>
+                {spotlight && (
+                    <div className="relative overflow-hidden rounded-3xl bg-[#0f1115] border border-primary/20 p-8 shadow-2xl" >
+                        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent"/>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                            <div className="w-28 h-36 rounded-2xl overflow-hidden shrink-0 shadow-2xl border border-primary/20">
+                                <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80" alt="spotlight" className="w-full h-full object-cover"/>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-primary">schedule</span>
-                                <div>
-                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Date & Time</p>
-                                    <p className="text-sm font-bold dark:text-slate-200">Tomorrow, 10:00 AM</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-primary">location_on</span>
-                                <div>
-                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Location</p>
-                                    <p className="text-sm font-bold dark:text-slate-200">Studio 41, Mumbai</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-primary">description</span>
-                                <div>
-                                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Preparation</p>
-                                    <p className="text-sm font-bold text-primary underline cursor-pointer">Download Script</p>
+                            <div className="flex-1">
+                                <p className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"/>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"/>
+                                    </span>
+                                    Immediate Action Required
+                                </p>
+                                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter mb-1">
+                                    {spotlight.project?.title || 'Audition Call'}
+                                </h2>
+                                <p className="text-slate-400 font-bold text-sm mb-6">
+                                    {spotlight.project?.director?.email?.split('@')[0] || 'Director'} • {spotlight.project?.category || 'Film'} • {spotlight.project?.location || 'Mumbai'}
+                                </p>
+                                <div className="flex gap-4">
+                                    <button onClick={() => handleAccept(spotlight)}
+                                        className="px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-primary/90 transition-all shadow-xl shadow-primary/20">
+                                        <span className="material-symbols-outlined text-sm">check_circle</span> Accept
+                                    </button>
+                                    <button onClick={() => handleDecline(spotlight._id)} disabled={decliningId === spotlight._id}
+                                        className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-60">
+                                        {decliningId === spotlight._id
+                                            ? <><span className="material-symbols-outlined text-sm animate-spin">sync</span> Declining...</>
+                                            : 'Decline'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-4 pt-2 justify-center md:justify-start">
-                            <button className="px-8 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 uppercase text-xs tracking-widest">PREPARE SCRIPT</button>
-                            <button className="px-8 py-3 bg-white dark:bg-zinc-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 transition-all border border-slate-200 dark:border-zinc-700 uppercase text-xs tracking-widest">RESCHEDULE</button>
-                        </div>
                     </div>
-                </section>
+                )}
 
-                {/* Filters */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                        <button className="px-6 py-2 bg-primary text-white text-sm font-bold rounded-full whitespace-nowrap shadow-lg shadow-primary/20">New (4)</button>
-                        <button className="px-6 py-2 bg-white dark:bg-zinc-900 text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-bold rounded-full border border-slate-200 dark:border-zinc-800 transition-colors whitespace-nowrap">Accepted</button>
-                        <button className="px-6 py-2 bg-white dark:bg-zinc-900 text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-bold rounded-full border border-slate-200 dark:border-zinc-800 transition-colors whitespace-nowrap">Declined</button>
-                        <button className="px-6 py-2 bg-white dark:bg-zinc-900 text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-bold rounded-full border border-slate-200 dark:border-zinc-800 transition-colors whitespace-nowrap">Completed</button>
-                    </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold border border-slate-200 dark:border-zinc-800 hover:border-primary transition-all shadow-sm">
-                        <span className="material-symbols-outlined text-sm">tune</span>
-                        More Filters
-                    </button>
+                {/* Filter Tabs */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                    {FILTERS.map(f => (
+                        <button key={f} onClick={() => setActiveFilter(f)}
+                            className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                                activeFilter === f ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary'
+                            }`}>
+                            {f}
+                            {f === 'New' && invites.filter(i => i.status === 'auditioning').length > 0 && (
+                                <span className="ml-2 bg-primary text-white text-[9px] font-black rounded-full px-1.5 py-0.5">{invites.filter(i => i.status === 'auditioning').length}</span>
+                            )}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Invites List */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-                    {/* Invite Item 1 */}
-                    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 rounded-2xl flex flex-col sm:flex-row items-center gap-6 group hover:border-primary/40 transition-all shadow-sm">
-                        <div className="size-24 rounded-2xl bg-slate-800 flex-shrink-0 flex items-center justify-center overflow-hidden shadow-lg">
-                            <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Invite 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdbk9wJTTct3vkDXNVyv44p_QFPD9KdK0al8mwyS4cUO1H82i-Ve__IZjuFMratoxVbwlMpKoOj0wE70O-i_GWRfOteAVRqRp4bcANHUugtxHPpCTE5zcON7fmCG1Qtk2_guMBVAaHkQ9Wobz3-Zj1UbOAQt2ACOGIDmkm4ovDzolKWIsc_nyf_V2bToMcRESwW8k-jvSSsedeP7jPmaHCoVk5hYTpolkYpi4pfZcYfzsYBZwDR0VvtJCI1ftvyWxizdJ5tMAwwBAM" />
-                        </div>
-                        <div className="flex-1 min-w-0 text-center sm:text-left">
-                            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                                <h4 className="font-bold text-lg text-slate-800 dark:text-white truncate uppercase italic tracking-tighter">Urban Chronicles</h4>
-                                <span className="shrink-0 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">New</span>
-                            </div>
-                            <div className="space-y-1 mb-4">
-                                <p className="text-sm text-slate-500 flex items-center justify-center sm:justify-start gap-1 font-medium">
-                                    <span className="material-symbols-outlined text-sm text-primary">person</span> Supporting - Aryan
-                                </p>
-                                <p className="text-sm text-slate-500 flex items-center justify-center sm:justify-start gap-1 font-medium">
-                                    <span className="material-symbols-outlined text-sm text-primary">apartment</span> Red Chillies Ent.
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Link className="flex-1 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all text-center uppercase tracking-widest" to="/talent/audition-details">Accept</Link>
-                                <button className="p-2 bg-slate-100 dark:bg-zinc-800 text-slate-400 rounded-xl hover:text-red-500 transition-colors">
-                                    <span className="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-                        </div>
+                {/* Invite List */}
+                {filteredInvites.length === 0 ? (
+                    <div className="bg-white dark:bg-zinc-900 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-16 text-center">
+                        <span className="material-symbols-outlined text-5xl text-slate-300 mb-4 block">mail</span>
+                        <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">No invites in this category</p>
                     </div>
-                </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredInvites.map((inv) => {
+                            const proj = inv.project || {};
+                            const filterLabel = STATUS_TO_FILTER[inv.status] || 'Applied';
+                            const isNew = inv.status === 'auditioning';
+                            return (
+                                <div key={inv._id} className={`bg-white dark:bg-zinc-900 border rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-6 shadow-sm transition-all ${isNew ? 'border-primary/30 hover:border-primary/60' : 'border-slate-200 dark:border-zinc-800'}`}>
+                                    <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 shadow-lg">
+                                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80" alt={proj.title || 'Project'} className="w-full h-full object-cover"/>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <h3 className="text-xl font-black dark:text-white uppercase italic tracking-tighter">{proj.title || 'Project Title'}</h3>
+                                            <span className={`px-2.5 py-1 text-[9px] font-black rounded uppercase tracking-widest ${
+                                                inv.status === 'selected' ? 'bg-green-500/10 text-green-500' :
+                                                inv.status === 'auditioning' ? 'bg-primary/10 text-primary' :
+                                                'bg-blue-500/10 text-blue-500'
+                                            }`}>{filterLabel}</span>
+                                        </div>
+                                        <p className="text-slate-500 text-sm font-bold flex flex-wrap gap-4">
+                                            <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm text-primary">movie</span>{proj.director?.email?.split('@')[0] || 'Director'}</span>
+                                            {proj.location && <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm text-primary">location_on</span>{proj.location}</span>}
+                                            {proj.deadline && <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm text-primary">calendar_today</span>{new Date(proj.deadline).toLocaleDateString()}</span>}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3 shrink-0">
+                                        <button onClick={() => handleAccept(inv)}
+                                            className="px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-sm">open_in_new</span> View Details
+                                        </button>
+                                        {isNew && (
+                                            <button onClick={() => handleDecline(inv._id)} disabled={decliningId === inv._id}
+                                                className="px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest border border-slate-200 dark:border-zinc-700 text-slate-500 hover:border-red-300 hover:text-red-500 transition-all flex items-center gap-2 disabled:opacity-60">
+                                                {decliningId === inv._id
+                                                    ? <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                                                    : 'Decline'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );

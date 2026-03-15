@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const VerificationStatus = ({ onReturn }) => {
+    const [isReturning, setIsReturning] = useState(false);
+    // Animate the hourglass icon continuously
+    const [hourglassFlip, setHourglassFlip] = useState(false);
+
+    useEffect(() => {
+        const iv = setInterval(() => setHourglassFlip(f => !f), 2000);
+        return () => clearInterval(iv);
+    }, []);
+
+    const handleReturn = async () => {
+        setIsReturning(true);
+        await new Promise(r => setTimeout(r, 800));
+        onReturn();
+    };
+
+    const handleSupport = () => {
+        if (typeof window !== 'undefined') {
+            window.open('/support', '_blank', 'noopener,noreferrer');
+        }
+    };
+
     return (
-        <div className="max-w-[560px] w-full bg-white/5 dark:bg-white/5 border border-primary/10 rounded-2xl p-8 lg:p-12 shadow-2xl">
+        <div className="max-w-[560px] w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-primary/10 rounded-2xl p-8 lg:p-12 shadow-2xl">
             {/* Status Icon */}
             <div className="flex justify-center mb-8">
                 <div className="relative">
                     <div className="absolute inset-0 bg-primary blur-2xl opacity-20 rounded-full"></div>
                     <div className="relative flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 border-2 border-primary/30">
-                        <span className="material-symbols-outlined text-5xl text-primary font-bold">hourglass_empty</span>
+                        <span
+                            className={`material-symbols-outlined text-5xl text-primary font-bold transition-transform duration-700 ease-in-out ${hourglassFlip ? 'rotate-180' : 'rotate-0'}`}
+                        >
+                            hourglass_empty
+                        </span>
                     </div>
                 </div>
             </div>
@@ -37,11 +62,12 @@ const VerificationStatus = ({ onReturn }) => {
                     </div>
                 </div>
 
-                {/* Step 2: In Progress */}
+                {/* Step 2: In Progress — pulsing ring */}
                 <div className="flex gap-4">
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-primary bg-primary/10 text-primary">
-                            <span className="material-symbols-outlined text-sm font-bold">schedule</span>
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-primary bg-primary/10 text-primary relative">
+                            <span className="absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-40"></span>
+                            <span className="material-symbols-outlined text-sm font-bold z-10">schedule</span>
                         </div>
                         <div className="w-0.5 h-12 bg-slate-300 dark:bg-slate-700"></div>
                     </div>
@@ -76,13 +102,29 @@ const VerificationStatus = ({ onReturn }) => {
                 </div>
             </div>
 
-            {/* Action Button */}
+            {/* Action Buttons */}
             <div className="flex flex-col gap-3">
-                <button onClick={onReturn} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
-                    Return to Dashboard
-                    <span className="material-symbols-outlined">arrow_forward</span>
+                <button
+                    onClick={handleReturn}
+                    disabled={isReturning}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70"
+                >
+                    {isReturning ? (
+                        <>
+                            <span className="material-symbols-outlined !text-base animate-spin">progress_activity</span>
+                            Returning…
+                        </>
+                    ) : (
+                        <>
+                            Return to Dashboard
+                            <span className="material-symbols-outlined">arrow_forward</span>
+                        </>
+                    )}
                 </button>
-                <button className="w-full bg-transparent hover:bg-white/5 text-slate-600 dark:text-slate-400 font-medium py-3 rounded-xl transition-all text-sm underline underline-offset-4">
+                <button
+                    onClick={handleSupport}
+                    className="w-full bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400 font-medium py-3 rounded-xl transition-all text-sm underline underline-offset-4 active:scale-95"
+                >
                     Contact Support
                 </button>
             </div>

@@ -14,9 +14,8 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'talentconnect',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'mkv'],
-    resource_type: 'auto', // Important for videos
-    transformation: [{ quality: 'auto', fetch_format: 'auto' }] // Optimize delivery
+    resource_type: 'auto', // Important for both images and videos
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }]
   },
 });
 

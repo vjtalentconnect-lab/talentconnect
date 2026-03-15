@@ -11,7 +11,7 @@ const Home = () => {
             <div className="flex-shrink-0 flex items-center gap-2">
               <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
               <span className="font-display font-bold text-2xl tracking-wide text-gray-900 dark:text-white">
-                TalentConnect
+                TALENT<span className="text-primary">CONNECT</span>
               </span>
             </div>
             <div className="hidden md:flex space-x-8 items-center">
@@ -21,7 +21,7 @@ const Home = () => {
               <a className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors font-medium" href="#">About Us</a>
             </div>
             <div className="hidden md:flex items-center space-x-4">
-              <button className="bg-primary hover:bg-yellow-600 text-white dark:text-black font-semibold px-6 py-2.5 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-primary/30">
+              <button className="bg-primary hover:bg-primary/90 text-white dark:text-black font-semibold px-6 py-2.5 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-primary/30">
                 <a href="/loginPage">Sign In</a>
               </button>
               <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => document.documentElement.classList.toggle('dark')}>
@@ -41,7 +41,7 @@ const Home = () => {
         <div className="absolute inset-0 z-0">
           <img alt="Cinematic Indian film set lighting" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASv0wK05pmUB7hdtge6cXmTfVbFivmDR7cxfdhRGQsR7O7vO2GLo_gUkHBoHi0yg5r9A4C0OipBTaJPu2xfWF8ecnmbEkOSi_gTw3NqdQF2uLswegTwOfVF_9XXfZ9esaODaqS7Jdlwm9pKuWsP9EFgrCYeE6tr-j2tou5G7qt3AVLtnttqYsQFAJecmvn8J40HgjzSeIF3uqbIQ3_HwFA2ZgCOTOeMfoEFb_c41dauYzSLd9YwQ_06K0N4ecU8IjoQYeu-SWBwWch" />
           <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/80 to-transparent opacity-90 dark:opacity-95"></div>
-          <div className="absolute inset-0 bg-secondary/30 mix-blend-multiply"></div>
+          <div className="absolute inset-0 bg-black/40 mix-blend-multiply"></div>
         </div>
         <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto mt-16">
           <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium tracking-wider mb-6 uppercase">
@@ -86,7 +86,7 @@ const Home = () => {
         </div>
       </header>
 
-      <section className="py-12 bg-white dark:bg-secondary border-b border-gray-200 dark:border-gray-800">
+      <section className="py-12 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-center gap-4 md:gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
             <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">Bollywood</span>
@@ -199,7 +199,7 @@ const Home = () => {
       <RegionalSpotlight />
       <ForumSection />
 
-      <section className="py-20 bg-secondary relative overflow-hidden">
+      <section className="py-20 bg-background-dark relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
@@ -325,13 +325,13 @@ const Home = () => {
         </div>
       </section>
 
-      <footer className="bg-secondary text-gray-400 py-16 border-t border-gray-800">
+      <footer className="bg-background-dark text-gray-400 py-16 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center gap-2 mb-6">
                 <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
-                <span className="font-display font-bold text-xl tracking-wide text-white">TalentConnect</span>
+                <span className="font-display font-bold text-xl tracking-wide text-white">TALENT<span className="text-primary">CONNECT</span></span>
               </div>
               <p className="text-sm leading-relaxed mb-6">India's most trusted platform for discovering talent and casting for films, ads, and web series.</p>
               <div className="flex gap-4">
@@ -368,7 +368,7 @@ const Home = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 TalentConnect • Where Global Talent Meets Opportunity | Privacy Policy | Terms of Service</div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 TALENT<span className="text-primary">CONNECT</span> • Where Global Talent Meets Opportunity | Privacy Policy | Terms of Service</div>
         </div>
       </footer>
     </>

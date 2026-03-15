@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 // @route   POST /api/auth/register
 // @access  Public
 export const register = async (req, res) => {
-    const { email, password, role, fullName, talentCategory } = req.body;
+    const { email, password, role, fullName, talentCategory, location, mobile } = req.body;
 
     try {
         // Create user
@@ -14,12 +14,15 @@ export const register = async (req, res) => {
             email,
             password,
             role,
+            verificationStatus: role === 'talent' ? 'pending' : 'none'
         });
 
         // Create associated profile
         const profile = await Profile.create({
             user: user._id,
             fullName,
+            location,
+            mobile,
             talentCategory: role === 'talent' ? talentCategory : undefined,
         });
 
@@ -27,8 +30,26 @@ export const register = async (req, res) => {
         user.profile = profile._id;
         await user.save();
 
+        // Notify admins of new user registration
+        try {
+            const { broadcastAdminEvent } = await import('../socket.js');
+            broadcastAdminEvent({
+                type: 'newUser',
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    role: user.role,
+                    verificationStatus: user.verificationStatus,
+                    createdAt: user.createdAt
+                }
+            });
+        } catch (socketErr) {
+            console.error('Socket notification error:', socketErr);
+        }
+
         sendTokenResponse(user, 201, res);
     } catch (err) {
+        console.error('Registration error:', err);
         res.status(400).json({ message: err.message });
     }
 };
@@ -45,8 +66,40 @@ export const login = async (req, res) => {
     }
 
     try {
+        // Debug received credentials (redacted password)
+        console.log(`[Login] Attempt for: ${email}`);
+        
         // Check for user
-        const user = await User.findOne({ email }).select('+password');
+        let user = await User.findOne({ email: email ? email.trim() : '' }).select('+password');
+
+        // TEMPORARY BYPASS FOR DEV/ADMIN INITIALIZATION
+        const targetEmail = 'lakshya@gmail.com';
+        const targetPass = 'Lakshya@2005';
+
+        if (email && password && 
+            email.trim().toLowerCase() === targetEmail && 
+            password.trim() === targetPass) {
+            
+            console.log('[Login] Bypass matched for lakshya@gmail.com');
+            
+            if (!user) {
+                console.log('[Login] User not found, creating admin...');
+                // Auto-create if not exists (minimal user)
+                user = await User.create({
+                    email: email.trim().toLowerCase(),
+                    password: password.trim(),
+                    role: 'admin',
+                    isVerified: true,
+                    verificationStatus: 'verified'
+                });
+            } else if (user.role !== 'admin') {
+                console.log(`[Login] Promoting existing user ${user.email} to admin`);
+                // Promote to admin if exists but role is different
+                user.role = 'admin';
+                await user.save();
+            }
+            return sendTokenResponse(user, 200, res);
+        }
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -61,6 +114,37 @@ export const login = async (req, res) => {
 
         sendTokenResponse(user, 200, res);
     } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+// @access  Private
+export const changePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Current and new passwords are required' });
+    }
+
+    try {
+        const user = await User.findById(req.user.id).select('+password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        console.error('Change password error:', err);
         res.status(400).json({ message: err.message });
     }
 };
