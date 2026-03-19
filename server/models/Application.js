@@ -17,6 +17,23 @@ const applicationSchema = new mongoose.Schema(
             enum: ['applied', 'shortlisted', 'auditioning', 'rejected', 'selected'],
             default: 'applied',
         },
+        auditionScheduled: {
+            type: Boolean,
+            default: false,
+        },
+        auditionDate: {
+            type: Date,
+        },
+        auditionLocation: {
+            type: String, // Could be physical location or virtual meeting link
+        },
+        auditionNotes: {
+            type: String,
+            maxlength: [500, 'Audition notes cannot be more than 500 characters'],
+        },
+        videoSubmissionUrl: {
+            type: String, // URL to uploaded audition video
+        },
         note: {
             type: String,
             maxlength: [200, 'Note cannot be more than 200 characters'],

@@ -9,6 +9,8 @@ import {
     getMyProjects,
     updateApplicationStatus,
     getDirectorApplications,
+    scheduleAudition,
+    submitAuditionVideo,
 } from '../controllers/projectController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -25,8 +27,10 @@ router.get('/:id', getProject);
 router.post('/', protect, authorize('director', 'admin'), createProject);
 router.get('/:id/applications', protect, authorize('director', 'admin'), getProjectApplications);
 router.put('/applications/:appId/status', protect, authorize('director', 'admin'), updateApplicationStatus);
+router.put('/applications/:appId/schedule-audition', protect, authorize('director', 'admin'), scheduleAudition);
 
 // Talent only routes
 router.post('/:id/apply', protect, authorize('talent'), applyToProject);
+router.put('/applications/:appId/submit-video', protect, authorize('talent'), submitAuditionVideo);
 
 export default router;

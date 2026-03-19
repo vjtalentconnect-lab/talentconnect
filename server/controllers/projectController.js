@@ -221,6 +221,88 @@ export const updateApplicationStatus = async (req, res) => {
     }
 };
 
+// @desc    Schedule audition for application
+// @route   PUT /api/projects/applications/:appId/schedule-audition
+// @access  Private (Director only)
+export const scheduleAudition = async (req, res) => {
+    try {
+        const { auditionDate, auditionLocation, auditionNotes } = req.body;
+
+        const application = await Application.findById(req.params.appId).populate('project talent');
+        
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found' });
+        }
+
+        // Check if user is the director of the project
+        if (application.project.director.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to schedule auditions for this application' });
+        }
+
+        // Update audition details
+        application.auditionScheduled = true;
+        application.auditionDate = new Date(auditionDate);
+        application.auditionLocation = auditionLocation;
+        application.auditionNotes = auditionNotes;
+        application.status = 'auditioning'; // Update status to auditioning
+        await application.save();
+
+        // Notify Talent
+        const notification = await Notification.create({
+            user: application.talent._id,
+            type: 'audition_scheduled',
+            title: 'Audition Scheduled',
+            message: `Your audition for ${application.project.title} has been scheduled for ${new Date(auditionDate).toLocaleString()}`,
+            link: '/talent/audition-invites'
+        });
+
+        sendNotification(application.talent._id, notification);
+
+        res.status(200).json({ success: true, data: application });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+// @desc    Submit audition video
+// @route   PUT /api/projects/applications/:appId/submit-video
+// @access  Private (Talent only)
+export const submitAuditionVideo = async (req, res) => {
+    try {
+        const { videoUrl } = req.body;
+
+        const application = await Application.findById(req.params.appId).populate('project talent');
+        
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found' });
+        }
+
+        // Check if user is the talent who owns this application
+        if (application.talent._id.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to submit video for this application' });
+        }
+
+        // Update video submission
+        application.videoSubmissionUrl = videoUrl;
+        await application.save();
+
+        // Notify Director
+        const notification = await Notification.create({
+            user: application.project.director,
+            type: 'audition_submitted',
+            title: 'Audition Video Submitted',
+            message: `${application.talent.profile?.fullName || 'Talent'} has submitted their audition video for ${application.project.title}`,
+            link: '/director/auditions'
+        });
+
+        sendNotification(application.project.director, notification);
+
+        res.status(200).json({ success: true, data: application });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
 // @desc    Get all applications for director's projects
 // @route   GET /api/projects/my-applications/director
 // @access  Private (Director only)

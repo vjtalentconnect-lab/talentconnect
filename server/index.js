@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
@@ -16,6 +17,7 @@ import profileRoutes from './routes/profileRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import { init as initSocket } from './socket.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
@@ -35,11 +37,62 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
     cors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) return callback(null, true);
+            
+            const allowedOrigins = [
+                process.env.FRONTEND_URL || 'http://localhost:5173',
+                'http://localhost:3000', // Alternative dev port
+                'https://talentconnect.vercel.app', // Production domain (example)
+            ];
+            
+            if (allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     })
 );
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https:", "http:"],
+            scriptSrc: ["'self'"],
+            connectSrc: ["'self'", "https://api.stripe.com", "ws:", "wss:"],
+        },
+    },
+    crossOriginEmbedderPolicy: false, // Allow embedding for Stripe
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Stricter rate limiting for auth routes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 auth attempts per windowMs
+    message: 'Too many authentication attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply general rate limiting
+app.use(limiter);
+
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Cache-Control for GET requests
@@ -51,12 +104,13 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

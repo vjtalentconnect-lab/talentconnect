@@ -70,36 +70,7 @@ export const login = async (req, res) => {
         console.log(`[Login] Attempt for: ${email}`);
         
         // Check for user
-        let user = await User.findOne({ email: email ? email.trim() : '' }).select('+password');
-
-        // TEMPORARY BYPASS FOR DEV/ADMIN INITIALIZATION
-        const targetEmail = 'lakshya@gmail.com';
-        const targetPass = 'Lakshya@2005';
-
-        if (email && password && 
-            email.trim().toLowerCase() === targetEmail && 
-            password.trim() === targetPass) {
-            
-            console.log('[Login] Bypass matched for lakshya@gmail.com');
-            
-            if (!user) {
-                console.log('[Login] User not found, creating admin...');
-                // Auto-create if not exists (minimal user)
-                user = await User.create({
-                    email: email.trim().toLowerCase(),
-                    password: password.trim(),
-                    role: 'admin',
-                    isVerified: true,
-                    verificationStatus: 'verified'
-                });
-            } else if (user.role !== 'admin') {
-                console.log(`[Login] Promoting existing user ${user.email} to admin`);
-                // Promote to admin if exists but role is different
-                user.role = 'admin';
-                await user.save();
-            }
-            return sendTokenResponse(user, 200, res);
-        }
+        const user = await User.findOne({ email: email ? email.trim() : '' }).select('+password');
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });

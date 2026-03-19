@@ -1,20 +1,40 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import StripeProvider from '../components/StripeProvider';
+import CheckoutForm from '../components/CheckoutForm';
 
 const DirectorCheckout = () => {
     const navigate = useNavigate();
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [isSavingCard, setIsSavingCard] = useState(true);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
 
     const handleBack = () => {
         navigate(-1);
     };
 
-    const handleUpgrade = () => {
-        // This would typically integrate with a payment gateway
-        alert('Payment processing would happen here. Redirecting to dashboard...');
-        navigate('/dashboard/director');
+    const handlePaymentSuccess = (paymentIntent) => {
+        setPaymentSuccess(true);
+        setTimeout(() => {
+            navigate('/dashboard/director');
+        }, 2000);
     };
+
+    const handlePaymentError = (error) => {
+        console.error('Payment error:', error);
+    };
+
+    if (paymentSuccess) {
+        return (
+            <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen font-display flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="text-6xl">🎉</div>
+                    <h1 className="text-2xl font-bold text-white">Payment Successful!</h1>
+                    <p className="text-slate-300">Welcome to Studio Pro! Redirecting to your dashboard...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen font-display">
@@ -99,61 +119,31 @@ const DirectorCheckout = () => {
                                 {/* Form Content */}
                                 <div className="space-y-4 pt-4 min-h-[300px]">
                                     {paymentMethod === 'card' && (
-                                        <div className="space-y-4 animate-in fade-in duration-300">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">Cardholder Name</label>
-                                                <input className="w-full bg-surface-dark border-border-dark rounded-lg focus:ring-primary focus:border-primary text-slate-100 p-3 outline-none" placeholder="John Doe" type="text" />
-                                            </div>
-                                            <div className="space-y-2 relative">
-                                                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">Card Number</label>
-                                                <div className="relative">
-                                                    <input className="w-full bg-surface-dark border-border-dark rounded-lg focus:ring-primary focus:border-primary text-slate-100 p-3 pl-12 outline-none" placeholder="0000 0000 0000 0000" type="text" />
-                                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">credit_card</span>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300">Expiry Date</label>
-                                                    <input className="w-full bg-surface-dark border-border-dark rounded-lg focus:ring-primary focus:border-primary text-slate-100 p-3 outline-none" placeholder="MM / YY" type="text" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300">CVV</label>
-                                                    <input className="w-full bg-surface-dark border-border-dark rounded-lg focus:ring-primary focus:border-primary text-slate-100 p-3 outline-none" placeholder="***" type="password" />
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 pt-2">
-                                                <input 
-                                                    checked={isSavingCard} 
-                                                    onChange={(e) => setIsSavingCard(e.target.checked)}
-                                                    className="h-5 w-5 rounded border-border-dark bg-transparent text-primary focus:ring-0 cursor-pointer" 
-                                                    type="checkbox" 
-                                                />
-                                                <label className="text-sm text-slate-300 cursor-pointer">Save this card for future faster payments</label>
-                                            </div>
-                                        </div>
+                                        <StripeProvider>
+                                            <CheckoutForm
+                                                planType="studio_pro"
+                                                onSuccess={handlePaymentSuccess}
+                                                onError={handlePaymentError}
+                                            />
+                                        </StripeProvider>
                                     )}
 
                                     {paymentMethod === 'upi' && (
                                         <div className="space-y-4 animate-in fade-in duration-300">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">UPI ID</label>
-                                                <input className="w-full bg-surface-dark border-border-dark rounded-lg focus:ring-primary focus:border-primary text-slate-100 p-3 outline-none" placeholder="username@upi" type="text" />
+                                            <div className="p-6 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                                                <p className="text-yellow-400 text-sm">
+                                                    UPI integration coming soon. Please use card payment for now.
+                                                </p>
                                             </div>
-                                            <p className="text-xs text-slate-400">A payment request will be sent to your UPI app.</p>
                                         </div>
                                     )}
 
                                     {paymentMethod === 'netbanking' && (
                                         <div className="space-y-4 animate-in fade-in duration-300">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">Select Your Bank</label>
-                                                <select className="w-full bg-surface-dark border-border-dark rounded-lg focus:ring-primary focus:border-primary text-slate-100 p-3 outline-none">
-                                                    <option>State Bank of India</option>
-                                                    <option>HDFC Bank</option>
-                                                    <option>ICICI Bank</option>
-                                                    <option>Axis Bank</option>
-                                                    <option>Kotak Mahindra Bank</option>
-                                                </select>
+                                            <div className="p-6 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                                                <p className="text-yellow-400 text-sm">
+                                                    Net Banking integration coming soon. Please use card payment for now.
+                                                </p>
                                             </div>
                                         </div>
                                     )}
@@ -174,33 +164,26 @@ const DirectorCheckout = () => {
                                                 <p className="font-bold text-slate-100">Studio Pro Plan</p>
                                                 <p className="text-xs text-slate-300">Monthly subscription</p>
                                             </div>
-                                            <p className="font-bold text-white">₹4,999.00</p>
+                                            <p className="font-bold text-white">$999.00</p>
                                         </div>
                                         <div className="space-y-2 border-t border-border-dark pt-4">
                                             <div className="flex justify-between text-sm text-slate-300">
                                                 <span>Subtotal</span>
-                                                <span>₹4,999.00</span>
+                                                <span>$999.00</span>
                                             </div>
                                             <div className="flex justify-between text-sm text-slate-300">
-                                                <span>GST (18%)</span>
-                                                <span>₹899.82</span>
+                                                <span>Tax</span>
+                                                <span>$0.00</span>
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-center border-t border-border-dark pt-4 mt-4">
                                             <span className="text-xl font-bold text-white">Total Amount</span>
-                                            <span className="text-2xl font-black text-primary">₹5,898.82</span>
+                                            <span className="text-2xl font-black text-primary">$999.00</span>
                                         </div>
                                     </div>
                                     <div className="p-6 bg-background-dark/50">
-                                        <button 
-                                            onClick={handleUpgrade}
-                                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]"
-                                        >
-                                            <span className="material-symbols-outlined">lock</span>
-                                            Authorize & Upgrade
-                                        </button>
-                                        <p className="text-[10px] text-center text-slate-400 mt-4 leading-relaxed uppercase tracking-widest">
-                                            By clicking Authorize, you agree to our Terms of Service and Privacy Policy.
+                                        <p className="text-[10px] text-center text-slate-400 leading-relaxed uppercase tracking-widest">
+                                            By proceeding with payment, you agree to our Terms of Service and Privacy Policy.
                                         </p>
                                     </div>
                                 </div>

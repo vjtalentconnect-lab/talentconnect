@@ -36,6 +36,16 @@ const userSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Profile',
         },
+        plan: {
+            type: String,
+            enum: ['free', 'studio_pro'],
+            default: 'free',
+        },
+        subscriptionStatus: {
+            type: String,
+            enum: ['inactive', 'active', 'cancelled'],
+            default: 'inactive',
+        },
     },
     {
         timestamps: true,

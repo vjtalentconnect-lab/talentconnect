@@ -2,13 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getMyProfile } from '../services/profileService';
-import { getDirectorApplications, updateApplicationStatus } from '../services/projectService';
+import { getDirectorApplications, updateApplicationStatus, scheduleAudition } from '../services/projectService';
 import { DIRECTOR_MENU } from '../constants/navigation';
 
 const AuditionRequests = () => {
     const [profile, setProfile] = useState(null);
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [selectedApplication, setSelectedApplication] = useState(null);
+    const [scheduleForm, setScheduleForm] = useState({
+        auditionDate: '',
+        auditionLocation: '',
+        auditionNotes: ''
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -38,6 +45,27 @@ const AuditionRequests = () => {
             console.error('Error updating status:', err);
             alert('Failed to update status');
         }
+    };
+
+    const handleScheduleAudition = async () => {
+        try {
+            await scheduleAudition(selectedApplication._id, scheduleForm);
+            setShowScheduleModal(false);
+            setSelectedApplication(null);
+            setScheduleForm({ auditionDate: '', auditionLocation: '', auditionNotes: '' });
+            // Refresh applications
+            const appsRes = await getDirectorApplications('auditioning');
+            setApplications(appsRes.data);
+            alert('Audition scheduled successfully!');
+        } catch (err) {
+            console.error('Error scheduling audition:', err);
+            alert('Failed to schedule audition');
+        }
+    };
+
+    const openScheduleModal = (application) => {
+        setSelectedApplication(application);
+        setShowScheduleModal(true);
     };
 
     const userData = {
@@ -199,7 +227,13 @@ const AuditionRequests = () => {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="p-6 bg-slate-50 dark:bg-white/5 border-t border-slate-100 dark:border-border-dark grid grid-cols-2 gap-4">
+                                                    <div className="p-6 bg-slate-50 dark:bg-white/5 border-t border-slate-100 dark:border-border-dark grid grid-cols-3 gap-3">
+                                                        <button 
+                                                            onClick={() => openScheduleModal(app)} 
+                                                            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
+                                                        >
+                                                            Schedule Audition
+                                                        </button>
                                                         <button onClick={() => handleStatusUpdate(app._id, 'selected')} className="w-full bg-primary py-3 rounded-xl font-bold text-white text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all">
                                                             Cast {profile?.fullName?.split(' ')[0]}
                                                         </button>
@@ -263,6 +297,79 @@ const AuditionRequests = () => {
             <footer className="mt-auto py-6 px-8 border-t border-slate-200 dark:border-border-dark text-center">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">© 2026 TalentConnect Entertainment • Casting Partner: Cinematic Solutions</p>
             </footer>
+
+            {/* Schedule Audition Modal */}
+            {showScheduleModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-card-dark rounded-2xl max-w-md w-full p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xl font-bold">Schedule Audition</h3>
+                            <button 
+                                onClick={() => setShowScheduleModal(false)}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                    Audition Date & Time
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={scheduleForm.auditionDate}
+                                    onChange={(e) => setScheduleForm({...scheduleForm, auditionDate: e.target.value})}
+                                    className="w-full bg-surface-dark border border-border-dark rounded-lg p-3 text-slate-100"
+                                    min={new Date().toISOString().slice(0, 16)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                    Location/Meeting Link
+                                </label>
+                                <input
+                                    type="text"
+                                    value={scheduleForm.auditionLocation}
+                                    onChange={(e) => setScheduleForm({...scheduleForm, auditionLocation: e.target.value})}
+                                    placeholder="Physical location or video call link"
+                                    className="w-full bg-surface-dark border border-border-dark rounded-lg p-3 text-slate-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                    Notes for Talent
+                                </label>
+                                <textarea
+                                    value={scheduleForm.auditionNotes}
+                                    onChange={(e) => setScheduleForm({...scheduleForm, auditionNotes: e.target.value})}
+                                    placeholder="Any specific instructions or requirements..."
+                                    rows={3}
+                                    className="w-full bg-surface-dark border border-border-dark rounded-lg p-3 text-slate-100 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowScheduleModal(false)}
+                                className="flex-1 border border-border-dark text-slate-600 dark:text-slate-400 py-3 rounded-lg font-bold hover:bg-slate-50 dark:hover:bg-white/5"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleScheduleAudition}
+                                className="flex-1 bg-primary text-white py-3 rounded-lg font-bold hover:bg-primary/90"
+                            >
+                                Schedule Audition
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 };

@@ -46,3 +46,13 @@ export const updateApplicationStatus = async (appId, status) => {
     const response = await api.put(`/projects/applications/${appId}/status`, { status });
     return response.data;
 };
+
+export const scheduleAudition = async (appId, auditionData) => {
+    const response = await api.put(`/projects/applications/${appId}/schedule-audition`, auditionData);
+    return response.data;
+};
+
+export const submitAuditionVideo = async (appId, videoUrl) => {
+    const response = await api.put(`/projects/applications/${appId}/submit-video`, { videoUrl });
+    return response.data;
+};
