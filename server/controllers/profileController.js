@@ -1,6 +1,5 @@
-import Profile from '../models/Profile.js';
-import User from '../models/User.js';
-import Notification from '../models/Notification.js';
+import { db } from '../lib/firebaseAdmin.js';
+import { uploadToFirebase } from '../utils/firebaseStorage.js';
 import { broadcastAdminEvent, sendNotification } from '../socket.js';
 
 // @desc    Get current user profile
@@ -8,11 +7,11 @@ import { broadcastAdminEvent, sendNotification } from '../socket.js';
 // @access  Private
 export const getMyProfile = async (req, res) => {
     try {
-        const profile = await Profile.findOne({ user: req.user.id }).populate('user', 'email role isVerified verificationStatus');
-        if (!profile) {
+        const profileSnapshot = await db.collection('profiles').where('user', '==', req.user.id).limit(1).get();
+        if (profileSnapshot.empty) {
             // Check if user is an admin and auto-generated without a profile
-            const user = await User.findById(req.user.id);
-            if (user && user.role === 'admin') {
+            const userDoc = await db.collection('users').doc(req.user.id).get();
+            if (userDoc.exists && userDoc.data().role === 'admin') {
                  return res.status(200).json({ 
                      success: true, 
                      data: { fullName: 'Super Admin', _id: 'admin_profile', role: 'admin' } 
@@ -20,6 +19,26 @@ export const getMyProfile = async (req, res) => {
             }
             return res.status(404).json({ message: 'Profile not found' });
         }
+        
+        const profileData = profileSnapshot.docs[0].data();
+        const profileId = profileSnapshot.docs[0].id;
+
+        // Populate user data
+        const userDoc = await db.collection('users').doc(profileData.user).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        
+        const profile = { 
+            id: profileId, 
+            ...profileData, 
+            user: { 
+                id: userDoc.id, 
+                email: userData.email, 
+                role: userData.role, 
+                isVerified: userData.isVerified, 
+                verificationStatus: userData.verificationStatus 
+            } 
+        };
+
         res.status(200).json({ success: true, data: profile });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -31,32 +50,33 @@ export const getMyProfile = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
     try {
-        let profile = await Profile.findOne({ user: req.user.id });
+        const profileSnapshot = await db.collection('profiles')
+            .where('user', '==', req.user.id)
+            .limit(1)
+            .get();
 
-        if (!profile) {
-            profile = await Profile.create({ ...req.body, user: req.user.id });
+        let profileData = { ...req.body, updatedAt: new Date().toISOString() };
+        let profileId;
+
+        if (profileSnapshot.empty) {
+            profileData.user = req.user.id;
+            profileData.createdAt = new Date().toISOString();
+            const docRef = await db.collection('profiles').add(profileData);
+            profileId = docRef.id;
         } else {
-            // Prepare update data to handle nested objects correctly
-            const updateData = { ...req.body };
+            profileId = profileSnapshot.docs[0].id;
+            const existingData = profileSnapshot.docs[0].data();
             
-            // Handle nested objects by using dots to avoid overwriting
-            ['verificationState', 'socialLinks', 'physicalMetrics', 'privacySettings'].forEach(key => {
-                if (updateData[key]) {
-                    Object.keys(updateData[key]).forEach(subKey => {
-                        updateData[`${key}.${subKey}`] = updateData[key][subKey];
-                    });
-                    delete updateData[key];
-                }
-            });
+            // Prepare update data to handle nested objects correctly
+            // Firestore merged update handles nested fields if you provide paths or just merge manually
+            const updateData = { ...req.body, updatedAt: new Date().toISOString() };
 
-            profile = await Profile.findOneAndUpdate(
-                { user: req.user.id },
-                { $set: updateData },
-                { new: true, runValidators: true }
-            );
+            await db.collection('profiles').doc(profileId).update(updateData);
+            const updatedDoc = await db.collection('profiles').doc(profileId).get();
+            profileData = updatedDoc.data();
         }
 
-        res.status(200).json({ success: true, data: profile });
+        res.status(200).json({ success: true, data: { id: profileId, ...profileData } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -67,11 +87,24 @@ export const updateProfile = async (req, res) => {
 // @access  Public
 export const getProfileById = async (req, res) => {
     try {
-        const profile = await Profile.findById(req.params.id).populate('user', 'email role');
-        if (!profile) {
+        const profileDoc = await db.collection('profiles').doc(req.params.id).get();
+        if (!profileDoc.exists) {
             return res.status(404).json({ message: 'Profile not found' });
         }
-        res.status(200).json({ success: true, data: profile });
+        const profileData = profileDoc.data();
+
+        // Populate user data
+        const userDoc = await db.collection('users').doc(profileData.user).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+
+        res.status(200).json({ 
+            success: true, 
+            data: { 
+                id: profileDoc.id, 
+                ...profileData, 
+                user: { id: userDoc.id, email: userData.email, role: userData.role } 
+            } 
+        });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -82,24 +115,53 @@ export const getProfileById = async (req, res) => {
 // @access  Public
 export const getProfiles = async (req, res) => {
     try {
-        const { talentCategory, location, skills, eyeColor, hairColor, minHeight, maxHeight, gender } = req.query;
-        let query = {};
+        const { talentCategory, location, skills, eyeColor, hairColor, minHeight, maxHeight } = req.query;
+        let query = db.collection('profiles');
 
-        if (talentCategory) query.talentCategory = talentCategory;
-        if (location) query.location = new RegExp(location, 'i');
-        if (skills) query.skills = { $in: skills.split(',') };
-        if (eyeColor) query['physicalMetrics.eyeColor'] = eyeColor;
-        if (hairColor) query['physicalMetrics.hairColor'] = hairColor;
+        if (talentCategory) {
+            query = query.where('talentCategory', '==', talentCategory);
+        }
         
-        // Height range filter
-        if (minHeight || maxHeight) {
-            query['physicalMetrics.height'] = {};
-            if (minHeight) query['physicalMetrics.height'].$gte = minHeight;
-            if (maxHeight) query['physicalMetrics.height'].$lte = maxHeight;
+        // Note: Firestore doesn't support native RegEx or $in efficiently like Mongoose.
+        // For simplicity and matching the old logic, we'll fetch then filter if needed, 
+        // but for primary filters we use where.
+        
+        const snapshot = await query.get();
+        let profiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Manual filtering for fields Firestore where can't handle easily (like case-insensitive Regex)
+        if (location) {
+            const regex = new RegExp(location, 'i');
+            profiles = profiles.filter(p => regex.test(p.location));
+        }
+        if (skills) {
+            const skillList = skills.split(',');
+            profiles = profiles.filter(p => p.skills && p.skills.some(s => skillList.includes(s)));
+        }
+        if (eyeColor) {
+            profiles = profiles.filter(p => p.physicalMetrics?.eyeColor === eyeColor);
+        }
+        if (hairColor) {
+            profiles = profiles.filter(p => p.physicalMetrics?.hairColor === hairColor);
+        }
+        if (minHeight) {
+            profiles = profiles.filter(p => p.physicalMetrics?.height >= minHeight);
+        }
+        if (maxHeight) {
+            profiles = profiles.filter(p => p.physicalMetrics?.height <= maxHeight);
         }
 
-        const profiles = await Profile.find(query).populate('user', 'email role');
-        res.status(200).json({ success: true, count: profiles.length, data: profiles });
+        // Populate user info for each profile
+        const populatedProfiles = await Promise.all(profiles.map(async (p) => {
+            const userDoc = await db.collection('users').doc(p.user).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+            return {
+                ...p,
+                user: { id: userDoc.id, email: userData.email, role: userData.role }
+            };
+        }));
+
+        res.status(200).json({ success: true, count: populatedProfiles.length, data: populatedProfiles });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -114,41 +176,51 @@ export const uploadMedia = async (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const profile = await Profile.findOne({ user: req.user.id });
-        if (!profile) {
+        const profileSnapshot = await db.collection('profiles').where('user', '==', req.user.id).limit(1).get();
+        if (profileSnapshot.empty) {
             return res.status(404).json({ message: 'Profile not found' });
         }
 
-        const fileUrl = req.file.path; // Cloudinary URL
+        const profileId = profileSnapshot.docs[0].id;
+        const profileData = profileSnapshot.docs[0].data();
+
+        // Upload to Firebase Storage
+        const fileUrl = await uploadToFirebase(req.file.buffer, req.file.originalname, 'profiles');
         const { type } = req.body; // 'profilePicture' or 'portfolio'
 
+        const updateData = {};
+
         if (type === 'profilePicture') {
-            profile.profilePicture = fileUrl;
+            updateData.profilePicture = fileUrl;
         } else if (type === 'portfolio') {
-            profile.portfolio.push({
+            const portfolio = profileData.portfolio || [];
+            portfolio.push({
                 type: req.file.mimetype.startsWith('video') ? 'video' : 'image',
                 url: fileUrl,
                 title: req.body.title || 'Untitled',
                 description: req.body.description || ''
             });
+            updateData.portfolio = portfolio;
         } else if (['idFile', 'membershipCard', 'videoSelfie'].includes(type)) {
-            if (!profile.verificationState) profile.verificationState = {};
+            const vs = profileData.verificationState || {};
             
             if (type === 'idFile') {
-                profile.verificationState.idFileUrl = fileUrl;
-                profile.verificationState.idType = req.body.idType;
+                vs.idFileUrl = fileUrl;
+                vs.idType = req.body.idType;
             } else if (type === 'membershipCard') {
-                profile.verificationState.membershipCardUrl = fileUrl;
-                profile.verificationState.membershipId = req.body.membershipId;
-                profile.verificationState.associationName = req.body.associationName;
+                vs.membershipCardUrl = fileUrl;
+                vs.membershipId = req.body.membershipId;
+                vs.associationName = req.body.associationName;
             } else if (type === 'videoSelfie') {
-                profile.verificationState.videoSelfieUrl = fileUrl;
+                vs.videoSelfieUrl = fileUrl;
             }
+            updateData.verificationState = vs;
         }
 
-        await profile.save();
-        res.status(200).json({ success: true, data: profile });
+        await db.collection('profiles').doc(profileId).update(updateData);
+        res.status(200).json({ success: true, data: { ...profileData, ...updateData } });
     } catch (err) {
+        console.error('Upload Error:', err);
         res.status(400).json({ message: err.message });
     }
 };
@@ -158,30 +230,37 @@ export const uploadMedia = async (req, res) => {
 // @access  Private
 export const submitForVerification = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        const userDoc = await db.collection('users').doc(req.user.id).get();
+        if (!userDoc.exists) return res.status(404).json({ message: 'User not found' });
 
-        user.verificationStatus = 'pending';
-        user.isVerified = false;
-        await user.save();
+        await db.collection('users').doc(req.user.id).update({
+            verificationStatus: 'pending',
+            isVerified: false
+        });
 
         // Notify admins and emit realtime event
-        const admins = await User.find({ role: 'admin' }).select('_id');
-        const adminNotifications = admins.map((admin) =>
-            Notification.create({
-                user: admin._id,
+        const adminsSnapshot = await db.collection('users').where('role', '==', 'admin').get();
+        
+        const adminNotifications = adminsSnapshot.docs.map(async (adminDoc) => {
+            const notificationDoc = {
+                user: adminDoc.id,
                 type: 'verification',
                 title: 'Verification Requested',
-                message: `${user.email} submitted verification`,
-                link: '/admin/verifications'
-            })
-        );
+                message: `${userDoc.data().email} submitted verification`,
+                link: '/admin/verifications',
+                createdAt: new Date().toISOString()
+            };
+            const noteRef = await db.collection('notifications').add(notificationDoc);
+            return { id: noteRef.id, ...notificationDoc };
+        });
+
         const adminNotes = await Promise.all(adminNotifications);
         adminNotes.forEach((note) => sendNotification(note.user, note));
+        
         broadcastAdminEvent({
             type: 'verification_requested',
-            user: user.email,
-            userId: user._id,
+            user: userDoc.data().email,
+            userId: userDoc.id,
             createdAt: new Date().toISOString(),
         });
 

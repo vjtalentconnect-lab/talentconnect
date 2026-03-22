@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
+import { useNotifications } from '../context/NotificationContext';
 import { getMyProfile } from '../services/profileService';
 import { getProject } from '../services/projectService';
 
@@ -19,6 +20,7 @@ const AuditionDetails = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
@@ -79,6 +81,7 @@ const AuditionDetails = () => {
 
     return (
         <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist" userData={userData}
+            verificationStatus={profile?.user?.verificationStatus || authUser?.verificationStatus || 'none'}
             headerTitle="Audition Details" headerSubtitle="Review the requirements and prepare for your screen test.">
             {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 

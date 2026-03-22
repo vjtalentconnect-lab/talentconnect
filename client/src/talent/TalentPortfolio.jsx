@@ -1,7 +1,10 @@
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU, DIRECTOR_MENU, ADMIN_MENU } from '../constants/navigation';
 import { getMyProfile, getProfileById, updateProfile, uploadMedia } from '../services/profileService';
 import { getMyApplications } from '../services/projectService';
+import { useNotifications } from '../context/NotificationContext';
 
 const Toast = ({ message, type, onDone }) => {
     useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, []);
@@ -16,6 +19,7 @@ const Toast = ({ message, type, onDone }) => {
 const TalentPortfolio = () => {
     const { id } = useParams();
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [viewerProfile, setViewerProfile] = useState(null);
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -80,6 +84,10 @@ const TalentPortfolio = () => {
             }
         };
         fetchData();
+
+        // Listen for real-time verification updates
+        window.addEventListener('userStateChange', fetchData);
+        return () => window.removeEventListener('userStateChange', fetchData);
     }, [id]);
 
     const showToast = (msg, type = 'success') => setToast({ message: msg, type });
@@ -164,6 +172,7 @@ const TalentPortfolio = () => {
         <DashboardLayout 
             menuItems={menuItems} 
             userData={navUserData}
+            verificationStatus={profile?.user?.verificationStatus || authUser?.verificationStatus || 'none'}
             headerTitle={isOwnProfile ? "Portfolio Control" : "Talent Profile"} 
             headerSubtitle={isOwnProfile ? "Manage your public StarCast identity." : `Reviewing ${profile?.fullName}'s professional background.`}
         >

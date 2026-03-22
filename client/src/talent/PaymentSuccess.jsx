@@ -41,7 +41,7 @@ const Confetti = () => {
 
 const PaymentSuccess = () => {
     const location = useLocation();
-    const order = location.state || { plan: 'Pro Artist', price: 999, billing: 'monthly', orderId: '#TCA-XYZ123' };
+    const order = location.state || { plan: 'Pro Artist', price: 99, billing: 'monthly', orderId: '#TCA-XYZ123' };
     const cardRef = useRef(null);
 
     useEffect(() => {

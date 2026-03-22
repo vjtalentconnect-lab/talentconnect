@@ -1,8 +1,5 @@
-import Message from '../models/Message.js';
-import User from '../models/User.js';
-import Notification from '../models/Notification.js';
+import { db } from '../lib/firebaseAdmin.js';
 import { sendNotification } from '../socket.js';
-import Profile from '../models/Profile.js';
 
 // @desc    Send a message
 // @route   POST /api/messages
@@ -11,31 +8,37 @@ export const sendMessage = async (req, res) => {
     const { receiverId, content } = req.body;
 
     try {
-        const receiver = await User.findById(receiverId);
-        if (!receiver) {
+        const receiverDoc = await db.collection('users').doc(receiverId).get();
+        if (!receiverDoc.exists) {
             return res.status(404).json({ message: 'Receiver not found' });
         }
 
-        const message = await Message.create({
+        const messageData = {
             sender: req.user.id,
             receiver: receiverId,
             content,
-        });
+            createdAt: new Date().toISOString()
+        };
+
+        const msgRef = await db.collection('messages').add(messageData);
+        const message = { id: msgRef.id, ...messageData };
 
         // Get sender profile for name
-        const senderProfile = await Profile.findOne({ user: req.user.id });
+        const senderProfileSnapshot = await db.collection('profiles').where('user', '==', req.user.id).limit(1).get();
+        const senderProfile = !senderProfileSnapshot.empty ? senderProfileSnapshot.docs[0].data() : null;
         const senderName = senderProfile?.fullName || 'Someone';
 
         // Notify Receiver
-        const notification = await Notification.create({
+        const notificationDoc = {
             user: receiverId,
             type: 'message',
             title: 'New Message',
             message: `You have a new message from ${senderName}`,
-            link: req.user.role === 'talent' ? '/director/messages' : '/talent/messages'
-        });
-
-        sendNotification(receiverId, notification);
+            link: req.user.role === 'talent' ? '/director/messages' : '/talent/messages',
+            createdAt: new Date().toISOString()
+        };
+        const noteRef = await db.collection('notifications').add(notificationDoc);
+        sendNotification(receiverId, { id: noteRef.id, ...notificationDoc });
 
         res.status(201).json({ success: true, data: message });
     } catch (err) {
@@ -48,12 +51,24 @@ export const sendMessage = async (req, res) => {
 // @access  Private
 export const getMessages = async (req, res) => {
     try {
-        const messages = await Message.find({
-            $or: [
-                { sender: req.user.id, receiver: req.params.userId },
-                { sender: req.params.userId, receiver: req.user.id },
-            ],
-        }).sort('createdAt');
+        // Firestore doesn't support $or across different fields easily without complex indexing or manual merging.
+        // We'll fetch sent and received messages separately and merge.
+        const sentSnapshot = await db.collection('messages')
+            .where('sender', '==', req.user.id)
+            .where('receiver', '==', req.params.userId)
+            .get();
+        
+        const receivedSnapshot = await db.collection('messages')
+            .where('sender', '==', req.params.userId)
+            .where('receiver', '==', req.user.id)
+            .get();
+        
+        const messages = [
+            ...sentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+            ...receivedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        ];
+
+        messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
         res.status(200).json({ success: true, data: messages });
     } catch (err) {
@@ -66,24 +81,33 @@ export const getMessages = async (req, res) => {
 // @access  Private
 export const getConversations = async (req, res) => {
     try {
-        // Find all unique users who have sent/received messages to/from the current user
-        const messages = await Message.find({
-            $or: [{ sender: req.user.id }, { receiver: req.user.id }],
-        }).populate('sender receiver', 'email profile');
+        const sentSnapshot = await db.collection('messages').where('sender', '==', req.user.id).get();
+        const receivedSnapshot = await db.collection('messages').where('receiver', '==', req.user.id).get();
 
-        // Extract unique users (other than current user)
-        const conversations = [];
-        const userIds = new Set();
+        const messages = [
+            ...sentSnapshot.docs.map(doc => doc.data()),
+            ...receivedSnapshot.docs.map(doc => doc.data())
+        ];
 
+        const otherUserIds = new Set();
         messages.forEach((msg) => {
-            const otherUser = msg.sender._id.toString() === req.user.id ? msg.receiver : msg.sender;
-            if (!userIds.has(otherUser._id.toString())) {
-                userIds.add(otherUser._id.toString());
-                conversations.push(otherUser);
-            }
+            const otherId = msg.sender === req.user.id ? msg.receiver : msg.sender;
+            otherUserIds.add(otherId);
         });
 
-        res.status(200).json({ success: true, data: conversations });
+        const conversations = await Promise.all(Array.from(otherUserIds).map(async (uid) => {
+            const uDoc = await db.collection('users').doc(uid).get();
+            if (!uDoc.exists) return null;
+            const uData = uDoc.data();
+            let profileData = null;
+            if (uData.profile) {
+                const pDoc = await db.collection('profiles').doc(uData.profile).get();
+                profileData = pDoc.exists ? { id: pDoc.id, ...pDoc.data() } : null;
+            }
+            return { id: uDoc.id, email: uData.email, profile: profileData };
+        }));
+
+        res.status(200).json({ success: true, data: conversations.filter(c => c !== null) });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }

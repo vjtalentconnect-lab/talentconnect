@@ -1,29 +1,24 @@
-import User from '../models/User.js';
-import Profile from '../models/Profile.js';
-import Project from '../models/Project.js';
-import Application from '../models/Application.js';
-import Message from '../models/Message.js';
-import Notification from '../models/Notification.js';
+import { db } from '../lib/firebaseAdmin.js';
 
 // @desc    Get platform stats
 // @route   GET /api/admin/stats
 // @access  Private (Admin)
 export const getStats = async (req, res) => {
     try {
-        const totalTalent = await User.countDocuments({ role: 'talent' });
-        const totalDirectors = await User.countDocuments({ role: 'director' });
-        const pendingVerifications = await User.countDocuments({ verificationStatus: 'pending' });
-        const totalProjects = await Project.countDocuments();
-        const totalApplications = await Application.countDocuments();
+        const talentSnapshot = await db.collection('users').where('role', '==', 'talent').get();
+        const directorSnapshot = await db.collection('users').where('role', '==', 'director').get();
+        const pendingSnapshot = await db.collection('users').where('verificationStatus', '==', 'pending').get();
+        const projectsSnapshot = await db.collection('projects').get();
+        const applicationsSnapshot = await db.collection('applications').get();
 
         res.status(200).json({
             success: true,
             data: {
-                totalTalent,
-                totalDirectors,
-                pendingVerifications,
-                totalProjects,
-                totalApplications,
+                totalTalent: talentSnapshot.size,
+                totalDirectors: directorSnapshot.size,
+                pendingVerifications: pendingSnapshot.size,
+                totalProjects: projectsSnapshot.size,
+                totalApplications: applicationsSnapshot.size,
                 revenue: 'INR 14.2L', // Placeholder for now
                 growth: '+12%',
             },
@@ -38,7 +33,17 @@ export const getStats = async (req, res) => {
 // @access  Private (Admin)
 export const getUsers = async (req, res) => {
     try {
-        const users = await User.find().populate('profile');
+        const snapshot = await db.collection('users').get();
+        const users = await Promise.all(snapshot.docs.map(async (doc) => {
+            const userData = doc.data();
+            let profileData = null;
+            if (userData.profile) {
+                const profileDoc = await db.collection('profiles').doc(userData.profile).get();
+                profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
+            }
+            return { id: doc.id, ...userData, profile: profileData };
+        }));
+
         console.log(`[AdminController] Fetched ${users.length} users`);
         res.status(200).json({ success: true, count: users.length, data: users });
     } catch (err) {
@@ -52,14 +57,28 @@ export const getUsers = async (req, res) => {
 // @access  Private (Admin)
 export const getPendingVerifications = async (req, res) => {
     try {
-        const users = await User.find({ 
-            role: { $ne: 'admin' },
-            verificationStatus: { $in: ['pending', 'none'] } 
-        })
-        .populate('profile')
-        .sort({ updatedAt: -1 });
+        // Firestore doesn't support $in and $ne together in simple queries easily.
+        // We'll fetch and filter.
+        const snapshot = await db.collection('users').get();
+        let usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        res.status(200).json({ success: true, count: users.length, data: users });
+        const filteredUsers = usersData.filter(u => 
+            u.role !== 'admin' && 
+            ['pending', 'none'].includes(u.verificationStatus)
+        );
+
+        const populatedUsers = await Promise.all(filteredUsers.map(async (u) => {
+            let profileData = null;
+            if (u.profile) {
+                const pDoc = await db.collection('profiles').doc(u.profile).get();
+                profileData = pDoc.exists ? { id: pDoc.id, ...pDoc.data() } : null;
+            }
+            return { ...u, profile: profileData };
+        }));
+
+        populatedUsers.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+        res.status(200).json({ success: true, count: populatedUsers.length, data: populatedUsers });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -70,70 +89,74 @@ export const getPendingVerifications = async (req, res) => {
 // @access  Private (Admin)
 export const verifyUser = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
-        if (!user) {
+        const userRef = db.collection('users').doc(req.params.id);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
             return res.status(404).json({ message: 'User not found' });
         }
-
+        const user = userDoc.data();
         const oldStatus = user.verificationStatus;
         
-        // Handle different payload formats gracefully
+        let verificationStatus = user.verificationStatus;
+        let isVerified = user.isVerified;
+
         const incomingStatus = typeof req.body === 'boolean' ? req.body : req.body.status;
         const incomingVerifStatus = req.body.verificationStatus;
 
         if (incomingVerifStatus) {
-            user.verificationStatus = incomingVerifStatus;
-            user.isVerified = incomingVerifStatus === 'verified';
+            verificationStatus = incomingVerifStatus;
+            isVerified = incomingVerifStatus === 'verified';
         } else if (incomingStatus !== undefined) {
-            user.isVerified = incomingStatus;
-            user.verificationStatus = incomingStatus ? 'verified' : 'none';
+            isVerified = incomingStatus;
+            verificationStatus = incomingStatus ? 'verified' : 'none';
         } else {
-            // Default to verifying if no clear instruction sent
-            user.isVerified = true;
-            user.verificationStatus = 'verified';
+            isVerified = true;
+            verificationStatus = 'verified';
         }
-        await user.save();
+
+        await userRef.update({ 
+            verificationStatus, 
+            isVerified,
+            updatedAt: new Date().toISOString()
+        });
 
         // Real-time update via Socket.io
-        if (oldStatus !== user.verificationStatus) {
+        if (oldStatus !== verificationStatus) {
             try {
                 const { getIO, sendNotification } = await import('../socket.js');
                 const io = getIO();
                 
-                // Emit specific verification update event
-                io.to(user._id.toString()).emit('verificationUpdate', {
-                    status: user.verificationStatus,
-                    isVerified: user.isVerified
+                io.to(req.params.id).emit('verificationUpdate', {
+                    status: verificationStatus,
+                    isVerified: isVerified
                 });
 
-                // Send standard notification
                 const notification = {
                     type: 'verification',
-                    title: user.isVerified ? 'Profile Verified!' : 'Verification Update',
-                    message: user.isVerified 
+                    title: isVerified ? 'Profile Verified!' : 'Verification Update',
+                    message: isVerified 
                         ? 'Congratulations! Your profile has been verified. You now have full access to the platform.' 
-                        : `Your verification status has been updated to ${user.verificationStatus}.`,
-                    link: '/talent/verify'
+                        : `Your verification status has been updated to ${verificationStatus}.`,
+                    link: '/talent/verify',
+                    createdAt: new Date().toISOString()
                 };
                 
-                sendNotification(user._id, notification);
+                sendNotification(req.params.id, notification);
                 
-                // Also create an in-app notification record
-                await Notification.create({
-                    user: user._id,
+                await db.collection('notifications').add({
+                    user: req.params.id,
                     ...notification
                 });
 
-                // Notify all admins of verification change
                 const { broadcastAdminEvent } = await import('../socket.js');
                 broadcastAdminEvent({
                     type: 'verificationUpdate',
                     user: {
-                        id: user._id,
+                        id: req.params.id,
                         email: user.email,
                         role: user.role,
-                        verificationStatus: user.verificationStatus,
-                        isVerified: user.isVerified
+                        verificationStatus: verificationStatus,
+                        isVerified: isVerified
                     }
                 });
             } catch (socketErr) {
@@ -141,7 +164,7 @@ export const verifyUser = async (req, res) => {
             }
         }
 
-        res.status(200).json({ success: true, data: user });
+        res.status(200).json({ success: true, data: { id: req.params.id, ...user, verificationStatus, isVerified } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -152,7 +175,18 @@ export const verifyUser = async (req, res) => {
 // @access  Private (Admin)
 export const getAdminProjects = async (req, res) => {
     try {
-        const projects = await Project.find().populate('director', 'email profile');
+        const snapshot = await db.collection('projects').get();
+        const projects = await Promise.all(snapshot.docs.map(async (doc) => {
+            const pData = doc.data();
+            const directorDoc = await db.collection('users').doc(pData.director).get();
+            let director = pData.director;
+            if (directorDoc.exists) {
+                const dData = directorDoc.data();
+                director = { id: directorDoc.id, email: dData.email, profile: dData.profile };
+            }
+            return { id: doc.id, ...pData, director };
+        }));
+
         res.status(200).json({ success: true, count: projects.length, data: projects });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -164,21 +198,36 @@ export const getAdminProjects = async (req, res) => {
 // @access  Private (Admin)
 export const getAdminProjectDetails = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id)
-            .populate('director', 'email profile')
-            .lean();
-
-        if (!project) {
+        const projectDoc = await db.collection('projects').doc(req.params.id).get();
+        if (!projectDoc.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
+        const project = { id: projectDoc.id, ...projectDoc.data() };
 
-        const applications = await Application.find({ project: req.params.id })
-            .populate({
-                path: 'talent',
-                select: 'email role',
-                populate: { path: 'profile' },
-            })
-            .sort({ createdAt: -1 });
+        // Populate director
+        const directorDoc = await db.collection('users').doc(project.director).get();
+        if (directorDoc.exists) {
+            const dData = directorDoc.data();
+            project.director = { id: directorDoc.id, email: dData.email, profile: dData.profile };
+        }
+
+        const appsSnapshot = await db.collection('applications').where('project', '==', req.params.id).get();
+        const applications = await Promise.all(appsSnapshot.docs.map(async (doc) => {
+            const app = { id: doc.id, ...doc.data() };
+            const talentDoc = await db.collection('users').doc(app.talent).get();
+            const talentData = talentDoc.data();
+            let profileData = null;
+            if (talentData.profile) {
+                const pDoc = await db.collection('profiles').doc(talentData.profile).get();
+                profileData = pDoc.exists ? { id: pDoc.id, ...pDoc.data() } : null;
+            }
+            return {
+                ...app,
+                talent: { id: talentDoc.id, email: talentData.email, role: talentData.role, profile: profileData }
+            };
+        }));
+
+        applications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         res.status(200).json({ success: true, data: { ...project, applications } });
     } catch (err) {
@@ -198,15 +247,14 @@ export const updateProjectStatus = async (req, res) => {
     }
 
     try {
-        const project = await Project.findById(req.params.id);
-        if (!project) {
+        const projectRef = db.collection('projects').doc(req.params.id);
+        const projectDoc = await projectRef.get();
+        if (!projectDoc.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        project.status = status;
-        await project.save();
-
-        res.status(200).json({ success: true, data: project });
+        await projectRef.update({ status, updatedAt: new Date().toISOString() });
+        res.status(200).json({ success: true, data: { id: projectDoc.id, ...projectDoc.data(), status } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -217,13 +265,17 @@ export const updateProjectStatus = async (req, res) => {
 // @access  Private (Admin)
 export const deleteProject = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id);
-        if (!project) {
+        const projectRef = db.collection('projects').doc(req.params.id);
+        const projectDoc = await projectRef.get();
+        if (!projectDoc.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        await Application.deleteMany({ project: req.params.id });
-        await project.deleteOne();
+        const appsSnapshot = await db.collection('applications').where('project', '==', req.params.id).get();
+        const batch = db.batch();
+        appsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        batch.delete(projectRef);
+        await batch.commit();
 
         res.status(200).json({ success: true, message: 'Project deleted' });
     } catch (err) {
@@ -243,15 +295,14 @@ export const updateUserRole = async (req, res) => {
     }
 
     try {
-        const user = await User.findById(req.params.id);
-        if (!user) {
+        const userRef = db.collection('users').doc(req.params.id);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        user.role = role;
-        await user.save();
-
-        res.status(200).json({ success: true, data: user });
+        await userRef.update({ role, updatedAt: new Date().toISOString() });
+        res.status(200).json({ success: true, data: { id: userDoc.id, ...userDoc.data(), role } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -262,26 +313,44 @@ export const updateUserRole = async (req, res) => {
 // @access  Private (Admin)
 export const deleteUser = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
-        if (!user) {
+        const userRef = db.collection('users').doc(req.params.id);
+        const userDoc = await userRef.get();
+        if (!userDoc.exists) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Remove associated records to avoid orphaned data
-        await Profile.deleteMany({ user: user._id });
-        await Application.deleteMany({ talent: user._id });
+        const batch = db.batch();
 
-        // Remove projects created by this user and any applications tied to them
-        const ownedProjects = await Project.find({ director: user._id }).select('_id');
-        const ownedProjectIds = ownedProjects.map(p => p._id);
-        if (ownedProjectIds.length) {
-            await Application.deleteMany({ project: { $in: ownedProjectIds } });
+        // 1. Delete Profile(s)
+        const profilesSnapshot = await db.collection('profiles').where('user', '==', req.params.id).get();
+        profilesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 2. Delete Applications (as talent)
+        const appsSnapshot = await db.collection('applications').where('talent', '==', req.params.id).get();
+        appsSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 3. Delete Projects (as director) and their Applications
+        const projectsSnapshot = await db.collection('projects').where('director', '==', req.params.id).get();
+        for (const pDoc of projectsSnapshot.docs) {
+            const pAppsSnapshot = await db.collection('applications').where('project', '==', pDoc.id).get();
+            pAppsSnapshot.forEach(doc => batch.delete(doc.ref));
+            batch.delete(pDoc.ref);
         }
-        await Project.deleteMany({ director: user._id });
-        await Message.deleteMany({ $or: [{ sender: user._id }, { receiver: user._id }] });
-        await Notification.deleteMany({ user: user._id });
 
-        await user.deleteOne();
+        // 4. Delete Messages (sent/received)
+        const sentMessages = await db.collection('messages').where('sender', '==', req.params.id).get();
+        sentMessages.forEach(doc => batch.delete(doc.ref));
+        const receivedMessages = await db.collection('messages').where('receiver', '==', req.params.id).get();
+        receivedMessages.forEach(doc => batch.delete(doc.ref));
+
+        // 5. Delete Notifications
+        const notesSnapshot = await db.collection('notifications').where('user', '==', req.params.id).get();
+        notesSnapshot.forEach(doc => batch.delete(doc.ref));
+
+        // 6. Delete User
+        batch.delete(userRef);
+
+        await batch.commit();
 
         res.status(200).json({ success: true, message: 'User deleted' });
     } catch (err) {

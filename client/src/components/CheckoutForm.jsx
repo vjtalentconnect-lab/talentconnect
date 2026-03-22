@@ -105,7 +105,7 @@ const CheckoutForm = ({ planType, onSuccess, onError }) => {
                 ) : (
                     <>
                         <span className="material-symbols-outlined">lock</span>
-                        Pay $999.00
+                        Pay $99.00
                     </>
                 )}
             </button>

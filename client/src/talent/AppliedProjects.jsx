@@ -4,6 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
 import { getMyProfile } from '../services/profileService';
 import { getMyApplications } from '../services/projectService';
+import { useNotifications } from '../context/NotificationContext';
 
 const STATUS_CONFIG = {
     applied:     { label: 'Applied',     color: 'bg-slate-500 text-white' },
@@ -28,6 +29,7 @@ const Toast = ({ message, type, onDone }) => {
 const AppliedProjects = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('All');
@@ -50,11 +52,11 @@ const AppliedProjects = () => {
             }
         };
         fetchData();
-    }, []);
 
-    // Listen for real-time verification updates
-    window.addEventListener('userStateChange', fetchData);
-    return () => window.removeEventListener('userStateChange', fetchData);
+        // Listen for real-time verification updates
+        window.addEventListener('userStateChange', fetchData);
+        return () => window.removeEventListener('userStateChange', fetchData);
+    }, []);
 
     const userData = {
         name: profile?.fullName || 'Artist',
@@ -64,7 +66,7 @@ const AppliedProjects = () => {
             : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     const filteredApps = applications.filter(app => {
         if (activeFilter === 'All') return true;

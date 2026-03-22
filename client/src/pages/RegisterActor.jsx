@@ -3,12 +3,42 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../services/authService';
 
 const RegisterActor = () => {
+    const categories = [
+        'Actor',
+        'Background Artist',
+        'Child Artist',
+        'Model',
+        'Theatre Actor',
+        'Voiceover Artist',
+        'Singer',
+        'Musician',
+        'Dancer / Choreographer',
+        'Stunt Performer',
+        'Comedian',
+        'Influencer / Creator',
+        'Anchor / Host',
+        'Cinematographer',
+        'Editor',
+        'Writer / Screenplay',
+        'Makeup / Hair',
+        'Costume / Stylist',
+        'Production Crew',
+    ];
+
+    const countries = [
+        'India','United States','Canada','United Kingdom','Ireland','France','Germany','Spain','Italy','Netherlands','Denmark','Sweden','Norway',
+        'Czech Republic','Poland','Hungary','Türkiye','United Arab Emirates','Qatar','Saudi Arabia','South Africa','Nigeria','Kenya','Egypt',
+        'Singapore','China','Japan','South Korea','Thailand','Malaysia','Indonesia','Taiwan','Australia','New Zealand','Brazil','Argentina','Chile','Colombia','Mexico'
+    ];
+
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
         mobile: '',
         category: '',
-        location: '',
+        country: '',
+        state: '',
+        city: '',
         password: '',
         agreeTerms: false
     });
@@ -37,13 +67,14 @@ const RegisterActor = () => {
         }
 
         try {
+            const location = [formData.city, formData.state, formData.country].filter(Boolean).join(', ');
             const userData = {
                 email: formData.email,
                 password: formData.password,
                 role: 'talent',
                 fullName: formData.fullName,
                 talentCategory: formData.category,
-                location: formData.location,
+                location,
                 mobile: formData.mobile,
             };
 
@@ -168,33 +199,59 @@ const RegisterActor = () => {
                                         className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
                                     >
                                         <option value="" disabled>Select Category</option>
-                                        <option value="actor">Actor</option>
-                                        <option value="model">Model</option>
-                                        <option value="musician">Singer</option>
-                                        <option value="dancer">Dancer</option>
-                                        <option value="voice_over">Voiceover Artist</option>
+                                        {categories.map((c) => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
                                     </select>
                                 </div>
 
-                                {/* Location */}
-                                <div className="md:col-span-1 space-y-2">
+                                {/* Location fields */}
+                                <div className="space-y-2 md:col-span-1">
                                     <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-[18px]">location_on</span>
-                                        Primary Location
+                                        <span className="material-symbols-outlined text-[18px]">public</span>
+                                        Country
                                     </label>
                                     <select
-                                        name="location"
-                                        value={formData.location}
+                                        name="country"
+                                        value={formData.country}
                                         onChange={handleChange}
                                         className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
                                     >
-                                        <option value="" disabled>Select City</option>
-                                        <option value="mumbai">Mumbai</option>
-                                        <option value="delhi">Delhi / NCR</option>
-                                        <option value="bengaluru">Bengaluru</option>
-                                        <option value="hyderabad">Hyderabad</option>
-                                        <option value="chennai">Chennai</option>
+                                        <option value="" disabled>Select Country</option>
+                                        {countries.map((c) => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
                                     </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[18px]">map</span>
+                                        State / Province
+                                    </label>
+                                    <input
+                                        name="state"
+                                        value={formData.state}
+                                        onChange={handleChange}
+                                        className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        placeholder="e.g. Maharashtra"
+                                        type="text"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[18px]">location_city</span>
+                                        City
+                                    </label>
+                                    <input
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleChange}
+                                        className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        placeholder="e.g. Mumbai"
+                                        type="text"
+                                    />
                                 </div>
 
                                 {/* Password */}
@@ -214,7 +271,7 @@ const RegisterActor = () => {
                                 </div>
 
                                 {error && (
-                                    <div className="md:col-span-2 bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl text-sm mb-2">
+                                    <div className="md:col-span-2 bg-red-100 dark:bg-red-500/20 border border-red-500/50 text-red-600 dark:text-red-200 p-3 rounded-xl text-sm mb-2">
                                         {error}
                                     </div>
                                 )}
@@ -258,9 +315,9 @@ const RegisterActor = () => {
                 <footer className="px-6 lg:px-40 py-6 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 dark:text-slate-500">
                     <p>© 2026 TalentConnect. All Rights Reserved.</p>
                     <div className="flex gap-6">
-                        <Link className="hover:text-primary transition-colors" to="#">Help Center</Link>
-                        <Link className="hover:text-primary transition-colors" to="#">Artist Guidelines</Link>
-                        <Link className="hover:text-primary transition-colors" to="#">Success Stories</Link>
+                        <Link className="hover:text-primary transition-colors" to="/support">Help Center</Link>
+                        <Link className="hover:text-primary transition-colors" to="/artist-guidelines">Artist Guidelines</Link>
+                        <Link className="hover:text-primary transition-colors" to="/success-stories">Success Stories</Link>
                     </div>
                 </footer>
             </div>

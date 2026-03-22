@@ -15,7 +15,7 @@ export default {
         "accent-dark": "#2a1a14",
         "card-dark": "#1a1a1a",
         "border-dark": "rgba(238, 43, 59, 0.1)",
-        accent: '#ee2b3b', 
+        accent: '#ee2b3b',
         surface: '#1a1a1a',
         'text-primary': '#f8f6f6',
         'text-secondary': '#a1a1aa',

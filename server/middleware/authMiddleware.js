@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import { auth, db } from '../lib/firebaseAdmin.js';
+import addDays from '../utils/addDays.js';
 
 // Protect routes
 export const protect = async (req, res, next) => {
@@ -22,13 +22,19 @@ export const protect = async (req, res, next) => {
     }
 
     try {
-        // Verify token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Verify Firebase ID token
+        const decodedToken = await auth.verifyIdToken(token);
+        
+        // Get user from Firestore
+        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+        if (!userDoc.exists) {
+            return res.status(401).json({ message: 'Not authorized to access this route' });
+        }
 
-        req.user = await User.findById(decoded.id);
-
+        req.user = { id: userDoc.id, ...userDoc.data() };
         next();
     } catch (err) {
+        console.error('Auth verification error:', err);
         return res.status(401).json({ message: 'Not authorized to access this route' });
     }
 };
@@ -43,4 +49,23 @@ export const authorize = (...roles) => {
         }
         next();
     };
+};
+
+// Enforce director free-trial / subscription window
+export const enforceDirectorBilling = (req, res, next) => {
+    const user = req.user;
+    if (!user || (user.role !== 'director' && user.role !== 'admin')) return next();
+    if (user.role === 'admin') return next();
+
+    const hasActivePlan = user.subscriptionStatus === 'active' || user.plan === 'studio_pro';
+    if (hasActivePlan) return next();
+
+    const trialEnd = user.trialEndsAt || addDays(user.createdAt || new Date(), 30);
+    if (new Date() <= new Date(trialEnd)) return next();
+
+    return res.status(402).json({
+        message: 'Your 30-day director trial has ended. Please upgrade to continue using these services.',
+        trialEnded: true,
+        trialEnd,
+    });
 };

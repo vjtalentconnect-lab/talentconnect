@@ -3,6 +3,52 @@ import { useNavigate } from 'react-router-dom';
 import { register } from '../services/authService';
 
 const RegisterDirector = () => {
+  const industryTypes = [
+    'Feature Films',
+    'OTT / Web Series',
+    'Advertising / Commercials',
+    'Television',
+    'Documentaries',
+    'Short Films',
+    'Music Videos',
+    'Animation / VFX',
+    'Branded Content',
+    'Corporate / Industrial',
+    'Theatre / Live Events',
+    'Fashion Films',
+    'Regional Cinema',
+  ];
+
+  const locations = [
+    'Mumbai, India',
+    'Delhi NCR, India',
+    'Bengaluru, India',
+    'Hyderabad, India',
+    'Chennai, India',
+    'Kolkata, India',
+    'Los Angeles, USA',
+    'New York, USA',
+    'Vancouver, Canada',
+    'Toronto, Canada',
+    'London, UK',
+    'Paris, France',
+    'Berlin, Germany',
+    'Madrid, Spain',
+    'Rome, Italy',
+    'Dubai, UAE',
+    'Singapore, Singapore',
+    'Hong Kong, China',
+    'Tokyo, Japan',
+    'Seoul, South Korea',
+    'Bangkok, Thailand',
+    'Sydney, Australia',
+    'Melbourne, Australia',
+    'Cape Town, South Africa',
+    'Lagos, Nigeria',
+    'Mexico City, Mexico',
+    'São Paulo, Brazil',
+  ];
+
   const [formData, setFormData] = useState({
     fullName: '',
     productionName: '',
@@ -171,11 +217,10 @@ const RegisterDirector = () => {
                       onChange={handleChange}
                       className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none appearance-none transition-all"
                     >
-                      <option value="">Select Category</option>
-                      <option value="films">Feature Films</option>
-                      <option value="advertising">Advertising</option>
-                      <option value="web">Web Series</option>
-                      <option value="theatre">Theatre</option>
+                      <option value="">Select Industry</option>
+                      {industryTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -185,14 +230,17 @@ const RegisterDirector = () => {
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Primary Location</label>
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl">location_on</span>
-                    <input
+                    <select
                       name="location"
                       value={formData.location}
                       onChange={handleChange}
-                      className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                      placeholder="City Name"
-                      type="text"
-                    />
+                      className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all appearance-none"
+                    >
+                      <option value="">Select Primary Location</option>
+                      {locations.map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -228,7 +276,7 @@ const RegisterDirector = () => {
               </div>
 
               {error && (
-                <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl text-sm mb-4">
+                <div className="bg-red-100 dark:bg-red-500/20 border border-red-500/50 text-red-600 dark:text-red-200 p-3 rounded-xl text-sm mb-4">
                   {error}
                 </div>
               )}

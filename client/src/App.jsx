@@ -48,6 +48,12 @@ const SystemHealth = lazy(() => import('./admin/SystemHealth'));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const DirectorCheckout = lazy(() => import("./pages/DirectorCheckout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const FindTalent = lazy(() => import("./pages/FindTalent"));
+const FindWork = lazy(() => import("./pages/FindWork"));
+const Productions = lazy(() => import("./pages/Productions"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const ArtistGuidelines = lazy(() => import("./pages/ArtistGuidelines"));
+const SuccessStories = lazy(() => import("./pages/SuccessStories"));
 
 
 function App() {
@@ -58,6 +64,12 @@ function App() {
           <Suspense fallback={<SkeletonLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/find-talent" element={<FindTalent />} />
+              <Route path="/find-work" element={<FindWork />} />
+              <Route path="/productions" element={<Productions />} />
+              <Route path="/about-us" element={<AboutUs />} />
+              <Route path="/artist-guidelines" element={<ArtistGuidelines />} />
+              <Route path="/success-stories" element={<SuccessStories />} />
               <Route path="/login" element={<Login />} />
               <Route path="/loginPage" element={<Login />} />
               <Route path="/register/actor" element={<RegisterActor />} />
@@ -121,7 +133,7 @@ function App() {
 
             </Routes>
           </Suspense>
-      </BrowserRouter>
+        </BrowserRouter>
       </NotificationProvider>
     </div>
   );

@@ -4,6 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
 import { getMyProfile } from '../services/profileService';
 import { getMyApplications } from '../services/projectService';
+import { useNotifications } from '../context/NotificationContext';
 
 const FILTERS = ['All', 'New', 'Accepted', 'Completed'];
 
@@ -26,6 +27,7 @@ const Toast = ({ message, type, onDone }) => {
 const AuditionInvites = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [invites, setInvites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('All');
@@ -46,11 +48,11 @@ const AuditionInvites = () => {
             }
         };
         fetchData();
-    }, []);
 
-    // Listen for real-time verification updates
-    window.addEventListener('userStateChange', fetchData);
-    return () => window.removeEventListener('userStateChange', fetchData);
+        // Listen for real-time verification updates
+        window.addEventListener('userStateChange', fetchData);
+        return () => window.removeEventListener('userStateChange', fetchData);
+    }, []);
 
     const filteredInvites = invites.filter(inv => {
         if (activeFilter === 'All') return true;
@@ -79,7 +81,7 @@ const AuditionInvites = () => {
             : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     if (loading) return (
         <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist"

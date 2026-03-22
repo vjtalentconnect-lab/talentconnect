@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
+import { useNotifications } from '../context/NotificationContext';
 import { getMyProfile, updateProfile } from '../services/profileService';
 import { changePassword } from '../services/authService';
 
@@ -23,6 +24,7 @@ const Toggle = ({ checked, onChange }) => (
 
 const ArtistSettings = () => {
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [savingPrivacy, setSavingPrivacy] = useState(false);
     const [toast, setToast] = useState(null);
@@ -58,11 +60,11 @@ const ArtistSettings = () => {
             }
         };
         fetchProfile();
+        
+        // Listen for real-time verification updates
+        window.addEventListener('userStateChange', fetchProfile);
+        return () => window.removeEventListener('userStateChange', fetchProfile);
     }, []);
-
-    // Listen for real-time verification updates
-    window.addEventListener('userStateChange', fetchProfile);
-    return () => window.removeEventListener('userStateChange', fetchProfile);
 
     const handleSavePrivacy = async () => {
         setSavingPrivacy(true);
@@ -102,7 +104,7 @@ const ArtistSettings = () => {
             : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     if (loading) return (
         <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist"

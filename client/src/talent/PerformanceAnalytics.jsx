@@ -3,9 +3,11 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
 import { getMyProfile } from '../services/profileService';
 import { getMyApplications } from '../services/projectService';
+import { useNotifications } from '../context/NotificationContext';
 
 const PerformanceAnalytics = () => {
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [chartRange, setChartRange] = useState('30d');
@@ -23,11 +25,11 @@ const PerformanceAnalytics = () => {
             }
         };
         fetchData();
+        
+        // Listen for real-time verification updates
+        window.addEventListener('userStateChange', fetchData);
+        return () => window.removeEventListener('userStateChange', fetchData);
     }, []);
-
-    // Listen for real-time verification updates
-    window.addEventListener('userStateChange', fetchData);
-    return () => window.removeEventListener('userStateChange', fetchData);
 
     const userData = {
         name: profile?.fullName || 'Artist',
@@ -37,7 +39,7 @@ const PerformanceAnalytics = () => {
             : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     // Derive stats from real data
     const totalApps = applications.length;

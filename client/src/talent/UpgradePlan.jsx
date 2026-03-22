@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
+import { useNotifications } from '../context/NotificationContext';
 import { getMyProfile } from '../services/profileService';
 
 const PLANS = [
@@ -66,6 +67,7 @@ const PLANS = [
 
 const UpgradePlan = () => {
     const navigate = useNavigate();
+    const { user: authUser } = useNotifications();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAnnual, setIsAnnual] = useState(false);
@@ -108,6 +110,7 @@ const UpgradePlan = () => {
 
     return (
         <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist" userData={userData}
+            verificationStatus={profile?.user?.verificationStatus || authUser?.verificationStatus || 'none'}
             headerTitle="Upgrade Your Plan" headerSubtitle="Unlock features that put you at the top of every casting call."
             searchPlaceholder="Search plans...">
             <div className="space-y-12 pb-24 max-w-6xl mx-auto">

@@ -1,6 +1,6 @@
-import User from '../models/User.js';
-import Profile from '../models/Profile.js';
-import jwt from 'jsonwebtoken';
+import { auth as adminAuth, db } from '../lib/firebaseAdmin.js';
+import { auth as clientAuth } from '../lib/firebase.js';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -9,26 +9,58 @@ export const register = async (req, res) => {
     const { email, password, role, fullName, talentCategory, location, mobile } = req.body;
 
     try {
-        // Create user
-        const user = await User.create({
+        // Create user in Firebase Auth
+        const userRecord = await adminAuth.createUser({
             email,
             password,
-            role,
-            verificationStatus: role === 'talent' ? 'pending' : 'none'
+            displayName: fullName,
         });
 
-        // Create associated profile
-        const profile = await Profile.create({
-            user: user._id,
+        const uid = userRecord.uid;
+
+        // Create user metadata in Firestore
+        const userDoc = {
+            email,
+            role: role || 'talent',
+            isVerified: false,
+            verificationStatus: role === 'talent' ? 'pending' : 'none',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            plan: 'free',
+            subscriptionStatus: 'inactive',
+        };
+
+        if (role === 'director') {
+            const trialEndsAt = new Date();
+            trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+            userDoc.trialEndsAt = trialEndsAt.toISOString();
+        }
+
+        await db.collection('users').doc(uid).set(userDoc);
+
+        // Create associated profile document in Firestore
+        const profileDoc = {
+            user: uid,
             fullName,
-            location,
-            mobile,
-            talentCategory: role === 'talent' ? talentCategory : undefined,
-        });
+            location: location || '',
+            mobile: mobile || '',
+            talentCategory: role === 'talent' ? talentCategory : null,
+            profilePicture: 'no-photo.jpg',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            portfolio: [],
+            privacySettings: {
+                profileSearchable: true,
+                showContactDetails: true,
+                showPortfolioPublic: true,
+                allowDirectMessages: true,
+            }
+        };
 
+        const profileRef = await db.collection('profiles').add(profileDoc);
+        
         // Update user with profile id
-        user.profile = profile._id;
-        await user.save();
+        await db.collection('users').doc(uid).update({ profile: profileRef.id });
 
         // Notify admins of new user registration
         try {
@@ -36,18 +68,21 @@ export const register = async (req, res) => {
             broadcastAdminEvent({
                 type: 'newUser',
                 user: {
-                    id: user._id,
-                    email: user.email,
-                    role: user.role,
-                    verificationStatus: user.verificationStatus,
-                    createdAt: user.createdAt
+                    id: uid,
+                    email: userDoc.email,
+                    role: userDoc.role,
+                    verificationStatus: userDoc.verificationStatus,
+                    createdAt: userDoc.createdAt
                 }
             });
         } catch (socketErr) {
             console.error('Socket notification error:', socketErr);
         }
 
-        sendTokenResponse(user, 201, res);
+        res.status(201).json({
+            success: true,
+            user: { id: uid, email, role: userDoc.role }
+        });
     } catch (err) {
         console.error('Registration error:', err);
         res.status(400).json({ message: err.message });
@@ -60,32 +95,46 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     const { email, password } = req.body;
 
-    // Validate email & password
     if (!email || !password) {
         return res.status(400).json({ message: 'Please provide an email and password' });
     }
 
     try {
-        // Debug received credentials (redacted password)
-        console.log(`[Login] Attempt for: ${email}`);
-        
-        // Check for user
-        const user = await User.findOne({ email: email ? email.trim() : '' }).select('+password');
+        // Use Firebase Client SDK for login on server-side if needed to maintain REST structure
+        const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
+        const user = userCredential.user;
+        const idToken = await user.getIdToken();
 
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+        // Get user roles/data from Firestore
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User data not found' });
         }
 
-        // Check if password matches
-        const isMatch = await user.matchPassword(password);
+        const userData = userDoc.data();
 
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+        // Set cookie
+        const options = {
+            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            httpOnly: true,
+        };
+
+        if (process.env.NODE_ENV === 'production') {
+            options.secure = true;
         }
 
-        sendTokenResponse(user, 200, res);
+        res.status(200).cookie('token', idToken, options).json({
+            success: true,
+            token: idToken,
+            user: {
+                id: user.uid,
+                email: user.email,
+                role: userData.role,
+            },
+        });
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        console.error('Login error:', err);
+        res.status(401).json({ message: 'Invalid credentials' });
     }
 };
 
@@ -93,25 +142,16 @@ export const login = async (req, res) => {
 // @route   PUT /api/auth/change-password
 // @access  Private
 export const changePassword = async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
+    const { newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-        return res.status(400).json({ message: 'Current and new passwords are required' });
+    if (!newPassword) {
+        return res.status(400).json({ message: 'New password is required' });
     }
 
     try {
-        const user = await User.findById(req.user.id).select('+password');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        const isMatch = await user.matchPassword(currentPassword);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Current password is incorrect' });
-        }
-
-        user.password = newPassword;
-        await user.save();
+        await adminAuth.updateUser(req.user.id, {
+            password: newPassword
+        });
 
         res.status(200).json({ success: true, message: 'Password updated successfully' });
     } catch (err) {
@@ -137,36 +177,21 @@ export const logout = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).populate('profile');
-        res.status(200).json({ success: true, data: user });
+        const userDoc = await db.collection('users').doc(req.user.id).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const userData = userDoc.data();
+        
+        // Populate profile if requested
+        if (userData.profile) {
+            const profileDoc = await db.collection('profiles').doc(userData.profile).get();
+            userData.profile = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
+        }
+
+        res.status(200).json({ success: true, data: { id: userDoc.id, ...userData } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
-};
-
-// Get token from model, create cookie and send response
-const sendTokenResponse = (user, statusCode, res) => {
-    // Create token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-        expiresIn: '30d',
-    });
-
-    const options = {
-        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        httpOnly: true,
-    };
-
-    if (process.env.NODE_ENV === 'production') {
-        options.secure = true;
-    }
-
-    res.status(statusCode).cookie('token', token, options).json({
-        success: true,
-        token,
-        user: {
-            id: user._id,
-            email: user.email,
-            role: user.role,
-        },
-    });
 };

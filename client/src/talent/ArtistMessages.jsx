@@ -4,6 +4,7 @@ import { TALENT_MENU } from '../constants/navigation';
 import { getConversations, getMessages, sendMessage } from '../services/messageService';
 import { getMyProfile } from '../services/profileService';
 import socket from '../services/socket';
+import { useNotifications } from '../context/NotificationContext';
 
 const ArtistMessages = () => {
     const [conversations, setConversations] = useState([]);
@@ -12,6 +13,7 @@ const ArtistMessages = () => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -121,7 +123,7 @@ const ArtistMessages = () => {
         avatar: profile?.profilePicture === 'no-photo.jpg' ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User') : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     if (loading) return null;
 

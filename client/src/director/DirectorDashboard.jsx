@@ -5,6 +5,7 @@ import { getMyProfile } from '../services/profileService';
 import { getProjects } from '../services/projectService';
 import MediaUpload from '../components/common/MediaUpload';
 import NotificationCenter from '../components/common/NotificationCenter';
+import WorkshopPortalSection from '../components/WorkshopPortalSection';
 
 import { DIRECTOR_MENU } from '../constants/navigation';
 
@@ -213,6 +214,11 @@ const DirectorDashboard = () => {
             </button>
           </div>
         </section>
+
+        {/* Workshops for directors */}
+        <div className="mt-12">
+          <WorkshopPortalSection variant="director" />
+        </div>
       </div>
       )}
     </DashboardLayout>

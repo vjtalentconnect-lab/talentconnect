@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
+import { useNotifications } from '../context/NotificationContext';
 import { getMyProfile } from '../services/profileService';
 
 const PAYMENT_METHODS = ['Card', 'UPI'];
@@ -14,9 +15,10 @@ const formatExpiry = (val) =>
 const Checkout = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const plan = location.state?.plan || { name: 'Pro Artist', price: 999, billing: 'monthly' };
+    const plan = location.state?.plan || { name: 'Pro Artist', price: 99, billing: 'monthly' };
 
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [activeTab, setActiveTab] = useState('Card');
     const [cardForm, setCardForm] = useState({ number: '', expiry: '', cvv: '', name: '' });
     const [upiId, setUpiId] = useState('');
@@ -74,6 +76,7 @@ const Checkout = () => {
 
     return (
         <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist" userData={userData}
+            verificationStatus={profile?.user?.verificationStatus || authUser?.verificationStatus || 'none'}
             headerTitle="Checkout" headerSubtitle={`Complete your ${plan.name} plan upgrade.`}>
             <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-10 pb-24">
                 {/* Payment Form */}

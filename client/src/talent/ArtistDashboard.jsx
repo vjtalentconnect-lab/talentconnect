@@ -4,6 +4,8 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { getMyProfile } from '../services/profileService';
 import { getProjects, applyToProject, getMyApplications } from '../services/projectService';
 import { TALENT_MENU } from '../constants/navigation';
+import { useNotifications } from '../context/NotificationContext';
+import WorkshopPortalSection from '../components/WorkshopPortalSection';
 
 const Toast = ({ message, type, onDone }) => {
     useEffect(() => { const t = setTimeout(onDone, 3500); return () => clearTimeout(t); }, []);
@@ -18,6 +20,7 @@ const Toast = ({ message, type, onDone }) => {
 const ArtistDashboard = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [myApplications, setMyApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState(null);
@@ -52,7 +55,7 @@ const ArtistDashboard = () => {
             : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     const activeApps = myApplications.slice(0, 3);
     const newInvitesCount = myApplications.filter(a => a.status === 'auditioning').length;
@@ -91,7 +94,8 @@ const ArtistDashboard = () => {
                     <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Preparing your stage...</p>
                 </div>
             ) : (
-                <div className="max-w-7xl mx-auto space-y-8">
+                <>
+                    <div className="max-w-7xl mx-auto space-y-8">
 
                     {/* ── Pending Banner ── */}
                     {verificationStatus === 'pending' && (
@@ -133,6 +137,29 @@ const ArtistDashboard = () => {
                                 className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl transition-all shadow-lg shadow-red-600/20 whitespace-nowrap active:scale-95"
                             >
                                 Update Profile
+                            </button>
+                        </div>
+                    )}
+
+                    {/* ── Initial/None State Banner ── */}
+                    {verificationStatus === 'none' && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-3xl p-10 flex flex-col items-center text-center space-y-6">
+                            <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-primary text-4xl">verified_user</span>
+                            </div>
+                            <div className="max-w-2xl">
+                                <h2 className="text-3xl font-black uppercase italic tracking-tight mb-3">Get Verified to Start Your Career</h2>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                                    Welcome to TalentConnect! To maintain the highest quality of professionals on our platform, 
+                                    we require all artists to undergo a quick verification process. Once verified, you'll gain 
+                                    full access to project discovery, direct messaging with directors, and audition invites.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate('/talent/verify')}
+                                className="px-10 py-4 bg-primary text-white font-black rounded-2xl shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-sm"
+                            >
+                                Start Verification Now
                             </button>
                         </div>
                     )}
@@ -367,7 +394,12 @@ const ArtistDashboard = () => {
                             </div>
                         </>
                     )}
-                </div>
+                    </div>
+                    {/* Workshops & Masterclasses for talent */}
+                    <div className="mt-10">
+                        <WorkshopPortalSection variant="talent" />
+                    </div>
+                </>
             )}
         </DashboardLayout>
     );

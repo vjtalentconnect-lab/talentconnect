@@ -164,12 +164,12 @@ const DirectorCheckout = () => {
                                                 <p className="font-bold text-slate-100">Studio Pro Plan</p>
                                                 <p className="text-xs text-slate-300">Monthly subscription</p>
                                             </div>
-                                            <p className="font-bold text-white">$999.00</p>
+                                            <p className="font-bold text-white">$99.00</p>
                                         </div>
                                         <div className="space-y-2 border-t border-border-dark pt-4">
                                             <div className="flex justify-between text-sm text-slate-300">
                                                 <span>Subtotal</span>
-                                                <span>$999.00</span>
+                                                <span>$99.00</span>
                                             </div>
                                             <div className="flex justify-between text-sm text-slate-300">
                                                 <span>Tax</span>
@@ -178,7 +178,7 @@ const DirectorCheckout = () => {
                                         </div>
                                         <div className="flex justify-between items-center border-t border-border-dark pt-4 mt-4">
                                             <span className="text-xl font-bold text-white">Total Amount</span>
-                                            <span className="text-2xl font-black text-primary">$999.00</span>
+                                            <span className="text-2xl font-black text-primary">$99.00</span>
                                         </div>
                                     </div>
                                     <div className="p-6 bg-background-dark/50">

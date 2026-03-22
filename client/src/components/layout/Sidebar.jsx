@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useNotifications } from '../../context/NotificationContext';
 
 const Sidebar = ({ menuItems, userRole, verificationStatus }) => {
     const location = useLocation();
-    const isVerified = verificationStatus === 'verified';
+    const { user: authUser } = useNotifications();
+    const effectiveStatus = verificationStatus || authUser?.verificationStatus || 'none';
+    const isVerified = effectiveStatus === 'verified';
 
     return (
         <aside className="w-72 flex-shrink-0 bg-background-light dark:bg-background-dark border-r border-slate-200 dark:border-white/5 flex flex-col h-screen sticky top-0 transition-all duration-500">

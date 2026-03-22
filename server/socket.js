@@ -15,14 +15,22 @@ export const init = (httpServer) => {
         console.log('User connected:', socket.id);
 
         // Client should emit { userId, role }
-        socket.on('register', ({ userId, role }) => {
+        socket.on('register', async ({ userId, role }) => {
             if (userId) {
                 socket.join(userId.toString());
                 console.log(`User ${userId} joined their room`);
-            }
-            if (role === 'admin') {
-                socket.join('admins');
-                console.log(`Admin ${userId || socket.id} joined admins room`);
+                
+                // Secure role check: verify from DB instead of trusting client
+                try {
+                    const { db } = await import('./lib/firebaseAdmin.js');
+                    const userDoc = await db.collection('users').doc(userId.toString()).get();
+                    if (userDoc.exists && userDoc.data().role === 'admin') {
+                        socket.join('admins');
+                        console.log(`Verified Admin ${userId} joined admins room`);
+                    }
+                } catch (err) {
+                    console.error('Socket role verification failed:', err);
+                }
             }
         });
 

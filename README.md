@@ -104,4 +104,4 @@ docker-compose up -d --build
 ---
 <p align="center">
   <i>Propelling the future of talent discovery.</i>
-</p>
+</p>

@@ -46,6 +46,9 @@ const userSchema = new mongoose.Schema(
             enum: ['inactive', 'active', 'cancelled'],
             default: 'inactive',
         },
+        trialEndsAt: {
+            type: Date,
+        },
     },
     {
         timestamps: true,
@@ -60,6 +63,16 @@ userSchema.pre('save', async function () {
 
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Ensure trial end is set for directors when created
+userSchema.pre('save', function (next) {
+    if (this.isNew && this.role === 'director' && !this.trialEndsAt) {
+        const expires = new Date(this.createdAt || Date.now());
+        expires.setDate(expires.getDate() + 30);
+        this.trialEndsAt = expires;
+    }
+    next();
 });
 
 // Match user entered password to hashed password in database

@@ -1,59 +1,140 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import TopNav from '../components/TopNav';
 import RegionalSpotlight from '../components/RegionalSpotlight';
 import ForumSection from '../components/ForumSection';
+import WorkshopPortalSection from '../components/WorkshopPortalSection';
+
+const cinemaIndustries = [
+  { label: 'Hollywood',      country: 'USA',         code: 'US' },
+  { label: 'Bollywood',      country: 'India',       code: 'IN' },
+  { label: 'Korean Cinema',  country: 'South Korea', code: 'KR' },
+  { label: 'French Cinema',  country: 'France',      code: 'FR' },
+  { label: 'Nollywood',      country: 'Nigeria',     code: 'NG' },
+  { label: 'Japanese Cinema',country: 'Japan',       code: 'JP' },
+  { label: 'British Cinema', country: 'United Kingdom', code: 'GB' },
+  { label: 'Chinese Cinema', country: 'China',       code: 'CN' },
+  { label: 'Brazilian Cinema',country: 'Brazil',     code: 'BR' },
+  { label: 'Spanish Cinema', country: 'Spain',       code: 'ES' },
+];
+
+const RollingText = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animating, setAnimating] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % cinemaIndustries.length);
+        setAnimating(false);
+      }, 400);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <style>{`
+        @keyframes slideUp {
+          0% { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(-40px); opacity: 0; }
+        }
+        @keyframes slideIn {
+          0% { transform: translateY(40px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        .roll-exit {
+          animation: slideUp 0.4s ease-in forwards;
+        }
+        .roll-enter {
+          animation: slideIn 0.4s ease-out forwards;
+        }
+        .rolling-wrapper {
+          display: inline-block;
+          overflow: hidden;
+          height: 1.2em;
+          vertical-align: bottom;
+        }
+        .rolling-inner {
+          display: flex;
+          flex-direction: column;
+        }
+      `}</style>
+
+      <span
+        className={`gold-text-gradient ${animating ? 'roll-exit' : 'roll-enter'}`}
+        style={{ display: 'inline-block' }}
+      >
+        {cinemaIndustries[currentIndex].label}
+        <span
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            fontSize: '0.28em',
+            marginTop: '4px',
+          }}
+        >
+          <img
+            src={`https://flagcdn.com/w40/${cinemaIndustries[currentIndex].code.toLowerCase()}.png`}
+            alt={cinemaIndustries[currentIndex].country}
+            style={{
+              width: '28px',
+              height: '20px',
+              objectFit: 'cover',
+              borderRadius: '3px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            }}
+          />
+          <span style={{
+            letterSpacing: '0.18em',
+            color: 'rgba(255,255,255,0.65)',
+            fontWeight: 400,
+            textTransform: 'uppercase',
+          }}>
+            {cinemaIndustries[currentIndex].country}
+          </span>
+        </span>
+      </span>
+    </>
+  );
+};
 
 const Home = () => {
   return (
     <>
-      <nav className="fixed w-full z-50 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex-shrink-0 flex items-center gap-2">
-              <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
-              <span className="font-display font-bold text-2xl tracking-wide text-gray-900 dark:text-white">
-                TALENT<span className="text-primary">CONNECT</span>
-              </span>
-            </div>
-            <div className="hidden md:flex space-x-8 items-center">
-              <a className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors font-medium" href="#">Find Talent</a>
-              <a className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors font-medium" href="#">Find Work</a>
-              <a className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors font-medium" href="#">Productions</a>
-              <a className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors font-medium" href="#">About Us</a>
-            </div>
-            <div className="hidden md:flex items-center space-x-4">
-              <button className="bg-primary hover:bg-primary/90 text-white dark:text-black font-semibold px-6 py-2.5 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-primary/30">
-                <a href="/loginPage">Sign In</a>
-              </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => document.documentElement.classList.toggle('dark')}>
-                <span className="material-icons text-gray-600 dark:text-gray-300">brightness_4</span>
-              </button>
-            </div>
-            <div className="md:hidden flex items-center">
-              <button className="text-gray-600 dark:text-gray-300 hover:text-primary">
-                <span className="material-icons text-3xl">menu</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <TopNav />
 
+      {/* ── HERO ── */}
       <header className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img alt="Cinematic Indian film set lighting" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASv0wK05pmUB7hdtge6cXmTfVbFivmDR7cxfdhRGQsR7O7vO2GLo_gUkHBoHi0yg5r9A4C0OipBTaJPu2xfWF8ecnmbEkOSi_gTw3NqdQF2uLswegTwOfVF_9XXfZ9esaODaqS7Jdlwm9pKuWsP9EFgrCYeE6tr-j2tou5G7qt3AVLtnttqYsQFAJecmvn8J40HgjzSeIF3uqbIQ3_HwFA2ZgCOTOeMfoEFb_c41dauYzSLd9YwQ_06K0N4ecU8IjoQYeu-SWBwWch" />
+          <img
+            alt="Global film set cinematic lighting"
+            className="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuASv0wK05pmUB7hdtge6cXmTfVbFivmDR7cxfdhRGQsR7O7vO2GLo_gUkHBoHi0yg5r9A4C0OipBTaJPu2xfWF8ecnmbEkOSi_gTw3NqdQF2uLswegTwOfVF_9XXfZ9esaODaqS7Jdlwm9pKuWsP9EFgrCYeE6tr-j2tou5G7qt3AVLtnttqYsQFAJecmvn8J40HgjzSeIF3uqbIQ3_HwFA2ZgCOTOeMfoEFb_c41dauYzSLd9YwQ_06K0N4ecU8IjoQYeu-SWBwWch"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/80 to-transparent opacity-90 dark:opacity-95"></div>
           <div className="absolute inset-0 bg-black/40 mix-blend-multiply"></div>
         </div>
+
         <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto mt-16">
+          {/* ── Badge ── */}
           <span className="inline-block py-1 px-3 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm font-medium tracking-wider mb-6 uppercase">
-            Bridging Bollywood to Regional Cinema
+            🌍 Connecting Film Industries Worldwide
           </span>
+
+          {/* ── Headline ── */}
           <h1 className="font-display text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
             Discover the Future of <br />
-            <span className="gold-text-gradient">Indian Cinema</span>
+            <RollingText />
           </h1>
+
+          {/* ── Subheading ── */}
           <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto font-light">
-            Where Global Talent Meets Opportunity
+            Where World Cinema Talent Meets Opportunity
           </p>
+
           <div className="flex flex-col sm:flex-row justify-center gap-6">
             <a className="group relative px-8 py-4 bg-primary text-black font-bold rounded-lg overflow-hidden shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all transform hover:-translate-y-1" href="/register/actor">
               <div className="absolute inset-0 w-0 bg-white transition-all duration-[250ms] ease-out group-hover:w-full opacity-20"></div>
@@ -69,6 +150,7 @@ const Home = () => {
               </span>
             </a>
           </div>
+
           <div className="mt-16 flex justify-center gap-8 md:gap-16 text-white/80">
             <div className="text-center">
               <div className="text-3xl font-display font-bold text-primary">5k+</div>
@@ -86,13 +168,14 @@ const Home = () => {
         </div>
       </header>
 
+      {/* ── Industry strip ── now global */}
       <section className="py-12 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap justify-center gap-4 md:gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+            <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">Hollywood</span>
             <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">Bollywood</span>
-            <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">Tollywood</span>
-            <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">Kollywood</span>
-            <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">TV Serials</span>
+            <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">Nollywood</span>
+            <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">K-Cinema</span>
             <span className="text-2xl font-display font-bold text-gray-400 dark:text-gray-500 hover:text-primary cursor-default">OTT Originals</span>
           </div>
         </div>
@@ -111,10 +194,9 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Four sample cards - images and content preserved from original HTML */}
             <div className="group bg-white dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 border border-gray-100 dark:border-gray-800">
               <div className="relative h-80 overflow-hidden">
-                <img alt="Indian Actor Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZCOHjr6GjdbAViOhOCvn-M4FN9ecLXHWtOolL_H7fiF0OyJqzAsZ77ul0hc3umyHQCHDrt8WWivDI2swYEsx5G2plPT1zSG8wpn1KLf6mgliJEbhkpDGV1r4-8YwFy78GonZ5pW3Suc2D_9ci1Ldu7suTx3s0tA0EOknT3DfB4rNKqMOpzwbEo2ws7Hwo2d3mk8MQOv_ClQVSDKqHo1zohqTGQE3MDSfuluzP7yRm1oHA2rzoScgGrpAkDWCNGcEi4b0Jm7C27Plt" />
+                <img alt="Actor Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZCOHjr6GjdbAViOhOCvn-M4FN9ecLXHWtOolL_H7fiF0OyJqzAsZ77ul0hc3umyHQCHDrt8WWivDI2swYEsx5G2plPT1zSG8wpn1KLf6mgliJEbhkpDGV1r4-8YwFy78GonZ5pW3Suc2D_9ci1Ldu7suTx3s0tA0EOknT3DfB4rNKqMOpzwbEo2ws7Hwo2d3mk8MQOv_ClQVSDKqHo1zohqTGQE3MDSfuluzP7yRm1oHA2rzoScgGrpAkDWCNGcEi4b0Jm7C27Plt" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
                 <div className="absolute bottom-4 left-4 text-white">
                   <p className="text-xs font-semibold bg-primary text-black px-2 py-0.5 rounded mb-2 inline-block">Featured</p>
@@ -123,7 +205,7 @@ const Home = () => {
               <div className="p-5">
                 <h4 className="font-display text-xl font-bold text-gray-900 dark:text-white mb-1">Aarav Sharma</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-1">
-                  <span className="material-icons text-sm text-primary">location_on</span> Mumbai, MH
+                  <span className="material-icons text-sm text-primary">location_on</span> Mumbai, India
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-xs rounded text-gray-600 dark:text-gray-300">Method Acting</span>
@@ -136,13 +218,13 @@ const Home = () => {
 
             <div className="group bg-white dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 border border-gray-100 dark:border-gray-800">
               <div className="relative h-80 overflow-hidden">
-                <img alt="Indian Actress Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOlX4922muLcI6JiEOICu9Q__52nmFYhFCNwx9R5cgIZAiNrSBZxhcPBtzRR-gS3JtzhV1pVA51EROYThFWe9qJxmsOE0sn-gPoj3V89P9Uqcs4rBnXKWdjo4pdvG16A5t_squ_07ZA0fQTa1xRwVe57Bxrrvpk7YEij2FayA47pleFLv_xxHSlfoCIxp3TPQxm5PPb5sld9onB_YqStiZirxHcTrK5ceKRPpPeL5sGCveS0U7azTa67knO7bXSdhJ5uC3kux2OdTh" />
+                <img alt="Actress Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOlX4922muLcI6JiEOICu9Q__52nmFYhFCNwx9R5cgIZAiNrSBZxhcPBtzRR-gS3JtzhV1pVA51EROYThFWe9qJxmsOE0sn-gPoj3V89P9Uqcs4rBnXKWdjo4pdvG16A5t_squ_07ZA0fQTa1xRwVe57Bxrrvpk7YEij2FayA47pleFLv_xxHSlfoCIxp3TPQxm5PPb5sld9onB_YqStiZirxHcTrK5ceKRPpPeL5sGCveS0U7azTa67knO7bXSdhJ5uC3kux2OdTh" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
               </div>
               <div className="p-5">
                 <h4 className="font-display text-xl font-bold text-gray-900 dark:text-white mb-1">Priya Reddy</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-1">
-                  <span className="material-icons text-sm text-primary">location_on</span> Hyderabad, TS
+                  <span className="material-icons text-sm text-primary">location_on</span> Hyderabad, India
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-xs rounded text-gray-600 dark:text-gray-300">Classical Dance</span>
@@ -154,13 +236,13 @@ const Home = () => {
 
             <div className="group bg-white dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 border border-gray-100 dark:border-gray-800">
               <div className="relative h-80 overflow-hidden">
-                <img alt="Indian Model Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxJ5PtY7WdujCrlEuDMyRMBgqyKI9NaKPgHQIHHfWj6BkuVdGwm177Kx2r8zZHebPTMUU5_9Xou5eGTvE0cdQ8tv-O0ly6cCU20_aUSLG_cAtc-TcZJBSIuOC6iUAL6FHrI9jafcqIajewvcof1tMIx2I6lnrSdIGsOzGQU79zNZuK7XYeJL6gveQrG1tsmAYvU3nQkg2AVDsw2obF6tSLGpg5bdmWM0F389YQGfMDL02r7auL3Qeh7EExlvbo9xeSyNIhYSfxUCTi" />
+                <img alt="Model Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxJ5PtY7WdujCrlEuDMyRMBgqyKI9NaKPgHQIHHfWj6BkuVdGwm177Kx2r8zZHebPTMUU5_9Xou5eGTvE0cdQ8tv-O0ly6cCU20_aUSLG_cAtc-TcZJBSIuOC6iUAL6FHrI9jafcqIajewvcof1tMIx2I6lnrSdIGsOzGQU79zNZuK7XYeJL6gveQrG1tsmAYvU3nQkg2AVDsw2obF6tSLGpg5bdmWM0F389YQGfMDL02r7auL3Qeh7EExlvbo9xeSyNIhYSfxUCTi" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
               </div>
               <div className="p-5">
                 <h4 className="font-display text-xl font-bold text-gray-900 dark:text-white mb-1">Vikram Singh</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-1">
-                  <span className="material-icons text-sm text-primary">location_on</span> New Delhi, DL
+                  <span className="material-icons text-sm text-primary">location_on</span> New Delhi, India
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-xs rounded text-gray-600 dark:text-gray-300">Modeling</span>
@@ -173,13 +255,13 @@ const Home = () => {
 
             <div className="group bg-white dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 border border-gray-100 dark:border-gray-800">
               <div className="relative h-80 overflow-hidden">
-                <img alt="Indian Artist Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl5jbRq4HRD_Dn0MlGrQfX6BVC_CgThragFWhXyQnO42ToJqLrs5LZkPTW5iCB2zpoe8vQyAi6JDUMcxZDBv_O3XFItoZuXLIJe5C6UfyVvx93867ElVHNymqND5sKDrrhuID1fz7dcDm0HcHV57yJm6dOi5kMvXW8f6xiXS0Hz9GlJRYqmvfL4HDrocadMXH4Hg6wgXK0iKo16Ifa_B9Pof5rCWw8eMOY_ArKA3fZbFYx_-UOtVcUnxhwHUbkO9uueYAcW7EvRdP3" />
+                <img alt="Artist Portrait" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl5jbRq4HRD_Dn0MlGrQfX6BVC_CgThragFWhXyQnO42ToJqLrs5LZkPTW5iCB2zpoe8vQyAi6JDUMcxZDBv_O3XFItoZuXLIJe5C6UfyVvx93867ElVHNymqND5sKDrrhuID1fz7dcDm0HcHV57yJm6dOi5kMvXW8f6xiXS0Hz9GlJRYqmvfL4HDrocadMXH4Hg6wgXK0iKo16Ifa_B9Pof5rCWw8eMOY_ArKA3fZbFYx_-UOtVcUnxhwHUbkO9uueYAcW7EvRdP3" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
               </div>
               <div className="p-5">
                 <h4 className="font-display text-xl font-bold text-gray-900 dark:text-white mb-1">Meera Kapoor</h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 flex items-center gap-1">
-                  <span className="material-icons text-sm text-primary">location_on</span> Bengaluru, KA
+                  <span className="material-icons text-sm text-primary">location_on</span> Bengaluru, India
                 </p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-xs rounded text-gray-600 dark:text-gray-300">Singing</span>
@@ -204,7 +286,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl text-white font-bold mb-4">Elevate Your Production</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">We simplify the casting process with technology and dedicated support.</p>
+            <p className="text-gray-400 max-w-2xl mx-auto">We simplify the casting process with technology and dedicated support — across every film industry on the planet.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div className="text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-primary/50 transition-colors">
@@ -218,8 +300,8 @@ const Home = () => {
               <div className="w-16 h-16 mx-auto bg-primary rounded-full flex items-center justify-center mb-6">
                 <span className="material-icons text-black text-3xl">groups</span>
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Diverse Talent Pool</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">From seasoned Bollywood veterans to fresh faces from regional theatre, find the perfect match for any role.</p>
+              <h3 className="text-xl font-bold text-white mb-3">Global Talent Pool</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">From Hollywood veterans to rising stars in regional theatres worldwide, find the perfect match for any role.</p>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/5 backdrop-blur border border-white/10 hover:border-primary/50 transition-colors">
               <div className="w-16 h-16 mx-auto bg-primary rounded-full flex items-center justify-center mb-6">
@@ -314,16 +396,20 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ── CTA ── */}
       <section className="bg-primary py-16">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <h2 className="font-display text-3xl md:text-5xl font-bold text-black mb-6">Ready to make your mark?</h2>
-          <p className="text-black/80 text-lg mb-8 max-w-2xl mx-auto">Join thousands of actors, directors, and production houses building the future of Indian entertainment.</p>
+          <p className="text-black/80 text-lg mb-8 max-w-2xl mx-auto">Join thousands of actors, directors, and production houses building the future of world cinema.</p>
           <div className="flex justify-center gap-4">
             <button className="px-8 py-3 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition-colors shadow-lg">Join for Free</button>
             <button className="px-8 py-3 bg-white/20 text-black border-2 border-black font-bold rounded-lg hover:bg-black hover:text-white transition-colors">Browse Jobs</button>
           </div>
         </div>
       </section>
+
+      {/* Workshops sample section */}
+      <WorkshopPortalSection variant="home" />
 
       <footer className="bg-background-dark text-gray-400 py-16 border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -333,7 +419,7 @@ const Home = () => {
                 <img src="/TC Logo.png" alt="Logo" className="h-8 w-auto" />
                 <span className="font-display font-bold text-xl tracking-wide text-white">TALENT<span className="text-primary">CONNECT</span></span>
               </div>
-              <p className="text-sm leading-relaxed mb-6">India's most trusted platform for discovering talent and casting for films, ads, and web series.</p>
+              <p className="text-sm leading-relaxed mb-6">The world's most trusted platform for discovering talent and casting for films, ads, and web series — across every cinema industry.</p>
               <div className="flex gap-4">
                 <a className="text-gray-400 hover:text-white transition-colors" href="#"><i className="text-xl">FB</i></a>
                 <a className="text-gray-400 hover:text-white transition-colors" href="#"><i className="text-xl">IG</i></a>
@@ -362,13 +448,15 @@ const Home = () => {
             <div>
               <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Contact</h4>
               <ul className="space-y-3 text-sm">
-                <li className="flex items-center gap-2"><span className="material-icons text-xs">email</span> support@TalentConnect.in</li>
-                <li className="flex items-center gap-2"><span className="material-icons text-xs">phone</span> +91 22 4567 8900</li>
-                <li className="flex items-center gap-2"><span className="material-icons text-xs">place</span> Film City, Goregaon, Mumbai</li>
+                <li className="flex items-center gap-2"><span className="material-icons text-xs">email</span> support@TalentConnect.io</li>
+                <li className="flex items-center gap-2"><span className="material-icons text-xs">phone</span> +1 (800) TALENT-1</li>
+                <li className="flex items-center gap-2"><span className="material-icons text-xs">place</span> Global HQ · Los Angeles, CA</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">© 2026 TALENT<span className="text-primary">CONNECT</span> • Where Global Talent Meets Opportunity | Privacy Policy | Terms of Service</div>
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">
+            © 2026 TALENT<span className="text-primary">CONNECT</span> • Where World Cinema Talent Meets Opportunity | Privacy Policy | Terms of Service
+          </div>
         </div>
       </footer>
     </>

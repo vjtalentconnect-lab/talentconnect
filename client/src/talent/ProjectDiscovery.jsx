@@ -4,6 +4,7 @@ import { getProjects, applyToProject, getMyApplications } from '../services/proj
 import { getMyProfile } from '../services/profileService';
 import { TALENT_MENU } from '../constants/navigation';
 import socket from '../services/socket';
+import { useNotifications } from '../context/NotificationContext';
 
 const CATEGORIES = ['Film', 'Advertisement', 'Music Video', 'TV Series', 'Web Series', 'Short Film'];
 
@@ -21,6 +22,7 @@ const ProjectDiscovery = () => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState(null);
+    const { user: authUser } = useNotifications();
     const [filters, setFilters] = useState({ category: '', location: '', budget: '', title: '' });
     const [appliedIds, setAppliedIds] = useState(new Set());
     const [applyingIds, setApplyingIds] = useState(new Set());
@@ -100,7 +102,7 @@ const ProjectDiscovery = () => {
         avatar: profile?.profilePicture === 'no-photo.jpg' ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User') : profile?.profilePicture,
     };
 
-    const verificationStatus = profile?.user?.verificationStatus || 'none';
+    const verificationStatus = profile?.user?.verificationStatus || authUser?.verificationStatus || 'none';
 
     return (
         <DashboardLayout menuItems={TALENT_MENU} userRole="India • Artist" userData={userData} verificationStatus={verificationStatus}

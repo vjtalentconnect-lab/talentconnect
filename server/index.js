@@ -10,7 +10,6 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
@@ -22,10 +21,9 @@ import { init as initSocket } from './socket.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 // Load env vars
-dotenv.config();
+dotenv.config({ override: true });
 
-// Connect to database
-connectDB();
+// Firebase is initialized in lib/firebaseAdmin.js
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -40,13 +38,13 @@ app.use(
         origin: function (origin, callback) {
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
-            
+
             const allowedOrigins = [
                 process.env.FRONTEND_URL || 'http://localhost:5173',
                 'http://localhost:3000', // Alternative dev port
                 'https://talentconnect.vercel.app', // Production domain (example)
             ];
-            
+
             if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
             } else {
@@ -95,9 +93,9 @@ app.use(limiter);
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Cache-Control for GET requests
+// Cache-Control for GET requests (exclude API)
 app.use((req, res, next) => {
-    if (req.method === 'GET') {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
         res.set('Cache-Control', 'public, max-age=300');
     }
     next();

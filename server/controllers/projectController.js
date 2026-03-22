@@ -1,7 +1,4 @@
-import Project from '../models/Project.js';
-import Application from '../models/Application.js';
-import Notification from '../models/Notification.js';
-import User from '../models/User.js';
+import { db } from '../lib/firebaseAdmin.js';
 import { sendNotification, broadcastAdminEvent, broadcastProjectCreated } from '../socket.js';
 
 // @desc    Get all projects
@@ -10,14 +7,33 @@ import { sendNotification, broadcastAdminEvent, broadcastProjectCreated } from '
 export const getProjects = async (req, res) => {
     try {
         const { category, location, budget } = req.query;
-        let query = { status: 'open' };
+        let query = db.collection('projects').where('status', '==', 'open');
 
-        if (category) query.category = category;
-        if (location) query.location = new RegExp(location, 'i');
-        if (budget) query.budget = new RegExp(budget, 'i');
+        if (category) query = query.where('category', '==', category);
+        
+        const snapshot = await query.get();
+        let projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const projects = await Project.find(query).populate('director', 'email');
-        res.status(200).json({ success: true, count: projects.length, data: projects });
+        // Manual filtering for Regex fields
+        if (location) {
+            const regex = new RegExp(location, 'i');
+            projects = projects.filter(p => regex.test(p.location));
+        }
+        if (budget) {
+            const regex = new RegExp(budget, 'i');
+            projects = projects.filter(p => regex.test(p.budget));
+        }
+
+        // Populate director
+        const populatedProjects = await Promise.all(projects.map(async (p) => {
+            const directorDoc = await db.collection('users').doc(p.director).get();
+            return {
+                ...p,
+                director: directorDoc.exists ? { id: directorDoc.id, email: directorDoc.data().email } : p.director
+            };
+        }));
+
+        res.status(200).json({ success: true, count: populatedProjects.length, data: populatedProjects });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -28,11 +44,17 @@ export const getProjects = async (req, res) => {
 // @access  Public
 export const getProject = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id).populate('director', 'email');
-        if (!project) {
+        const projectDoc = await db.collection('projects').doc(req.params.id).get();
+        if (!projectDoc.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
-        res.status(200).json({ success: true, data: project });
+        const projectData = projectDoc.data();
+
+        // Populate director
+        const directorDoc = await db.collection('users').doc(projectData.director).get();
+        const director = directorDoc.exists ? { id: directorDoc.id, email: directorDoc.data().email } : projectData.director;
+
+        res.status(200).json({ success: true, data: { id: projectDoc.id, ...projectData, director } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -42,46 +64,51 @@ export const getProject = async (req, res) => {
 // @route   POST /api/projects
 // @access  Private (Director only)
 export const createProject = async (req, res) => {
-    req.body.director = req.user.id;
+    const projectData = {
+        ...req.body,
+        director: req.user.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: req.body.status || 'open'
+    };
 
     try {
-        const project = await Project.create(req.body);
-        const populatedProject = await project.populate('director', 'email role profile');
+        const projectRef = await db.collection('projects').add(projectData);
+        const project = { id: projectRef.id, ...projectData };
+
+        // Fetch director for population
+        const directorDoc = await db.collection('users').doc(req.user.id).get();
+        const directorData = directorDoc.data();
+        project.director = { id: req.user.id, email: directorData.email, role: directorData.role, profile: directorData.profile };
 
         // Notify admins about new project
-        const admins = await User.find({ role: 'admin' }).select('_id');
-        const adminNotifications = admins.map((admin) =>
-            Notification.create({
-                user: admin._id,
+        const adminsSnapshot = await db.collection('users').where('role', '==', 'admin').get();
+        const adminNotifications = adminsSnapshot.docs.map(async (adminDoc) => {
+            const notificationDoc = {
+                user: adminDoc.id,
                 type: 'project',
                 title: 'New Project Created',
                 message: `${req.user.email} created "${project.title}"`,
-                link: `/admin/projects/${project._id}`
-            })
-        );
+                link: `/admin/projects/${project.id}`,
+                createdAt: new Date().toISOString()
+            };
+            const noteRef = await db.collection('notifications').add(notificationDoc);
+            return { id: noteRef.id, ...notificationDoc };
+        });
+        
         const createdAdminNotes = await Promise.all(adminNotifications);
         createdAdminNotes.forEach((note) => sendNotification(note.user, note));
+        
         broadcastAdminEvent({
             type: 'project_created',
-            projectId: project._id,
+            projectId: project.id,
             title: project.title,
             director: req.user.email,
             createdAt: new Date().toISOString(),
         });
 
-        // Realtime broadcast for directors/talents/admins to refresh
-        broadcastProjectCreated({
-            _id: populatedProject._id,
-            title: populatedProject.title,
-            description: populatedProject.description,
-            category: populatedProject.category,
-            location: populatedProject.location,
-            budget: populatedProject.budget,
-            status: populatedProject.status,
-            deadline: populatedProject.deadline,
-            director: populatedProject.director,
-            createdAt: populatedProject.createdAt,
-        });
+        // Realtime broadcast
+        broadcastProjectCreated(project);
 
         res.status(201).json({ success: true, data: project });
     } catch (err) {
@@ -94,52 +121,72 @@ export const createProject = async (req, res) => {
 // @access  Private (Talent only)
 export const applyToProject = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id);
-        if (!project) {
+        const projectDoc = await db.collection('projects').doc(req.params.id).get();
+        if (!projectDoc.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
+        const project = projectDoc.data();
 
-        const application = await Application.create({
+        // Check for existing application (Firestore doesn't have unique constraints like Mongoose)
+        const existingApp = await db.collection('applications')
+            .where('project', '==', req.params.id)
+            .where('talent', '==', req.user.id)
+            .limit(1)
+            .get();
+        
+        if (!existingApp.empty) {
+            return res.status(400).json({ message: 'You have already applied to this project' });
+        }
+
+        const applicationData = {
             project: req.params.id,
             talent: req.user.id,
-        });
+            status: 'applied',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        const appRef = await db.collection('applications').add(applicationData);
+        const application = { id: appRef.id, ...applicationData };
 
         // Notify Director
-        const notification = await Notification.create({
+        const notificationDoc = {
             user: project.director,
             type: 'application',
             title: 'New Application',
             message: `A talent has applied to your project: ${project.title}`,
-            link: `/director/project/${project._id}`
-        });
+            link: `/director/project/${req.params.id}`,
+            createdAt: new Date().toISOString()
+        };
+        const noteRef = await db.collection('notifications').add(notificationDoc);
+        sendNotification(project.director, { id: noteRef.id, ...notificationDoc });
 
-        sendNotification(project.director, notification);
-
-        // Notify admins for audit trail
-        const admins = await User.find({ role: 'admin' }).select('_id');
-        const adminNotifications = admins.map((admin) =>
-            Notification.create({
-                user: admin._id,
+        // Notify admins
+        const adminsSnapshot = await db.collection('users').where('role', '==', 'admin').get();
+        const adminNotifications = adminsSnapshot.docs.map(async (adminDoc) => {
+            const n = {
+                user: adminDoc.id,
                 type: 'application',
                 title: 'New Application Submitted',
                 message: `Talent ${req.user.email} applied to "${project.title}"`,
-                link: `/admin/projects/${project._id}`
-            })
-        );
+                link: `/admin/projects/${req.params.id}`,
+                createdAt: new Date().toISOString()
+            };
+            const nr = await db.collection('notifications').add(n);
+            return { id: nr.id, ...n };
+        });
         const adminNotes = await Promise.all(adminNotifications);
         adminNotes.forEach((note) => sendNotification(note.user, note));
+
         broadcastAdminEvent({
             type: 'application_submitted',
-            projectId: project._id,
+            projectId: req.params.id,
             talent: req.user.email,
             createdAt: new Date().toISOString(),
         });
 
         res.status(201).json({ success: true, data: application });
     } catch (err) {
-        if (err.code === 11000) {
-            return res.status(400).json({ message: 'You have already applied to this project' });
-        }
         res.status(400).json({ message: err.message });
     }
 };
@@ -149,17 +196,34 @@ export const applyToProject = async (req, res) => {
 // @access  Private (Director only)
 export const getProjectApplications = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id);
-        if (!project) {
+        const projectDoc = await db.collection('projects').doc(req.params.id).get();
+        if (!projectDoc.exists) {
             return res.status(404).json({ message: 'Project not found' });
         }
+        const project = projectDoc.data();
 
         // Check if user is director of project
-        if (project.director.toString() !== req.user.id) {
+        if (project.director !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to view applications for this project' });
         }
 
-        const applications = await Application.find({ project: req.params.id }).populate('talent', 'email profile');
+        const appsSnapshot = await db.collection('applications').where('project', '==', req.params.id).get();
+        const applications = await Promise.all(appsSnapshot.docs.map(async (doc) => {
+            const app = { id: doc.id, ...doc.data() };
+            // Populate talent and profile
+            const talentDoc = await db.collection('users').doc(app.talent).get();
+            const talentData = talentDoc.exists ? talentDoc.data() : {};
+            let profileData = null;
+            if (talentData.profile) {
+                const profileDoc = await db.collection('profiles').doc(talentData.profile).get();
+                profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
+            }
+            return {
+                ...app,
+                talent: { id: talentDoc.id, email: talentData.email, profile: profileData }
+            };
+        }));
+
         res.status(200).json({ success: true, count: applications.length, data: applications });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -171,7 +235,11 @@ export const getProjectApplications = async (req, res) => {
 // @access  Private (Director only)
 export const getMyProjects = async (req, res) => {
     try {
-        const projects = await Project.find({ director: req.user.id }).sort({ createdAt: -1 });
+        const snapshot = await db.collection('projects')
+            .where('director', '==', req.user.id)
+            .orderBy('createdAt', 'desc')
+            .get();
+        const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         res.status(200).json({ success: true, count: projects.length, data: projects });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -190,32 +258,35 @@ export const updateApplicationStatus = async (req, res) => {
             return res.status(400).json({ message: 'Invalid status' });
         }
 
-        const application = await Application.findById(req.params.appId).populate('project');
-        
-        if (!application) {
+        const appDoc = await db.collection('applications').doc(req.params.appId).get();
+        if (!appDoc.exists) {
             return res.status(404).json({ message: 'Application not found' });
         }
+        const application = { id: appDoc.id, ...appDoc.data() };
 
-        // Check if user is the director of the project
-        if (application.project.director.toString() !== req.user.id) {
+        // Get project to check director
+        const projectDoc = await db.collection('projects').doc(application.project).get();
+        const project = projectDoc.data();
+
+        if (project.director !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to update this application' });
         }
 
-        application.status = status;
-        await application.save();
+        await db.collection('applications').doc(req.params.appId).update({ status, updatedAt: new Date().toISOString() });
 
         // Notify Talent
-        const notification = await Notification.create({
+        const notificationDoc = {
             user: application.talent,
             type: 'application_update',
             title: 'Application Update',
-            message: `Your application status for ${application.project.title} has been updated to ${status}`,
-            link: '/talent/projects'
-        });
+            message: `Your application status for ${project.title} has been updated to ${status}`,
+            link: '/talent/projects',
+            createdAt: new Date().toISOString()
+        };
+        const noteRef = await db.collection('notifications').add(notificationDoc);
+        sendNotification(application.talent, { id: noteRef.id, ...notificationDoc });
 
-        sendNotification(application.talent, notification);
-
-        res.status(200).json({ success: true, data: application });
+        res.status(200).json({ success: true, data: { ...application, status } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -228,37 +299,43 @@ export const scheduleAudition = async (req, res) => {
     try {
         const { auditionDate, auditionLocation, auditionNotes } = req.body;
 
-        const application = await Application.findById(req.params.appId).populate('project talent');
-        
-        if (!application) {
+        const appDoc = await db.collection('applications').doc(req.params.appId).get();
+        if (!appDoc.exists) {
             return res.status(404).json({ message: 'Application not found' });
         }
+        const application = { id: appDoc.id, ...appDoc.data() };
 
-        // Check if user is the director of the project
-        if (application.project.director.toString() !== req.user.id) {
+        const projectDoc = await db.collection('projects').doc(application.project).get();
+        const project = projectDoc.data();
+
+        if (project.director !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to schedule auditions for this application' });
         }
 
-        // Update audition details
-        application.auditionScheduled = true;
-        application.auditionDate = new Date(auditionDate);
-        application.auditionLocation = auditionLocation;
-        application.auditionNotes = auditionNotes;
-        application.status = 'auditioning'; // Update status to auditioning
-        await application.save();
+        const updateData = {
+            auditionScheduled: true,
+            auditionDate: new Date(auditionDate).toISOString(),
+            auditionLocation,
+            auditionNotes,
+            status: 'auditioning',
+            updatedAt: new Date().toISOString()
+        };
+
+        await db.collection('applications').doc(req.params.appId).update(updateData);
 
         // Notify Talent
-        const notification = await Notification.create({
-            user: application.talent._id,
+        const notificationDoc = {
+            user: application.talent,
             type: 'audition_scheduled',
             title: 'Audition Scheduled',
-            message: `Your audition for ${application.project.title} has been scheduled for ${new Date(auditionDate).toLocaleString()}`,
-            link: '/talent/audition-invites'
-        });
+            message: `Your audition for ${project.title} has been scheduled for ${new Date(auditionDate).toLocaleString()}`,
+            link: '/talent/audition-invites',
+            createdAt: new Date().toISOString()
+        };
+        const noteRef = await db.collection('notifications').add(notificationDoc);
+        sendNotification(application.talent, { id: noteRef.id, ...notificationDoc });
 
-        sendNotification(application.talent._id, notification);
-
-        res.status(200).json({ success: true, data: application });
+        res.status(200).json({ success: true, data: { ...application, ...updateData } });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -271,33 +348,45 @@ export const submitAuditionVideo = async (req, res) => {
     try {
         const { videoUrl } = req.body;
 
-        const application = await Application.findById(req.params.appId).populate('project talent');
-        
-        if (!application) {
+        const appDoc = await db.collection('applications').doc(req.params.appId).get();
+        if (!appDoc.exists) {
             return res.status(404).json({ message: 'Application not found' });
         }
+        const application = { id: appDoc.id, ...appDoc.data() };
 
-        // Check if user is the talent who owns this application
-        if (application.talent._id.toString() !== req.user.id) {
+        if (application.talent !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to submit video for this application' });
         }
 
-        // Update video submission
-        application.videoSubmissionUrl = videoUrl;
-        await application.save();
-
-        // Notify Director
-        const notification = await Notification.create({
-            user: application.project.director,
-            type: 'audition_submitted',
-            title: 'Audition Video Submitted',
-            message: `${application.talent.profile?.fullName || 'Talent'} has submitted their audition video for ${application.project.title}`,
-            link: '/director/auditions'
+        await db.collection('applications').doc(req.params.appId).update({
+            videoSubmissionUrl: videoUrl,
+            updatedAt: new Date().toISOString()
         });
 
-        sendNotification(application.project.director, notification);
+        // Notify Director
+        const projectDoc = await db.collection('projects').doc(application.project).get();
+        const project = projectDoc.data();
 
-        res.status(200).json({ success: true, data: application });
+        const talentDoc = await db.collection('users').doc(application.talent).get();
+        const talentData = talentDoc.data();
+        let fullName = 'Talent';
+        if (talentData.profile) {
+            const profileDoc = await db.collection('profiles').doc(talentData.profile).get();
+            if (profileDoc.exists) fullName = profileDoc.data().fullName;
+        }
+
+        const notificationDoc = {
+            user: project.director,
+            type: 'audition_submitted',
+            title: 'Audition Video Submitted',
+            message: `${fullName} has submitted their audition video for ${project.title}`,
+            link: '/director/auditions',
+            createdAt: new Date().toISOString()
+        };
+        const noteRef = await db.collection('notifications').add(notificationDoc);
+        sendNotification(project.director, { id: noteRef.id, ...notificationDoc });
+
+        res.status(200).json({ success: true });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -309,27 +398,45 @@ export const submitAuditionVideo = async (req, res) => {
 export const getDirectorApplications = async (req, res) => {
     try {
         const { status } = req.query;
-        // First find all projects by this director
-        const projects = await Project.find({ director: req.user.id }).select('_id title category');
-        const projectIds = projects.map(p => p._id);
+        const projectsSnapshot = await db.collection('projects').where('director', '==', req.user.id).get();
+        const projectIds = projectsSnapshot.docs.map(doc => doc.id);
         
-        let query = { project: { $in: projectIds } };
-        if (status) {
-            // Allows querying for multiple statuses, e.g., ?status=shortlisted,auditioning
-            const statusArray = status.split(',');
-            query.status = { $in: statusArray };
+        if (projectIds.length === 0) {
+            return res.status(200).json({ success: true, count: 0, data: [] });
         }
 
-        const applications = await Application.find(query)
-            .populate({
-                path: 'talent',
-                select: 'email role',
-                populate: { path: 'profile' } // Populate talent's profile to get images, stats
-            })
-            .populate('project', 'title category')
-            .sort({ createdAt: -1 });
+        let query = db.collection('applications').where('project', 'in', projectIds);
+        
+        // Firestore 'in' query supports up to 10 items. If more, we might need a different approach.
+        // But for this project's scale, it should be fine for now.
+        
+        const appsSnapshot = await query.get();
+        let applications = appsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        res.status(200).json({ success: true, count: applications.length, data: applications });
+        if (status) {
+            const statusArray = status.split(',');
+            applications = applications.filter(app => statusArray.includes(app.status));
+        }
+
+        const populatedApps = await Promise.all(applications.map(async (app) => {
+            const talentDoc = await db.collection('users').doc(app.talent).get();
+            const talentData = talentDoc.data();
+            let profileData = null;
+            if (talentData.profile) {
+                const profileDoc = await db.collection('profiles').doc(talentData.profile).get();
+                profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
+            }
+            const pDoc = await db.collection('projects').doc(app.project).get();
+            const pData = pDoc.data();
+
+            return {
+                ...app,
+                talent: { id: talentDoc.id, email: talentData.email, profile: profileData },
+                project: { id: pDoc.id, title: pData.title, category: pData.category }
+            };
+        }));
+
+        res.status(200).json({ success: true, count: populatedApps.length, data: populatedApps });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -340,12 +447,30 @@ export const getDirectorApplications = async (req, res) => {
 // @access  Private (Talent only)
 export const getMyApplications = async (req, res) => {
     try {
-        const applications = await Application.find({ talent: req.user.id })
-            .populate({
-                path: 'project',
-                populate: { path: 'director', select: 'email' }
-            })
-            .sort({ createdAt: -1 });
+        const snapshot = await db.collection('applications')
+            .where('talent', '==', req.user.id)
+            .get();
+        
+        const applications = await Promise.all(snapshot.docs.map(async (doc) => {
+            const app = { id: doc.id, ...doc.data() };
+            const pDoc = await db.collection('projects').doc(app.project).get();
+            const pData = pDoc.data();
+            const dDoc = await db.collection('users').doc(pData.director).get();
+            const dData = dDoc.data();
+
+            return {
+                ...app,
+                project: { 
+                    id: pDoc.id, 
+                    ...pData, 
+                    director: { id: dDoc.id, email: dData.email } 
+                }
+            };
+        }));
+
+        // Sort manually since we can't orderBy on a field not in the filter easily without index
+        applications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
         res.status(200).json({ success: true, count: applications.length, data: applications });
     } catch (err) {
         res.status(400).json({ message: err.message });

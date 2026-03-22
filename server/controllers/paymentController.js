@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import User from '../models/User.js';
+import { db } from '../lib/firebaseAdmin.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -12,7 +12,7 @@ export const createPaymentIntent = async (req, res) => {
 
         // Define plan prices (in cents)
         const planPrices = {
-            studio_pro: 99900, // $999 per month
+            studio_pro: 9900, // $99 per month
             // Add other plans as needed
         };
 
@@ -51,15 +51,18 @@ export const confirmPayment = async (req, res) => {
 
         if (paymentIntent.status === 'succeeded') {
             // Update user subscription status
-            const user = await User.findById(req.user.id);
-            if (!user) {
+            const userRef = db.collection('users').doc(req.user.id);
+            const userDoc = await userRef.get();
+            if (!userDoc.exists) {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            // Update user plan (you might want to add a subscription field to User model)
-            user.plan = paymentIntent.metadata.planType;
-            user.subscriptionStatus = 'active';
-            await user.save();
+            // Update user plan
+            await userRef.update({
+                plan: paymentIntent.metadata.planType,
+                subscriptionStatus: 'active',
+                updatedAt: new Date().toISOString()
+            });
 
             res.status(200).json({
                 success: true,
@@ -105,4 +108,4 @@ export const handleWebhook = async (req, res) => {
     }
 
     res.json({ received: true });
-};
+};
