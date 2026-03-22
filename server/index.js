@@ -28,6 +28,9 @@ dotenv.config({ override: true });
 const PORT = process.env.PORT || 5000;
 const app = express();
 
+// Required for Render / Heroku to correctly get client IP for rate limiting
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(compression());
 app.use(express.json());
@@ -39,10 +42,14 @@ app.use(
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
 
+            const envOrigin = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : 'http://localhost:5173';
+
             const allowedOrigins = [
-                process.env.FRONTEND_URL || 'http://localhost:5173',
-                'http://localhost:3000', // Alternative dev port
-                'https://talentconnect.vercel.app', // Production domain (example)
+                envOrigin,
+                'http://localhost:5173',
+                'http://localhost:3000', 
+                'https://talentconnect-6e347.web.app', // Explicitly allow Firebase Hosting
+                'https://talentconnect-api.onrender.com'
             ];
 
             if (allowedOrigins.indexOf(origin) !== -1) {
