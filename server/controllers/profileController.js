@@ -1,5 +1,5 @@
 import { db } from '../lib/firebaseAdmin.js';
-import { uploadToFirebase } from '../utils/firebaseStorage.js';
+import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 import { broadcastAdminEvent, sendNotification } from '../socket.js';
 
 // @desc    Get current user profile
@@ -61,7 +61,7 @@ export const updateProfile = async (req, res) => {
         if (profileSnapshot.empty) {
             profileData.user = req.user.id;
             profileData.createdAt = new Date().toISOString();
-            const docRef = await db.collection('profiles').add(profileData);
+            const docRef = await addWithBackup('profiles', profileData);
             profileId = docRef.id;
         } else {
             profileId = profileSnapshot.docs[0].id;
@@ -71,7 +71,7 @@ export const updateProfile = async (req, res) => {
             // Firestore merged update handles nested fields if you provide paths or just merge manually
             const updateData = { ...req.body, updatedAt: new Date().toISOString() };
 
-            await db.collection('profiles').doc(profileId).update(updateData);
+            await updateWithBackup('profiles', profileId, updateData);
             const updatedDoc = await db.collection('profiles').doc(profileId).get();
             profileData = updatedDoc.data();
         }
@@ -184,8 +184,8 @@ export const uploadMedia = async (req, res) => {
         const profileId = profileSnapshot.docs[0].id;
         const profileData = profileSnapshot.docs[0].data();
 
-        // Upload to Firebase Storage
-        const fileUrl = await uploadToFirebase(req.file.buffer, req.file.originalname, 'profiles');
+        // File is uploaded to Cloudinary via multer storage middleware
+        const fileUrl = req.file.path;
         const { type } = req.body; // 'profilePicture' or 'portfolio'
 
         const updateData = {};
@@ -217,11 +217,17 @@ export const uploadMedia = async (req, res) => {
             updateData.verificationState = vs;
         }
 
-        await db.collection('profiles').doc(profileId).update(updateData);
+        await updateWithBackup('profiles', profileId, updateData);
         res.status(200).json({ success: true, data: { ...profileData, ...updateData } });
     } catch (err) {
-        console.error('Upload Error:', err);
-        res.status(400).json({ message: err.message });
+        console.error('Upload Error:', {
+            message: err?.message,
+            stack: err?.stack,
+            code: err?.code,
+            cloudinary: err?.error?.message || err?.error,
+        });
+        const status = err instanceof Error && err.name === 'MulterError' ? 400 : 400;
+        res.status(status).json({ message: 'Upload failed', detail: err.message });
     }
 };
 
@@ -233,7 +239,7 @@ export const submitForVerification = async (req, res) => {
         const userDoc = await db.collection('users').doc(req.user.id).get();
         if (!userDoc.exists) return res.status(404).json({ message: 'User not found' });
 
-        await db.collection('users').doc(req.user.id).update({
+        await updateWithBackup('users', req.user.id, {
             verificationStatus: 'pending',
             isVerified: false
         });
@@ -250,7 +256,7 @@ export const submitForVerification = async (req, res) => {
                 link: '/admin/verifications',
                 createdAt: new Date().toISOString()
             };
-            const noteRef = await db.collection('notifications').add(notificationDoc);
+            const noteRef = await addWithBackup('notifications', notificationDoc);
             return { id: noteRef.id, ...notificationDoc };
         });
 

@@ -1,4 +1,5 @@
 import { db } from '../lib/firebaseAdmin.js';
+import { addWithBackup } from '../lib/textBackup.js';
 import { sendNotification } from '../socket.js';
 
 // @desc    Send a message
@@ -20,7 +21,7 @@ export const sendMessage = async (req, res) => {
             createdAt: new Date().toISOString()
         };
 
-        const msgRef = await db.collection('messages').add(messageData);
+        const msgRef = await addWithBackup('messages', messageData);
         const message = { id: msgRef.id, ...messageData };
 
         // Get sender profile for name
@@ -37,7 +38,7 @@ export const sendMessage = async (req, res) => {
             link: req.user.role === 'talent' ? '/director/messages' : '/talent/messages',
             createdAt: new Date().toISOString()
         };
-        const noteRef = await db.collection('notifications').add(notificationDoc);
+        const noteRef = await addWithBackup('notifications', notificationDoc);
         sendNotification(receiverId, { id: noteRef.id, ...notificationDoc });
 
         res.status(201).json({ success: true, data: message });

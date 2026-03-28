@@ -1,5 +1,6 @@
 import { auth, db } from '../lib/firebaseAdmin.js';
 import addDays from '../utils/addDays.js';
+import jwt from 'jsonwebtoken';
 
 // Protect routes
 export const protect = async (req, res, next) => {
@@ -32,8 +33,39 @@ export const protect = async (req, res, next) => {
         }
 
         req.user = { id: userDoc.id, ...userDoc.data() };
-        next();
+        return next();
     } catch (err) {
+        // Fallback: JWT-based env admin login
+        try {
+            const decodedJwt = jwt.verify(token, process.env.JWT_SECRET || 'change_this_secret');
+            if (decodedJwt.isEnvAdmin && decodedJwt.email === process.env.ADMIN_EMAIL) {
+                req.user = {
+                    id: decodedJwt.id,
+                    email: decodedJwt.email,
+                    role: 'admin',
+                    isVerified: true,
+                };
+                return next();
+            }
+
+            // Allow JWT-based social logins (e.g., LinkedIn) that we issue ourselves
+            if (decodedJwt.provider === 'linkedin') {
+                const socialDoc = await db.collection('users').doc(decodedJwt.id).get();
+                if (socialDoc.exists) {
+                    req.user = { id: socialDoc.id, ...socialDoc.data() };
+                } else {
+                    req.user = {
+                        id: decodedJwt.id,
+                        email: decodedJwt.email,
+                        role: decodedJwt.role || 'talent',
+                        isVerified: decodedJwt.isVerified ?? false,
+                    };
+                }
+                return next();
+            }
+        } catch (jwtErr) {
+            // swallow and fall through
+        }
         console.error('Auth verification error:', err);
         return res.status(401).json({ message: 'Not authorized to access this route' });
     }

@@ -1,4 +1,6 @@
 import api from './api';
+import { auth } from '../lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
@@ -9,8 +11,63 @@ export const login = async (email, password) => {
     return response.data;
 };
 
+export const loginAdmin = async (email, password) => {
+    const response = await api.post('/auth/admin-login', { email, password });
+    if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify({ id: 'env-admin', email, role: 'admin' }));
+    }
+    return response.data;
+};
+
 export const register = async (userData) => {
     const response = await api.post('/auth/register', userData);
+    if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+};
+
+export const loginWithGoogle = async (role = 'talent') => {
+    const provider = new GoogleAuthProvider();
+    const credential = await signInWithPopup(auth, provider);
+    const idToken = await credential.user.getIdToken();
+
+    const response = await api.post('/auth/login/google', { idToken, role });
+    if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+};
+
+export const getLinkedInAuthUrl = () => {
+    const clientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
+    const redirectUri = import.meta.env.VITE_LINKEDIN_REDIRECT_URI;
+    const scope = encodeURIComponent('r_liteprofile r_emailaddress');
+    const state = Math.random().toString(36).substring(2, 15); // simple CSRF token
+    localStorage.setItem('linkedin_oauth_state', state);
+    return `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
+};
+
+export const completeLinkedInLogin = async (code, state) => {
+    const storedState = localStorage.getItem('linkedin_oauth_state');
+    if (storedState && state && storedState !== state) {
+        throw new Error('State mismatch. Please try again.');
+    }
+    const redirectUri = import.meta.env.VITE_LINKEDIN_REDIRECT_URI;
+    const response = await api.post('/auth/login/linkedin', { code, redirectUri });
+    if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+};
+
+export const autoLinkedInLogin = async (role = 'talent') => {
+    const redirectUri = import.meta.env.VITE_LINKEDIN_REDIRECT_URI || window.location.origin + '/auth/linkedin/callback';
+    const response = await api.post('/auth/login/linkedin', { code: 'AUTO', redirectUri, role });
     if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));

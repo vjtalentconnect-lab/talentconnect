@@ -1,6 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { NotificationProvider } from "./context/NotificationContext";
+import { ThemeProvider } from "./context/ThemeContext";
+
 import SkeletonLoader from "./components/SkeletonLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -54,10 +56,13 @@ const Productions = lazy(() => import("./pages/Productions"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const ArtistGuidelines = lazy(() => import("./pages/ArtistGuidelines"));
 const SuccessStories = lazy(() => import("./pages/SuccessStories"));
+const LinkedInCallback = lazy(() => import("./pages/LinkedInCallback"));
 
 
 function App() {
   return (
+    <ThemeProvider>
+
     <div className="min-h-screen font-sans bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
       <NotificationProvider>
         <BrowserRouter>
@@ -74,6 +79,7 @@ function App() {
               <Route path="/loginPage" element={<Login />} />
               <Route path="/register/actor" element={<RegisterActor />} />
               <Route path="/register/director" element={<RegisterDirector />} />
+              <Route path="/auth/linkedin/callback" element={<LinkedInCallback />} />
               <Route path="/admin/login" element={<AdminLogin />} />
 
               {/* Dashboards */}
@@ -136,7 +142,9 @@ function App() {
         </BrowserRouter>
       </NotificationProvider>
     </div>
+    </ThemeProvider>
   );
+
 }
 
 export default App;

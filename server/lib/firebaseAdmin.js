@@ -6,7 +6,14 @@ dotenv.config();
 let serviceAccount;
 try {
     if (process.env.FIREBASE_ADMIN_KEY && process.env.FIREBASE_ADMIN_KEY !== 'your_admin_key_json_string') {
-        serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_KEY);
+        let rawKey = process.env.FIREBASE_ADMIN_KEY;
+        if (rawKey.startsWith("'") && rawKey.endsWith("'")) {
+            rawKey = rawKey.slice(1, -1);
+        }
+        serviceAccount = JSON.parse(rawKey);
+        if (serviceAccount && serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
     }
 } catch (error) {
     console.error('CRITICAL: Error parsing FIREBASE_ADMIN_KEY. Ensure it is a valid JSON string.');

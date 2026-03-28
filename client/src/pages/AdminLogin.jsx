@@ -1,18 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../services/authService';
+import { loginAdmin } from '../services/authService';
 
 const AdminLogin = () => {
     const [formData, setFormData] = useState({
         adminId: '',
         password: ''
     });
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    
-    const otpRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
     const navigate = useNavigate();
 
     const handleInputChange = (e) => {
@@ -20,54 +17,13 @@ const AdminLogin = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleOtpChange = (index, value) => {
-        if (isNaN(value)) return;
-        
-        const newOtp = [...otp];
-        newOtp[index] = value.substring(value.length - 1);
-        setOtp(newOtp);
-
-        // Move to next input
-        if (value && index < 5) {
-            otpRefs[index + 1].current.focus();
-        }
-    };
-
-    const handleKeyDown = (index, e) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            otpRefs[index - 1].current.focus();
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
-        const otpString = otp.join('');
-        if (otpString.length < 6) {
-            setError('Please enter the 6-digit security code');
-            setLoading(false);
-            return;
-        }
-
-        if (otpString !== '151105') {
-            setError('Invalid security code. Access denied.');
-            setLoading(false);
-            return;
-        }
-
         try {
-            // Using email as the field name expected by the backend auth service
-            const data = await login(formData.adminId, formData.password);
-            
-            if (data.user.role !== 'admin') {
-                setError('Access denied. This terminal is restricted to administrative personnel.');
-                // Optionally clear token if the service saved it
-                localStorage.removeItem('token');
-                setLoading(false);
-                return;
-            }
+            await loginAdmin(formData.adminId, formData.password);
 
             console.log('Admin login successful');
             navigate('/dashboard/admin');
@@ -166,39 +122,6 @@ const AdminLogin = () => {
                                                 >
                                                     <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
                                                 </button>
-                                            </div>
-                                        </div>
-
-                                        {/* 2FA Section */}
-                                        <div className="pt-4 pb-2">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="h-[1px] grow bg-slate-700"></div>
-                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Enhanced Security</span>
-                                                <div className="h-[1px] grow bg-slate-700"></div>
-                                            </div>
-                                            <div className="flex flex-col bg-primary/5 border border-primary/20 rounded-lg p-4">
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <p className="text-white text-sm font-bold flex items-center gap-2">
-                                                        <span className="material-symbols-outlined text-primary text-sm">verified_user</span>
-                                                        Two-Factor Auth (2FA)
-                                                    </p>
-                                                    <span className="text-[10px] text-primary/80 font-mono">REQUIRED</span>
-                                                </div>
-                                                <div className="grid grid-cols-6 gap-2">
-                                                    {otp.map((digit, idx) => (
-                                                        <input 
-                                                            key={idx}
-                                                            ref={otpRefs[idx]}
-                                                            value={digit}
-                                                            onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                                            onKeyDown={(e) => handleKeyDown(idx, e)}
-                                                            className="w-full aspect-square text-center font-bold text-lg bg-slate-800 border border-slate-700 rounded text-white focus:border-primary focus:ring-0 transition-colors" 
-                                                            maxLength="1" 
-                                                            type="text"
-                                                            required
-                                                        />
-                                                    ))}
-                                                </div>
                                             </div>
                                         </div>
 

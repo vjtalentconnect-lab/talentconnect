@@ -1,5 +1,6 @@
 import { db } from '../lib/firebaseAdmin.js';
 import { sendNotification, broadcastAdminEvent, broadcastProjectCreated } from '../socket.js';
+import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 
 // @desc    Get all projects
 // @route   GET /api/projects
@@ -73,7 +74,7 @@ export const createProject = async (req, res) => {
     };
 
     try {
-        const projectRef = await db.collection('projects').add(projectData);
+        const projectRef = await addWithBackup('projects', projectData);
         const project = { id: projectRef.id, ...projectData };
 
         // Fetch director for population
@@ -92,7 +93,7 @@ export const createProject = async (req, res) => {
                 link: `/admin/projects/${project.id}`,
                 createdAt: new Date().toISOString()
             };
-            const noteRef = await db.collection('notifications').add(notificationDoc);
+            const noteRef = await addWithBackup('notifications', notificationDoc);
             return { id: noteRef.id, ...notificationDoc };
         });
         
@@ -146,7 +147,7 @@ export const applyToProject = async (req, res) => {
             updatedAt: new Date().toISOString()
         };
 
-        const appRef = await db.collection('applications').add(applicationData);
+        const appRef = await addWithBackup('applications', applicationData);
         const application = { id: appRef.id, ...applicationData };
 
         // Notify Director
@@ -158,7 +159,7 @@ export const applyToProject = async (req, res) => {
             link: `/director/project/${req.params.id}`,
             createdAt: new Date().toISOString()
         };
-        const noteRef = await db.collection('notifications').add(notificationDoc);
+        const noteRef = await addWithBackup('notifications', notificationDoc);
         sendNotification(project.director, { id: noteRef.id, ...notificationDoc });
 
         // Notify admins
@@ -172,7 +173,7 @@ export const applyToProject = async (req, res) => {
                 link: `/admin/projects/${req.params.id}`,
                 createdAt: new Date().toISOString()
             };
-            const nr = await db.collection('notifications').add(n);
+            const nr = await addWithBackup('notifications', n);
             return { id: nr.id, ...n };
         });
         const adminNotes = await Promise.all(adminNotifications);
@@ -272,7 +273,7 @@ export const updateApplicationStatus = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to update this application' });
         }
 
-        await db.collection('applications').doc(req.params.appId).update({ status, updatedAt: new Date().toISOString() });
+        await updateWithBackup('applications', req.params.appId, { status, updatedAt: new Date().toISOString() });
 
         // Notify Talent
         const notificationDoc = {
@@ -283,7 +284,7 @@ export const updateApplicationStatus = async (req, res) => {
             link: '/talent/projects',
             createdAt: new Date().toISOString()
         };
-        const noteRef = await db.collection('notifications').add(notificationDoc);
+        const noteRef = await addWithBackup('notifications', notificationDoc);
         sendNotification(application.talent, { id: noteRef.id, ...notificationDoc });
 
         res.status(200).json({ success: true, data: { ...application, status } });
@@ -321,7 +322,7 @@ export const scheduleAudition = async (req, res) => {
             updatedAt: new Date().toISOString()
         };
 
-        await db.collection('applications').doc(req.params.appId).update(updateData);
+        await updateWithBackup('applications', req.params.appId, updateData);
 
         // Notify Talent
         const notificationDoc = {
@@ -332,7 +333,7 @@ export const scheduleAudition = async (req, res) => {
             link: '/talent/audition-invites',
             createdAt: new Date().toISOString()
         };
-        const noteRef = await db.collection('notifications').add(notificationDoc);
+        const noteRef = await addWithBackup('notifications', notificationDoc);
         sendNotification(application.talent, { id: noteRef.id, ...notificationDoc });
 
         res.status(200).json({ success: true, data: { ...application, ...updateData } });
@@ -358,7 +359,7 @@ export const submitAuditionVideo = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to submit video for this application' });
         }
 
-        await db.collection('applications').doc(req.params.appId).update({
+        await updateWithBackup('applications', req.params.appId, {
             videoSubmissionUrl: videoUrl,
             updatedAt: new Date().toISOString()
         });
@@ -383,7 +384,7 @@ export const submitAuditionVideo = async (req, res) => {
             link: '/director/auditions',
             createdAt: new Date().toISOString()
         };
-        const noteRef = await db.collection('notifications').add(notificationDoc);
+        const noteRef = await addWithBackup('notifications', notificationDoc);
         sendNotification(project.director, { id: noteRef.id, ...notificationDoc });
 
         res.status(200).json({ success: true });

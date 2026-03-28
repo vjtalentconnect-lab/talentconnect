@@ -179,9 +179,17 @@ const TalentPortfolio = () => {
             <style>
                 {`
                     .cinematic-gradient {
+                        background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(200, 200, 200, 0.1) 60%, rgba(255, 255, 255, 1) 100%);
+                    }
+                    .dark .cinematic-gradient {
                         background: linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(34, 16, 18, 0.4) 60%, rgba(34, 16, 18, 1) 100%);
                     }
                     .glass-card {
+                        background: rgba(255, 255, 255, 0.6);
+                        backdrop-filter: blur(12px);
+                        border: 1px solid rgba(0, 0, 0, 0.05);
+                    }
+                    .dark .glass-card {
                         background: rgba(42, 26, 20, 0.4);
                         backdrop-filter: blur(12px);
                         border: 1px solid rgba(238, 43, 59, 0.1);
@@ -194,339 +202,246 @@ const TalentPortfolio = () => {
 
             {toast && <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} />}
 
-            <div className="pb-24">
+            <div className="pb-24 text-slate-900 dark:text-zinc-100 font-sans">
                 {/* Hero Section */}
-                <section className="relative h-[70vh] w-full overflow-hidden rounded-3xl group mb-12 border border-white/5">
+                <section className="relative h-[614px] min-h-[450px] w-full overflow-hidden rounded-3xl mb-12 border border-slate-200 dark:border-zinc-800">
                     <div className="absolute inset-0">
-                        <img 
-                            alt="Main Portrait" 
-                            className="w-full h-full object-cover object-top opacity-70 group-hover:scale-105 transition-transform duration-1000" 
-                            src={avatarUrl} 
-                        />
-                        <div className="absolute inset-0 cinematic-gradient"></div>
+                        <img alt={profile?.fullName || "Hero"} className="w-full h-full object-cover object-top" src={avatarUrl} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-zinc-950 via-white/40 dark:via-zinc-950/40 to-transparent"></div>
                     </div>
-                    
-                    <div className="absolute bottom-0 left-0 w-full p-8 md:p-12 z-10">
-                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+                    <div className="absolute bottom-0 left-0 w-full p-8 lg:p-12">
+                        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div>
-                                <span className="inline-block px-3 py-1 bg-primary/20 border border-primary/50 text-primary text-[10px] font-black tracking-[0.2em] uppercase rounded mb-4">
-                                    {profile?.isVerified ? 'Verified Pro' : 'Leading Talent'}
+                                <span className="inline-block px-3 py-1 bg-red-600 text-white text-[10px] font-black tracking-widest uppercase mb-4 rounded-sm">
+                                    Artist ID: {(profile?.user?._id || '000000').substring(0,6)}
                                 </span>
-                                <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-white mb-2 uppercase italic">
-                                    {profile?.fullName}
-                                </h2>
-                                <p className="text-lg md:text-xl text-primary font-bold tracking-wide uppercase italic flex items-center gap-4">
-                                    <span>{profile?.talentCategory} • {profile?.location || 'Location Not Set'}</span>
-                                    {profile?.mobile && (
-                                        <span className="flex items-center gap-2 text-slate-400 text-sm font-semibold h-full border-l border-white/20 pl-4 normal-case not-italic">
-                                            <span className="material-symbols-outlined text-sm">call</span>
-                                            {profile.mobile}
-                                        </span>
-                                    )}
+                                <h1 className="text-5xl lg:text-7xl font-black tracking-tighter text-white mb-2">{profile?.fullName}</h1>
+                                <p className="text-red-500 font-medium text-lg flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+                                    {profile?.location || 'Location Not Set'}
                                 </p>
                             </div>
-                            
-                            <div className="flex flex-wrap gap-4">
-                                <div className="glass-card px-6 py-4 rounded-2xl text-center min-w-[110px]">
-                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Height</p>
-                                    <p className="text-xl font-bold text-white">{profile?.physicalAttributes?.height || attrs.height || '-'}</p>
-                                </div>
-                                <div className="glass-card px-6 py-4 rounded-2xl text-center min-w-[110px]">
-                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Eyes</p>
-                                    <p className="text-xl font-bold text-white">{profile?.physicalAttributes?.eyeColor || attrs.eyeColor || '-'}</p>
-                                </div>
-                                <div className="glass-card px-6 py-4 rounded-2xl text-center min-w-[110px]">
-                                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Build</p>
-                                    <p className="text-xl font-bold text-white">{profile?.physicalAttributes?.build || attrs.build || '-'}</p>
-                                </div>
+                            {isOwnProfile && (
+                            <div className="flex gap-3">
+                                <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-lg font-bold transition-all">
+                                    <span className="material-symbols-outlined text-sm z-0">edit</span>
+                                    Edit Profile
+                                </button>
+                                <button className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-red-600/20 transition-all">
+                                    <span className="material-symbols-outlined text-sm">share</span>
+                                    Share
+                                </button>
                             </div>
+                            )}
                         </div>
                     </div>
-
-                    {/* Actions */}
-                    {isOwnProfile && (
-                        <div className="absolute top-8 right-8 z-20 flex gap-3">
-                            <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/30">
-                                <span className="material-symbols-outlined text-sm">download</span>
-                                Download CV
-                            </button>
-                            <button className="p-2.5 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 hover:border-primary/50 transition-all text-white">
-                                <span className="material-symbols-outlined text-sm">share</span>
-                            </button>
-                        </div>
-                    )}
                 </section>
 
-                <div className="grid lg:grid-cols-12 gap-12">
-                    {/* Left Content */}
-                    <div className="lg:col-span-8 space-y-12">
-                        {/* Biography */}
-                        <section id="biography" className="relative">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-xs font-black tracking-[0.3em] uppercase text-primary flex items-center gap-2">
-                                    <span className="w-8 h-[2px] bg-primary"></span>
-                                    Professional Biography
-                                </h3>
+                <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 space-y-16">
+                    {/* Bento Grid Stats */}
+                    <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
+                            <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Category</span>
+                            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.talentCategory || 'Actor'}</p>
+                        </div>
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
+                            <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Experience</span>
+                            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.skills?.length || 0} Skills</p>
+                        </div>
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
+                            <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Availability</span>
+                            <div className="flex items-center gap-2 mt-2">
+                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                                <p className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Ready to Shoot</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Bio & Attributes Asymmetric Layout */}
+                    <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                        <div className="lg:col-span-7 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Professional Biography</h3>
                                 {isOwnProfile && !editingBio && (
-                                    <button 
-                                        onClick={() => setEditingBio(true)}
-                                        className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-1.5 hover:underline"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">edit</span>
-                                        Rewrite Bio
-                                    </button>
+                                <button onClick={() => setEditingBio(true)} className="text-primary hover:text-red-400 text-sm font-bold flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">edit</span> Edit Bio
+                                </button>
                                 )}
                             </div>
-
                             {editingBio ? (
                                 <div className="space-y-4">
                                     <textarea
                                         rows={6}
                                         value={bioText}
                                         onChange={e => setBioText(e.target.value)}
-                                        className="w-full bg-surface-dark border border-white/10 rounded-2xl px-6 py-5 text-slate-300 font-medium outline-none focus:border-primary/50 transition-all resize-none leading-loose custom-scrollbar"
+                                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-6 py-5 text-slate-700 dark:text-zinc-300 font-medium outline-none focus:border-red-500/50 transition-all shadow-inner resize-none leading-relaxed"
                                         placeholder="Express your artistic journey..."
                                     />
                                     <div className="flex gap-4">
                                         <button 
                                             onClick={handleSaveBio} 
                                             disabled={savingBio}
-                                            className="px-8 py-3 bg-primary text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all disabled:opacity-50"
+                                            className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold text-sm tracking-wide hover:bg-red-700 transition-all disabled:opacity-50"
                                         >
-                                            {savingBio ? 'Updating Chronicles...' : 'Save Biography'}
+                                            {savingBio ? 'Saving...' : 'Save Biography'}
                                         </button>
                                         <button 
                                             onClick={() => setEditingBio(false)}
-                                            className="px-8 py-3 bg-white/5 border border-white/10 text-slate-400 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all"
+                                            className="px-6 py-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-lg font-bold text-sm tracking-wide hover:bg-zinc-700 transition-all"
                                         >
-                                            Terminate
+                                            Cancel
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-8">
-                                    <p className="text-2xl md:text-3xl leading-relaxed text-slate-300 font-light italic opacity-90">
-                                        "{bioText ? bioText.split('.')[0] + '.' : 'Click "Rewrite Bio" to craft your artistic statement.'}"
-                                    </p>
-                                    <div className="space-y-6 text-slate-400 leading-loose text-lg">
-                                        <p>{bioText || 'No history recorded yet in the archives.'}</p>
-                                    </div>
+                                <div className="text-zinc-400 leading-relaxed space-y-4">
+                                    {bioText ? bioText.split('\n').map((para, i) => <p key={i}>{para}</p>) : <p>No history recorded yet in the archives.</p>}
                                 </div>
                             )}
-                        </section>
+                        </div>
 
-                        {/* Media Gallery */}
-                        <section id="gallery">
-                            <div className="flex justify-between items-end mb-10">
-                                <div>
-                                    <h3 className="text-xs font-black tracking-[0.3em] uppercase text-primary mb-3">Visual Portfolio</h3>
-                                    <h2 className="text-3xl font-black uppercase text-white italic">Stills & Moods</h2>
-                                </div>
-                                {isOwnProfile && (
-                                    <label className={`text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2 cursor-pointer hover:underline ${uploadingMedia ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                        {uploadingMedia ? 'TRANSMITTING...' : (
-                                            <>
-                                                ADD FRAME
-                                                <span className="material-symbols-outlined text-lg">add_a_photo</span>
-                                            </>
-                                        )}
-                                        <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia}/>
-                                    </label>
-                                )}
-                            </div>
-                            
-                            <div className="columns-2 md:columns-3 gap-6 space-y-6">
-                                {(profile?.portfolio || []).map((item, idx) => (
-                                    <div key={item._id || idx} className="relative group overflow-hidden rounded-2xl cursor-pointer">
-                                        <img 
-                                            src={item.url || item} 
-                                            alt={`Portolio ${idx}`} 
-                                            className="w-full h-auto grayscale hover:grayscale-0 transition-all duration-700 hover:scale-105" 
-                                        />
-                                        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-white text-4xl">fullscreen</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        {/* Film Credits */}
-                        <section id="credits">
-                            <div className="flex items-center gap-4 mb-10">
-                                <span className="material-symbols-outlined text-primary text-3xl">movie</span>
-                                <h4 className="text-2xl font-black uppercase tracking-tight text-white italic">Performance Credits</h4>
-                            </div>
-                            
-                            {filmCredits.length === 0 ? (
-                                <div className="text-center py-16 bg-white/5 border border-dashed border-white/10 rounded-3xl">
-                                    <span className="material-symbols-outlined text-5xl text-slate-600 mb-4 block">theaters</span>
-                                    <p className="text-slate-500 font-bold text-sm tracking-wide uppercase italic">The chronicles begin when you are cast.</p>
-                                </div>
-                            ) : (
-                                <div className="bg-surface-dark/50 rounded-3xl border border-white/5 overflow-hidden">
-                                    <table className="w-full text-left">
-                                        <thead className="bg-white/5 border-b border-white/10">
-                                            <tr>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Project Title</th>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Role</th>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500">Production</th>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Year</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {filmCredits.map((credit, idx) => (
-                                                <tr key={idx} className="group hover:bg-primary/5 transition-colors">
-                                                    <td className="px-8 py-6 font-black text-white italic group-hover:text-primary transition-colors uppercase tracking-tight">
-                                                        {credit.title}
-                                                    </td>
-                                                    <td className="px-8 py-6 text-slate-300 text-sm font-medium">{credit.role}</td>
-                                                    <td className="px-8 py-6 text-slate-500 text-sm font-medium">{credit.production}</td>
-                                                    <td className="px-8 py-6 text-slate-500 text-sm font-bold text-right italic">{credit.year}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </section>
-                    </div>
-
-                    {/* Right Sidebar */}
-                    <div className="lg:col-span-4 space-y-10">
-                        {/* Attributes */}
-                        <div className="glass-card p-8 rounded-3xl">
-                            <div className="flex items-center justify-between mb-8">
-                                <h4 className="text-base font-black text-white uppercase italic tracking-tighter flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-primary text-xl">analytics</span>
-                                    Physical Specs
-                                </h4>
+                        <div className="lg:col-span-5 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Physical Attributes</h3>
                                 {isOwnProfile && !editingAttrs && (
-                                    <button 
-                                        onClick={() => setEditingAttrs(true)}
-                                        className="text-[10px] font-black text-primary uppercase tracking-[0.2em] hover:underline"
-                                    >
-                                        Calibrate
-                                    </button>
+                                <button onClick={() => setEditingAttrs(true)} className="text-primary hover:text-red-400 text-sm font-bold">Manage</button>
                                 )}
                             </div>
-
                             {editingAttrs ? (
-                                <div className="space-y-5">
-                                    {[
-                                        { key: 'height', label: 'Height' },
-                                        { key: 'eyeColor', label: 'Eyes' },
-                                        { key: 'skinTone', label: 'Skin' },
-                                        { key: 'hairColor', label: 'Hair' },
-                                        { key: 'build', label: 'Build' },
-                                        { key: 'waist', label: 'Waist' },
-                                        { key: 'chest', label: 'Chest' },
-                                    ].map(({ key, label }) => (
-                                        <div key={key}>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">{label}</label>
-                                            <input 
-                                                type="text" 
-                                                value={attrs[key]} 
-                                                onChange={e => setAttrs(p => ({ ...p, [key]: e.target.value }))}
-                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-primary/50 transition-all"
-                                            />
-                                        </div>
-                                    ))}
-                                    <div className="flex gap-4 pt-4">
+                                <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {[
+                                            { key: 'height', label: 'Height' },
+                                            { key: 'eyeColor', label: 'Eyes' },
+                                            { key: 'hairColor', label: 'Hair' },
+                                            { key: 'build', label: 'Build' },
+                                        ].map(({ key, label }) => (
+                                            <div key={key}>
+                                                <label className="text-zinc-500 text-[10px] font-bold uppercase block mb-1">{label}</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={attrs[key]} 
+                                                    onChange={e => setAttrs(p => ({ ...p, [key]: e.target.value }))}
+                                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-md px-3 py-2 text-sm font-semibold text-white outline-none focus:border-red-500/50 transition-all"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-3 pt-2">
                                         <button 
                                             onClick={handleSaveAttrs} 
                                             disabled={savingAttrs}
-                                            className="flex-1 py-3 bg-primary text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                                            className="flex-1 py-2 bg-red-600 text-white rounded-md font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
                                         >
                                             {savingAttrs ? 'Saving...' : 'Confirm'}
                                         </button>
                                         <button 
                                             onClick={() => setEditingAttrs(false)}
-                                            className="flex-1 py-3 bg-white/5 border border-white/10 text-slate-400 rounded-xl font-black text-[10px] uppercase tracking-widest"
+                                            className="flex-1 py-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-md font-bold text-xs uppercase tracking-wider"
                                         >
                                             Abort
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-y-8 gap-x-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     {[
                                         { label: 'Height', value: profile?.physicalAttributes?.height || attrs.height || '-' },
                                         { label: 'Eyes', value: profile?.physicalAttributes?.eyeColor || attrs.eyeColor || '-' },
-                                        { label: 'Skin', value: profile?.physicalAttributes?.skinTone || attrs.skinTone || '-' },
                                         { label: 'Hair', value: profile?.physicalAttributes?.hairColor || attrs.hairColor || '-' },
-                                        { label: 'Build', value: profile?.physicalAttributes?.build || attrs.build || '-' },
-                                        { label: 'Waist', value: profile?.physicalAttributes?.waist || attrs.waist || '-' },
+                                        { label: 'Build', value: profile?.physicalAttributes?.build || attrs.build || '-' }
                                     ].map(({ label, value }) => (
-                                        <div key={label}>
-                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1.5">{label}</p>
-                                            <p className="font-black text-white text-lg tracking-tight italic">{value}</p>
+                                        <div key={label} className="bg-white dark:bg-zinc-900/50 p-4 rounded-lg border border-slate-200 dark:border-zinc-800 shadow-sm">
+                                            <span className="text-slate-500 dark:text-zinc-500 text-[10px] font-bold uppercase block mb-1">{label}</span>
+                                            <span className="text-lg font-semibold text-slate-900 dark:text-zinc-100">{value}</span>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
+                    </section>
 
-                        {/* Core Skills */}
-                        <div id="skills" className="glass-card p-8 rounded-3xl">
-                            <h4 className="text-base font-black text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
-                                <span className="material-symbols-outlined text-primary text-xl">military_tech</span>
-                                expertise
-                            </h4>
-                            <div className="flex flex-wrap gap-2.5">
-                                {(profile?.skills || []).length > 0 ? (
-                                    profile.skills.map(skill => (
-                                        <span key={skill} className="bg-primary/10 border border-primary/30 text-primary px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                            {skill}
-                                        </span>
-                                    ))
-                                ) : (
-                                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest italic">No elite skills logged.</p>
-                                )}
-                            </div>
+                    {/* Media Gallery */}
+                    <section className="space-y-8">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Media Gallery</h3>
+                            {isOwnProfile && (
+                                <label className={`bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-zinc-700 ${uploadingMedia ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    <span className="material-symbols-outlined text-sm">upload</span> {uploadingMedia ? 'Uploading...' : 'Upload Media'}
+                                    <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia}/>
+                                </label>
+                            )}
                         </div>
-
-                        {/* Verified Credentials */}
-                        {profile?.verificationState && (
-                            <div className="glass-card p-8 rounded-3xl">
-                                <h4 className="text-base font-black text-white uppercase italic tracking-tighter flex items-center gap-2 mb-8">
-                                    <span className="material-symbols-outlined text-green-500 text-xl">verified</span>
-                                    Verified Credentials
-                                </h4>
-                                <div className="space-y-4">
-                                    {profile.verificationState.imdbUrl && (
-                                        <a href={profile.verificationState.imdbUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-white/5 group">
-                                            <span className="text-[10px] font-black uppercase text-slate-400">IMDb Profile</span>
-                                            <span className="material-symbols-outlined text-primary text-sm transition-transform group-hover:translate-x-1">open_in_new</span>
-                                        </a>
-                                    )}
-                                    {profile.verificationState.associationName && (
-                                        <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                                            <p className="text-[10px] font-black uppercase text-slate-400 mb-1">{profile.verificationState.associationName}</p>
-                                            <p className="text-xs font-bold text-white tracking-widest">{profile.verificationState.membershipId}</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {(profile?.portfolio || []).map((item, idx) => (
+                                <div key={idx} className={`group relative rounded-lg overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm ${idx % 3 === 2 ? 'md:col-span-2 aspect-video' : 'aspect-[3/4]'}`}>
+                                    <img 
+                                        alt={`Media ${idx + 1}`} 
+                                        className={`w-full h-full object-cover transition-all duration-500 ${idx % 3 === 2 ? 'brightness-75 dark:brightness-50 group-hover:brightness-100 dark:group-hover:brightness-75' : 'grayscale group-hover:grayscale-0'}`} 
+                                        src={item.url || item} 
+                                    />
+                                    {idx % 3 === 2 ? (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                                            </div>
+                                            <span className="text-white font-bold text-lg">Showreel</span>
+                                        </div>
+                                    ) : (
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                            <span className="material-symbols-outlined text-white text-3xl">fullscreen</span>
                                         </div>
                                     )}
-                                    {!profile.verificationState.imdbUrl && !profile.verificationState.associationName && (
-                                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest italic">Verification in progress...</p>
-                                    )}
                                 </div>
-                            </div>
-                        )}
-
-                        {/* CTA Section */}
-                        <div className="p-8 rounded-3xl bg-primary shadow-2xl shadow-primary/20 text-center relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
-                            <div className="relative z-10">
-                                <h5 className="text-2xl font-black text-white uppercase tracking-tighter mb-4 italic">Next Blockbuster?</h5>
-                                <p className="text-white/80 text-xs font-bold leading-relaxed mb-6 uppercase tracking-wider">
-                                    Contact managers for high-impact character leads.
-                                </p>
-                                <button className="w-full bg-white text-primary py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">
-                                    Contact Agent
-                                </button>
-                            </div>
+                            ))}
                         </div>
-                    </div>
+                    </section>
+
+                    {/* Credits Table */}
+                    <section className="space-y-8">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Filmography</h3>
+                            {isOwnProfile && (
+                            <button className="bg-primary/5 hover:bg-primary/10 text-primary px-4 py-2 rounded font-bold text-sm flex items-center gap-2 border border-primary/20 transition-all">
+                                <span className="material-symbols-outlined text-sm">add</span> Add New Credit
+                            </button>
+                            )}
+                        </div>
+                        <div className="overflow-hidden border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/30 backdrop-blur-sm shadow-sm">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-slate-50 dark:bg-zinc-900/80 text-slate-500 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">
+                                        <th className="px-6 py-4">Project Title</th>
+                                        <th className="px-6 py-4">Role</th>
+                                        <th className="px-6 py-4">Year</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                                    {filmCredits.length > 0 ? filmCredits.map((credit, idx) => (
+                                    <tr key={credit.id || idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                        <td className="px-6 py-5 font-bold text-slate-900 dark:text-zinc-100">{credit.title}</td>
+                                        <td className="px-6 py-5 text-slate-500 dark:text-zinc-400">{credit.role}</td>
+                                        <td className="px-6 py-5 text-slate-500 dark:text-zinc-400">{credit.year}</td>
+                                        <td className="px-6 py-5">
+                                            <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold rounded">Completed</span>
+                                        </td>
+                                        <td className="px-6 py-5 text-right">
+                                            <button className="text-zinc-500 hover:text-white transition-colors">
+                                                <span className="material-symbols-outlined text-sm">more_vert</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    )) : (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-8 text-center text-zinc-500 font-medium">No performance records added yet.</td>
+                                    </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
             </div>
         </DashboardLayout>

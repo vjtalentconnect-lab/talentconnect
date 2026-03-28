@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
+import { login, loginAdmin, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin } from '../services/authService';
 
 const Login = () => {
   const [userType, setUserType] = useState('artist');
@@ -13,29 +13,70 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const handleLinkedInAuto = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const role = userType === 'director' ? 'director' : 'talent';
+      const data = await autoLinkedInLogin(role);
+      const userRole = data.user.role || role;
+      if (role === 'talent') navigate('/dashboard/talent');
+      else if (role === 'director') navigate('/dashboard/director');
+      else navigate('/dashboard/admin');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'LinkedIn auto-login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const data = await login(email, password);
-      console.log('Login successful:', data);
-
-      // Redirect based on role
-      const role = data.user.role;
-      if (role === 'talent') {
-        navigate('/dashboard/talent');
-      } else if (role === 'director') {
-        navigate('/dashboard/director');
-      } else if (role === 'admin') {
+      // Try env-admin first so admins can log in from here
+      try {
+        await loginAdmin(email, password);
         navigate('/dashboard/admin');
+        return;
+      } catch (adminErr) {
+        // fall back to regular auth
       }
+
+      const data = await login(email, password);
+      const role = data.user.role;
+      if (role === 'talent') navigate('/dashboard/talent');
+      else if (role === 'director') navigate('/dashboard/director');
+      else if (role === 'admin') navigate('/dashboard/admin');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const role = userType === 'director' ? 'director' : 'talent';
+      const data = await loginWithGoogle(role);
+      const userRole = data.user.role || role;
+      if (role === 'talent') navigate('/dashboard/talent');
+      else if (role === 'director') navigate('/dashboard/director');
+      else navigate('/dashboard/admin');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLinkedIn = () => {
+    const url = getLinkedInAuthUrl();
+    window.location.href = url;
   };
 
   return (
@@ -208,8 +249,10 @@ const Login = () => {
             {/* Social Login */}
             <div className="grid grid-cols-2 gap-4">
               <button
-                className="flex items-center justify-center gap-2 bg-background-dark/40 border border-slate-700 hover:bg-background-dark/60 py-3 rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 bg-background-dark/40 border border-slate-700 hover:bg-background-dark/60 py-3 rounded-xl transition-colors disabled:opacity-50"
                 type="button"
+                onClick={handleGoogle}
+                disabled={loading}
               >
                 <img
                   alt="Google Logo"
@@ -219,15 +262,17 @@ const Login = () => {
                 <span className="text-sm font-medium text-white">Google</span>
               </button>
               <button
-                className="flex items-center justify-center gap-2 bg-background-dark/40 border border-slate-700 hover:bg-background-dark/60 py-3 rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 bg-background-dark/40 border border-slate-700 hover:bg-background-dark/60 py-3 rounded-xl transition-colors disabled:opacity-50"
                 type="button"
+                onClick={handleLinkedInAuto}
+                disabled={loading}
               >
                 <img
-                  alt="Facebook Logo"
+                  alt="LinkedIn Logo"
                   className="w-5 h-5"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB86yrQmtv4C-gVPC89OPZBI4b4dayGpvWv5dsrXCSWhEYB9W9ZUa_qpeayTOV1OIUBwRFvnhdoWf5d8HSfEGwLjLjCX1sxhbkLDIHTPym3wqtXugPZwP2hEydfetf8WXmlDjAhTrgnMQDHy7lWMrAZWRTBa55ywXR5SQqybsvB2WETk14Irqc2Gr3Pa7cwv6XNO7zJoYfW_sgePTnTTxCOn0FdQCpeBMmMF4L7-AVX7Lu7CkxBeNWiC9Qwq_bWokvrNJRlwnuheLM1"
+                  src="https://cdn-icons-png.flaticon.com/512/174/174857.png"
                 />
-                <span className="text-sm font-medium text-white">Facebook</span>
+                <span className="text-sm font-medium text-white">LinkedIn</span>
               </button>
             </div>
 

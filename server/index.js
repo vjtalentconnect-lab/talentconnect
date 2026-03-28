@@ -19,11 +19,18 @@ import adminRoutes from './routes/adminRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import { init as initSocket } from './socket.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
+import connectDB from './config/db.js';
 
 // Load env vars
 dotenv.config({ override: true });
 
 // Firebase is initialized in lib/firebaseAdmin.js
+// Connect MongoDB (used as backup store for text data)
+if (process.env.MONGODB_URI) {
+    connectDB();
+} else {
+    console.warn('MONGODB_URI not set; Mongo backups are disabled.');
+}
 
 const PORT = process.env.PORT || 5000;
 const app = express();

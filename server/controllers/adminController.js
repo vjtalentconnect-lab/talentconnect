@@ -1,4 +1,5 @@
 import { db } from '../lib/firebaseAdmin.js';
+import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 
 // @desc    Get platform stats
 // @route   GET /api/admin/stats
@@ -114,7 +115,7 @@ export const verifyUser = async (req, res) => {
             verificationStatus = 'verified';
         }
 
-        await userRef.update({ 
+        await updateWithBackup('users', req.params.id, { 
             verificationStatus, 
             isVerified,
             updatedAt: new Date().toISOString()
@@ -143,7 +144,7 @@ export const verifyUser = async (req, res) => {
                 
                 sendNotification(req.params.id, notification);
                 
-                await db.collection('notifications').add({
+                await addWithBackup('notifications', {
                     user: req.params.id,
                     ...notification
                 });
@@ -253,7 +254,7 @@ export const updateProjectStatus = async (req, res) => {
             return res.status(404).json({ message: 'Project not found' });
         }
 
-        await projectRef.update({ status, updatedAt: new Date().toISOString() });
+        await updateWithBackup('projects', req.params.id, { status, updatedAt: new Date().toISOString() });
         res.status(200).json({ success: true, data: { id: projectDoc.id, ...projectDoc.data(), status } });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -301,7 +302,7 @@ export const updateUserRole = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        await userRef.update({ role, updatedAt: new Date().toISOString() });
+        await updateWithBackup('users', req.params.id, { role, updatedAt: new Date().toISOString() });
         res.status(200).json({ success: true, data: { id: userDoc.id, ...userDoc.data(), role } });
     } catch (err) {
         res.status(400).json({ message: err.message });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../services/authService';
+import { register, login } from '../services/authService';
 
 const RegisterDirector = () => {
   const industryTypes = [
@@ -91,9 +91,10 @@ const RegisterDirector = () => {
         companyName: formData.productionName,
       };
 
-      const data = await register(userData);
-      console.log('Director Registration successful:', data);
-      navigate('/checkout/director');
+      await register(userData);
+      // Auto-login so directors immediately start their free trial experience
+      await login(formData.email, formData.password);
+      navigate('/dashboard/director');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {

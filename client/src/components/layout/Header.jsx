@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import NotificationCenter from '../common/NotificationCenter';
+import ThemeToggle from '../common/ThemeToggle';
 import { logout } from '../../services/authService';
 
 const Header = ({ title, subtitle, showSearch = true, searchPlaceholder = "Search...", actions, userData }) => {
@@ -55,6 +56,7 @@ const Header = ({ title, subtitle, showSearch = true, searchPlaceholder = "Searc
                 )}
 
                 <div className="flex items-center gap-4">
+                    <ThemeToggle />
                     <NotificationCenter />
                     <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-2"></div>
                     

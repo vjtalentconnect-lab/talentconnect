@@ -1,4 +1,5 @@
 import { db } from '../lib/firebaseAdmin.js';
+import { updateWithBackup, batchUpdateWithBackup } from '../lib/textBackup.js';
 
 // @desc    Get all notifications for user
 // @route   GET /api/notifications
@@ -36,7 +37,7 @@ export const markAsRead = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        await docRef.update({ read: true });
+        await updateWithBackup('notifications', req.params.id, { read: true });
 
         res.status(200).json({ success: true, data: { id: doc.id, ...notification, read: true } });
     } catch (err) {
@@ -58,11 +59,8 @@ export const markAllRead = async (req, res) => {
             return res.status(200).json({ success: true, message: 'All marked as read' });
         }
 
-        const batch = db.batch();
-        snapshot.docs.forEach((doc) => {
-            batch.update(doc.ref, { read: true });
-        });
-        await batch.commit();
+        const updates = snapshot.docs.map((doc) => ({ id: doc.id, data: { read: true } }));
+        await batchUpdateWithBackup('notifications', updates);
 
         res.status(200).json({ success: true, message: 'All marked as read' });
     } catch (err) {

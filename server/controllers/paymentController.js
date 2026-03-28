@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { db } from '../lib/firebaseAdmin.js';
+import { updateWithBackup } from '../lib/textBackup.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -58,7 +59,7 @@ export const confirmPayment = async (req, res) => {
             }
 
             // Update user plan
-            await userRef.update({
+            await updateWithBackup('users', req.user.id, {
                 plan: paymentIntent.metadata.planType,
                 subscriptionStatus: 'active',
                 updatedAt: new Date().toISOString()
@@ -108,4 +109,4 @@ export const handleWebhook = async (req, res) => {
     }
 
     res.json({ received: true });
-};
+};
