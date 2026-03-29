@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getMyProfile } from '../services/profileService';
-import { getAdminStats } from '../services/adminService';
+import { getAdminStats, searchGlobal } from '../services/adminService';
 
 const GlobalSearch = () => {
     const [adminProfile, setAdminProfile] = useState(null);
@@ -10,6 +10,9 @@ const GlobalSearch = () => {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('All Results');
     const [searchQuery, setSearchQuery] = useState('');
+
+    const [searchResults, setSearchResults] = useState({ users: [], projects: [] });
+    const [searching, setSearching] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -28,6 +31,23 @@ const GlobalSearch = () => {
         };
         fetchData();
     }, []);
+
+    const handleSearch = async (val) => {
+        setSearchQuery(val);
+        if (val.trim().length > 1) {
+            setSearching(true);
+            try {
+                const res = await searchGlobal(val);
+                setSearchResults(res.data);
+            } catch (err) {
+                console.error('Search error:', err);
+            } finally {
+                setSearching(false);
+            }
+        } else {
+            setSearchResults({ users: [], projects: [] });
+        }
+    };
 
     const menuItems = [
         { icon: 'dashboard', label: 'Overview', path: '/dashboard/admin' },
@@ -91,9 +111,9 @@ const GlobalSearch = () => {
                             </div>
                             <input
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => handleSearch(e.target.value)}
                                 className="block w-full pl-24 pr-64 py-10 bg-white/80 dark:bg-card-dark/80 backdrop-blur-3xl border border-slate-200 dark:border-white/5 rounded-[3rem] text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-700 focus:ring-8 focus:ring-primary/5 focus:border-primary transition-all text-2xl font-black shadow-2xl uppercase tracking-tighter"
-                                placeholder="INDEX_QUERY_ALPHA..."
+                                placeholder={searching ? "QUERYING_DOMAIN..." : "INDEX_QUERY_ALPHA..."}
                                 type="text"
                             />
                             <div className="absolute inset-y-0 right-10 flex items-center gap-6">
@@ -155,32 +175,35 @@ const GlobalSearch = () => {
                                 <Link to="/admin/users" className="text-[10px] font-black text-primary uppercase tracking-[0.4em] hover:tracking-[0.6em] transition-all">READ_ALL</Link>
                             </div>
                             <div className="space-y-4">
-                                {[
-                                    { name: 'Arjun Malhotra', role: 'Lead Actor • Mumbai', id: '#USR-9921', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDOfbcY8E-UhnlwIbEthr3I7PQ4hqaI-F4whyBWVAgXI_POFIJq9r_nyAb4zO8v0nq_6iyFRnG8VKLH-H3ozJcAtEaqdO3EnPkO6vxiXaCtpqLSy6GJfvmJlA9Eb1sbTxn4zuISUYRGVGFgzV5cpHwOSsQ5A-5NJeKrfHzTUeGLwidMBrh-BZFseudOJbzgYYJhFF2vTgIBffd7tfvSPj0KnnHnRia2hG68AHwVNrFTZ1MpCX39LDsXXo2F7ADXCH3WUwsWXHWlyZ5m', verified: false },
-                                    { name: 'Priya Sharma', role: 'Exec Director • Delhi', id: '#USR-4420', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC96W9DzHrg6_q90doKZjqg1hfmKyUZ4v92rBqMPH2AfbcBiP7PV6HW8y3TLF1EMb2FKYOBmEETh6zRcdJoh68cMM1_vkr3YhT4o1poU1gnuy_tXCO2XaerApNV5d9AYq3YW65_DUmwrNgsv4HgajYL3aKdVraowbg1BUQXgjHm34QL9Jo6QT3En8zpVflvrZTzWY6v_junrmSUXj4SwMIHWOlfL936YjtwvxKWwVRJHFev80uJLW7x0lLPPaz2OiGWPWq-dRpteUI8', verified: true }
-                                ].map((user, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between hover:border-primary/40 transition-all group/card shadow-sm hover:shadow-2xl hover:shadow-primary/5">
-                                        <div className="flex items-center gap-8">
-                                            <div className="size-20 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden ring-8 ring-primary/5 group-hover/card:ring-primary/10 transition-all p-1">
-                                                <img className="w-full h-full object-cover rounded-full" src={user.img} alt={user.name} />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h4 className="text-xl font-black dark:text-white uppercase tracking-tighter">{user.name}</h4>
-                                                    {user.verified && <span className="material-symbols-outlined text-sm text-blue-400 fill-1">verified</span>}
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{user.role}</p>
-                                                    <div className="size-1 bg-slate-200 dark:bg-white/10 rounded-full"></div>
-                                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">{user.id}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-4">
-                                            <Link to={`/admin/users/1`} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-95 leading-none">Access Dossier</Link>
-                                        </div>
+                                {searchResults.users.length === 0 ? (
+                                    <div className="p-12 text-center bg-slate-50 dark:bg-white/2 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/10">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{searchQuery ? 'Target entity not found in current sector.' : 'Enter query to initialize matrix scan.'}</p>
                                     </div>
-                                ))}
+                                ) : (
+                                    searchResults.users.map((user, idx) => (
+                                        <div key={idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between hover:border-primary/40 transition-all group/card shadow-sm hover:shadow-2xl hover:shadow-primary/5">
+                                            <div className="flex items-center gap-8">
+                                                <div className="size-20 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden ring-8 ring-primary/5 group-hover/card:ring-primary/10 transition-all p-1">
+                                                    <img className="w-full h-full object-cover rounded-full" src={user.profile?.profilePicture && user.profile?.profilePicture !== 'no-photo.jpg' ? user.profile?.profilePicture : `https://ui-avatars.com/api/?name=${user.profile?.fullName || 'User'}&background=ee2b3b&color=fff`} alt={user.name} />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <h4 className="text-xl font-black dark:text-white uppercase tracking-tighter">{user.profile?.fullName || 'Anonymous Node'}</h4>
+                                                        {user.isVerified && <span className="material-symbols-outlined text-sm text-blue-400 fill-1">verified</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{user.role} • {user.profile?.location || 'Unknown Sector'}</p>
+                                                        <div className="size-1 bg-slate-200 dark:bg-white/10 rounded-full"></div>
+                                                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">#{user._id.slice(-6).toUpperCase()}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <Link to={`/admin/users/${user._id}`} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-95 leading-none">Access Dossier</Link>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </section>
 
@@ -196,27 +219,30 @@ const GlobalSearch = () => {
                                 <Link to="/admin/projects" className="text-[10px] font-black text-primary uppercase tracking-[0.4em] hover:tracking-[0.6em] transition-all">VIEW_GRID</Link>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {[
-                                    { title: 'Dharma Productions', meta: 'Feature Film • ₹45 Cr', status: 'Audit Req', statusColor: 'amber', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD_S0JMjAGe_CYl7cXZE_BHLc38_jlAGUk9bHSgPuzSgOxRMqMsUJeZIuSI3B4uKO3vK86ci5DFBveUybV-ZgES1XcpIzrKKV3JtsKmrzHAyeXRDxZHXenldqdRiBjczRh_MGHQ8G8EFEqZzbxyNm6kNwL2i6Wvy3b2iFhCyP-VhhtFqRMEj2qu5KdGDte-XTV8BsyOxJemepYToO4-hKu2z1G9zDMdBHqWDT8U1GIuoYu2JG6LiDzikya6YRCdTdaRveHnfwc9sAqU' },
-                                    { title: 'The Glitch', meta: 'Netflix Series • Casting', status: 'Live Node', statusColor: 'emerald', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCAh_MVjnQugL1BmoBxWujUoOA5kSUvI_xXMYv0eJ5duv82cBCj2zIWvwagsq2VV2-xmPftlZQZsr8eRxPFFWRMRg5eh6TzRghoWt3NliYj69VNOUfxRFp9eU4gHTq9GJQFWyLoGPkxTviXsPk-Wd1jreqyeICZXqMQOH_eCGAGbtY0VFMUvibYtVBJ5_S9Sq2fS9i8HszhF8gXyd9ptlXsGeLWUvBn494RqcyE9VkS8HAZLmB5F235wRwfassc_tXbW55qsoFs2EL1' }
-                                ].map((project, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] overflow-hidden group/item hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:shadow-primary/5">
-                                        <div className="h-64 w-full relative overflow-hidden">
-                                            <img className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" src={project.img} alt={project.title} />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
-                                            <div className="absolute bottom-8 left-8">
-                                                <span className={`px-4 py-2 rounded-xl bg-${project.statusColor}-500/20 text-${project.statusColor}-500 text-[10px] font-black uppercase tracking-[0.2em] border border-${project.statusColor}-500/30 backdrop-blur-2xl`}>
-                                                    {project.status}
-                                                </span>
+                                {searchResults.projects.length === 0 ? (
+                                    <div className="md:col-span-2 p-12 text-center bg-slate-50 dark:bg-white/2 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/10 font-black text-[10px] text-slate-400 uppercase tracking-widest italic">
+                                        No project shards detected in query range.
+                                    </div>
+                                ) : (
+                                    searchResults.projects.map((project, idx) => (
+                                        <div key={idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] overflow-hidden group/item hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:shadow-primary/5">
+                                            <div className="h-64 w-full relative overflow-hidden">
+                                                <img className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" src={project.poster || 'https://images.unsplash.com/photo-1485846234645-a62644ffb1e7?q=80&w=2069&auto=format&fit=crop'} alt={project.title} />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
+                                                <div className="absolute bottom-8 left-8">
+                                                    <span className={`px-4 py-2 rounded-xl bg-${project.status === 'open' ? 'emerald' : 'amber'}-500/20 text-${project.status === 'open' ? 'emerald' : 'amber'}-500 text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 backdrop-blur-2xl`}>
+                                                        {project.status?.toUpperCase() || 'LIVE_NODE'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="p-10">
+                                                <h4 className="text-xl font-black dark:text-white uppercase tracking-tighter mb-2">{project.title}</h4>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">{project.category} • {project.location}</p>
+                                                <Link to={`/admin/projects`} className="block w-full text-center py-5 bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black rounded-2xl uppercase tracking-[0.3em] hover:bg-primary transition-all leading-none">ANALYZE_PROJECT</Link>
                                             </div>
                                         </div>
-                                        <div className="p-10">
-                                            <h4 className="text-xl font-black dark:text-white uppercase tracking-tighter mb-2">{project.title}</h4>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">{project.meta}</p>
-                                            <button className="w-full py-5 bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black rounded-2xl uppercase tracking-[0.3em] hover:bg-primary transition-all leading-none">ANALYZE_PROJECT</button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </section>
                     </div>

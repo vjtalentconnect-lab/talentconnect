@@ -226,8 +226,8 @@ export const uploadMedia = async (req, res) => {
             code: err?.code,
             cloudinary: err?.error?.message || err?.error,
         });
-        const status = err instanceof Error && err.name === 'MulterError' ? 400 : 400;
-        res.status(status).json({ message: 'Upload failed', detail: err.message });
+        const status = err instanceof Error && err.name === 'MulterError' ? 400 : 500;
+        res.status(status).json({ message: 'Upload failed', detail: err.message || 'Unknown error' });
     }
 };
 

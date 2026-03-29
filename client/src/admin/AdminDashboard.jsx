@@ -141,7 +141,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Monthly Revenue</p>
-              <h3 className="text-3xl font-black mt-1 dark:text-white leading-none">{stats?.revenue || '₹14.2L'}</h3>
+              <h3 className="text-3xl font-black mt-1 dark:text-white leading-none">{stats?.revenue || '₹0.0L'}</h3>
             </div>
           </Link>
         </div>
@@ -188,28 +188,28 @@ const AdminDashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-slate-400">Active Auditions</span>
-                  <span className="dark:text-white text-primary">3,120</span>
+                  <span className="dark:text-white text-primary">{stats?.activeAuditions || '0'}</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
-                  <div className="bg-primary h-full w-[78%] rounded-full shadow-[0_0_8px_rgba(238,43,59,0.3)] transition-all duration-1000"></div>
+                  <div className="bg-primary h-full rounded-full shadow-[0_0_8px_rgba(238,43,59,0.3)] transition-all duration-1000" style={{ width: `${Math.min((stats?.activeAuditions || 0) / 100 * 100, 100)}%` }}></div>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-slate-400">Message Throughput</span>
-                  <span className="dark:text-white text-emerald-500">18.4K</span>
+                  <span className="dark:text-white text-emerald-500">{stats?.messageThroughput || '0'}</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
-                  <div className="bg-emerald-500 h-full w-[92%] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-1000 delay-300"></div>
+                  <div className="bg-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-1000 delay-300" style={{ width: `${Math.min((stats?.messageThroughput || 0) / 1000 * 100, 100)}%` }}></div>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-slate-400">Server Load</span>
-                  <span className="dark:text-white text-blue-500">24%</span>
+                  <span className="dark:text-white text-blue-500">{stats?.serverLoad || '24'}%</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 h-full w-[24%] rounded-full shadow-[0_0_8px_rgba(59,130,246,0.3)] transition-all duration-1000 delay-500"></div>
+                  <div className="bg-blue-500 h-full rounded-full shadow-[0_0_8px_rgba(59,130,246,0.3)] transition-all duration-1000 delay-500" style={{ width: `${stats?.serverLoad || 24}%` }}></div>
                 </div>
               </div>
               <div className="pt-8 border-t border-slate-100 dark:border-white/5">

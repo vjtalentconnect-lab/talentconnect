@@ -60,7 +60,7 @@ const SystemHealth = () => {
         { label: 'Cluster Load', value: '42.8%', trend: '+2%', trendDir: 'up', icon: 'memory', color: 'blue' },
         { label: 'DB Latency', value: '14ms', trend: '-1ms', trendDir: 'down', icon: 'speed', color: 'amber' },
         { label: 'API Integrity', value: '99.98%', status: 'STABLE', icon: 'check_circle', color: 'emerald' },
-        { label: 'Storage Mesh', value: '68.2%', trend: '+5%', trendDir: 'up', icon: 'storage', color: 'purple' }
+        { label: 'Storage Mesh', value: '68.2%', trend: '+5%', trendDir: 'up', icon: 'storage', color: 'purple', path: '/admin/storage' }
     ];
 
     const regions = [
@@ -119,7 +119,11 @@ const SystemHealth = () => {
             <div className="max-w-7xl mx-auto py-8 lg:px-4 space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {metrics.map((metric, idx) => (
-                        <div key={idx} className="bg-white dark:bg-card-dark p-10 rounded-[2.5rem] border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden">
+                        <div 
+                            key={idx} 
+                            onClick={() => metric.path && (window.location.href = metric.path)}
+                            className={`bg-white dark:bg-card-dark p-10 rounded-[2.5rem] border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden ${metric.path ? 'cursor-pointer hover:border-primary/50' : ''}`}
+                        >
                             <div className="flex justify-between items-start mb-8">
                                 <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                                     <span className="material-symbols-outlined text-2xl">{metric.icon}</span>
@@ -136,6 +140,11 @@ const SystemHealth = () => {
                             </div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{metric.label}</p>
                             <p className="text-3xl font-black dark:text-white mt-4 tracking-tighter">{metric.value}</p>
+                            {metric.path && (
+                                <div className="absolute bottom-4 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

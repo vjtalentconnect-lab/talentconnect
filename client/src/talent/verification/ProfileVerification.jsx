@@ -97,9 +97,14 @@ const ProfileVerification = () => {
             // Upload Video Selfie
             if (formData.videoBlob) {
                 const videoData = new FormData();
-                videoData.append('media', formData.videoBlob, 'verification-video.webm');
+                const blob = formData.videoBlob instanceof Blob
+                    ? formData.videoBlob
+                    : new Blob([formData.videoBlob], { type: 'video/webm' });
+                videoData.append('media', blob, 'verification-video.webm');
                 videoData.append('type', 'videoSelfie');
                 await uploadMedia(videoData);
+            } else {
+                throw new Error('Please record a short video selfie before submitting.');
             }
 
             // Final sync
@@ -111,7 +116,8 @@ const ProfileVerification = () => {
             goToStep(4, 'forward');
         } catch (err) {
             console.error('Finish failed:', err);
-            alert('Failed to complete verification. Please try again.');
+            const msg = err?.response?.data?.message || err?.message || 'Failed to complete verification. Please try again.';
+            alert(msg);
         } finally {
             setIsSaving(false);
         }

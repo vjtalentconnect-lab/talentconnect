@@ -7,8 +7,8 @@ const backupToMongo = async (collection, docId, data) => {
     if (mongoose.connection.readyState !== 1) return; // only run when Mongo is connected
     try {
         await Backup.findOneAndUpdate(
-            { collection, docId },
-            { data, updatedAt: new Date() },
+            { collectionName: collection, docId },
+            { collectionName: collection, data, updatedAt: new Date() },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
     } catch (err) {

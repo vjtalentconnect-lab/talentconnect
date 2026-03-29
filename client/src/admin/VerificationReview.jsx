@@ -236,35 +236,61 @@ const VerificationReview = () => {
                                             ))}
                                         </div>
 
-                                        <div className="pt-4 space-y-4">
+                                        <div className="pt-4 space-y-8">
                                             <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Submitted Assets</h5>
-                                            <div className="grid grid-cols-1 gap-3">
+                                            <div className="space-y-8">
                                                 {vState.idFileUrl && (
-                                                    <a href={vState.idFileUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/20">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
-                                                            <span className="material-symbols-outlined text-lg text-primary">badge</span>
-                                                            ID Document ({vState.idType})
-                                                        </span>
-                                                        <span className="material-symbols-outlined text-sm">open_in_new</span>
-                                                    </a>
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between px-2">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                                                <span className="material-symbols-outlined text-sm text-primary">badge</span>
+                                                                ID Document ({vState.idType})
+                                                            </span>
+                                                            <a href={vState.idFileUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[9px] font-black uppercase tracking-widest">Full Shard</a>
+                                                        </div>
+                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/2 aspect-video group/preview relative">
+                                                            <img src={vState.idFileUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Identity ID" />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <span className="material-symbols-outlined text-white text-3xl">zoom_in</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 )}
-                                                {vState.membershipCardUrl && (
-                                                    <a href={vState.membershipCardUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/20">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
-                                                            <span className="material-symbols-outlined text-lg text-primary">contact_emergency</span>
-                                                            Membership Card
-                                                        </span>
-                                                        <span className="material-symbols-outlined text-sm">open_in_new</span>
-                                                    </a>
-                                                )}
+                                                
                                                 {vState.videoSelfieUrl && (
-                                                    <a href={vState.videoSelfieUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/20">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
-                                                            <span className="material-symbols-outlined text-lg text-primary">videocam</span>
-                                                            Verification Video
-                                                        </span>
-                                                        <span className="material-symbols-outlined text-sm">open_in_new</span>
-                                                    </a>
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between px-2">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                                                <span className="material-symbols-outlined text-sm text-primary">videocam</span>
+                                                                Biometric Verification Video
+                                                            </span>
+                                                            <a href={vState.videoSelfieUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[9px] font-black uppercase tracking-widest">Full Shard</a>
+                                                        </div>
+                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-black aspect-video relative group/video">
+                                                            <video controls className="w-full h-full object-contain" src={vState.videoSelfieUrl}></video>
+                                                            <div className="absolute top-4 right-4 size-10 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center text-primary animate-pulse">
+                                                                <span className="material-symbols-outlined text-xl">security</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {vState.membershipCardUrl && (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between px-2">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                                                <span className="material-symbols-outlined text-sm text-primary">contact_emergency</span>
+                                                                Association Membership
+                                                            </span>
+                                                            <a href={vState.membershipCardUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[9px] font-black uppercase tracking-widest">Full Shard</a>
+                                                        </div>
+                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/2 aspect-video group/preview relative">
+                                                            <img src={vState.membershipCardUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Membership Card" />
+                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                <span className="material-symbols-outlined text-white text-3xl">zoom_in</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>

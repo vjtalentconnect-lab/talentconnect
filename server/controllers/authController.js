@@ -4,12 +4,93 @@ import { addWithBackup, setWithBackup, updateWithBackup } from '../lib/textBacku
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
+import crypto from 'crypto';
+import { sendEmail } from '../lib/email.js';
+
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+
+const generateToken = () => crypto.randomBytes(32).toString('hex');
+
+const storeToken = async (collection, token, data) => {
+    await db.collection(collection).doc(token).set({
+        ...data,
+        createdAt: new Date().toISOString(),
+    });
+};
+
+const fetchUserByEmail = async (email) => {
+    const snapshot = await db.collection('users').where('email', '==', email).limit(1).get();
+    if (snapshot.empty) return null;
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() };
+};
+
+const sendVerificationEmailForUser = async ({ userId, email }) => {
+    const token = generateToken();
+    await storeToken('emailVerifications', token, {
+        userId,
+        email,
+        type: 'email_verification',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+        used: false,
+    });
+
+    const verifyLink = `${FRONTEND_URL}/verify-email?token=${token}`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height:1.6;">
+            <h2>Confirm your email</h2>
+            <p>Thanks for signing up for TalentConnect. Please verify your email to activate your account.</p>
+            <p><a href="${verifyLink}" style="background:#111827;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Verify Email</a></p>
+            <p>Or copy this link into your browser: <br/>${verifyLink}</p>
+            <p>This link expires in 24 hours.</p>
+        </div>
+    `;
+
+    await sendEmail({
+        to: email,
+        subject: 'Verify your TalentConnect email',
+        html,
+    });
+
+    return token;
+};
+
+const sendResetPasswordEmail = async ({ userId, email }) => {
+    const token = generateToken();
+    await storeToken('passwordResets', token, {
+        userId,
+        email,
+        type: 'password_reset',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1h
+        used: false,
+    });
+
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height:1.6;">
+            <h2>Reset your password</h2>
+            <p>We received a request to reset your TalentConnect password.</p>
+            <p><a href="${resetLink}" style="background:#111827;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Reset Password</a></p>
+            <p>Or copy this link into your browser: <br/>${resetLink}</p>
+            <p>This link expires in 1 hour. If you didn’t request this, you can safely ignore this email.</p>
+        </div>
+    `;
+
+    await sendEmail({
+        to: email,
+        subject: 'Reset your TalentConnect password',
+        html,
+    });
+
+    return token;
+};
 
 // Ensure Firestore user + profile exist; used by social logins
 const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent', mobile = '', location = '', provider = 'password' }) => {
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
 
+    // If the user does not exist, create both user + profile records
     if (!userDoc.exists) {
         const userData = {
             email,
@@ -43,6 +124,43 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
         };
         const profileRef = await addWithBackup('profiles', profileData);
         await updateWithBackup('users', uid, { profile: profileRef.id });
+    } else {
+        // If the user exists (e.g., social login returning), patch missing verification fields
+        const patch = {};
+        const data = userDoc.data() || {};
+
+        if (!data.verificationStatus) patch.verificationStatus = role === 'talent' ? 'pending' : 'none';
+        if (data.isVerified === undefined) patch.isVerified = false;
+        if (!data.role) patch.role = role || 'talent';
+        if (!data.authProvider && provider) patch.authProvider = provider;
+        if (!data.createdAt) patch.createdAt = new Date().toISOString();
+        patch.updatedAt = new Date().toISOString();
+
+        // Ensure a profile exists
+        if (!data.profile) {
+            const profileRef = await addWithBackup('profiles', {
+                user: uid,
+                fullName,
+                location,
+                mobile,
+                talentCategory: (role || data.role) === 'talent' ? 'Actor' : null,
+                profilePicture: 'no-photo.jpg',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                portfolio: [],
+                privacySettings: {
+                    profileSearchable: true,
+                    showContactDetails: true,
+                    showPortfolioPublic: true,
+                    allowDirectMessages: true,
+                }
+            });
+            patch.profile = profileRef.id;
+        }
+
+        if (Object.keys(patch).length > 0) {
+            await updateWithBackup('users', uid, patch);
+        }
     }
 
     // Return updated user doc
@@ -125,6 +243,13 @@ export const register = async (req, res) => {
             });
         } catch (socketErr) {
             console.error('Socket notification error:', socketErr);
+        }
+
+        // Fire off verification email (best-effort)
+        try {
+            await sendVerificationEmailForUser({ userId: uid, email });
+        } catch (emailErr) {
+            console.error('Verification email send failed:', emailErr?.message || emailErr);
         }
 
         // Sign the user in immediately so the frontend receives a valid Firebase ID token
@@ -317,6 +442,117 @@ export const login = async (req, res) => {
     } catch (err) {
         console.error('Login error:', err);
         res.status(401).json({ message: 'Invalid credentials' });
+    }
+};
+
+// @desc    Send / resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public (email required)
+export const resendVerification = async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    try {
+        const user = await fetchUserByEmail(email);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (user.isVerified) {
+            return res.status(200).json({ success: true, message: 'Email already verified' });
+        }
+
+        await sendVerificationEmailForUser({ userId: user.id, email });
+        res.status(200).json({ success: true, message: 'Verification email sent' });
+    } catch (err) {
+        console.error('Resend verification error:', err);
+        res.status(500).json({ message: 'Unable to send verification email' });
+    }
+};
+
+// @desc    Verify email with token
+// @route   POST /api/auth/verify-email
+// @access  Public
+export const verifyEmail = async (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ message: 'Token is required' });
+
+    try {
+        const tokenDoc = await db.collection('emailVerifications').doc(token).get();
+        if (!tokenDoc.exists) return res.status(400).json({ message: 'Invalid or expired token' });
+
+        const tokenData = tokenDoc.data();
+        if (tokenData.used) return res.status(400).json({ message: 'Token already used' });
+        if (new Date(tokenData.expiresAt) < new Date()) {
+            return res.status(400).json({ message: 'Token expired' });
+        }
+
+        await updateWithBackup('users', tokenData.userId, {
+            isVerified: true,
+            verificationStatus: 'verified',
+            emailVerifiedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+
+        await db.collection('emailVerifications').doc(token).update({
+            used: true,
+            usedAt: new Date().toISOString(),
+        });
+
+        res.status(200).json({ success: true, message: 'Email verified successfully' });
+    } catch (err) {
+        console.error('Verify email error:', err);
+        res.status(500).json({ message: 'Unable to verify email' });
+    }
+};
+
+// @desc    Trigger password reset email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    try {
+        const user = await fetchUserByEmail(email);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        await sendResetPasswordEmail({ userId: user.id, email });
+        res.status(200).json({ success: true, message: 'Password reset email sent' });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ message: 'Unable to send password reset email' });
+    }
+};
+
+// @desc    Reset password with token
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and newPassword are required' });
+    }
+
+    try {
+        const tokenDoc = await db.collection('passwordResets').doc(token).get();
+        if (!tokenDoc.exists) return res.status(400).json({ message: 'Invalid or expired token' });
+
+        const tokenData = tokenDoc.data();
+        if (tokenData.used) return res.status(400).json({ message: 'Token already used' });
+        if (new Date(tokenData.expiresAt) < new Date()) {
+            return res.status(400).json({ message: 'Token expired' });
+        }
+
+        await adminAuth.updateUser(tokenData.userId, { password: newPassword });
+        await updateWithBackup('users', tokenData.userId, { updatedAt: new Date().toISOString() });
+
+        await db.collection('passwordResets').doc(token).update({
+            used: true,
+            usedAt: new Date().toISOString(),
+        });
+
+        res.status(200).json({ success: true, message: 'Password reset successful' });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).json({ message: 'Unable to reset password' });
     }
 };
 

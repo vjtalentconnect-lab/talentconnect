@@ -75,8 +75,12 @@ const Login = () => {
   };
 
   const handleLinkedIn = () => {
-    const url = getLinkedInAuthUrl();
-    window.location.href = url;
+    try {
+      const url = getLinkedInAuthUrl();
+      window.location.href = url;
+    } catch (err) {
+      setError(err.message || 'LinkedIn is not configured.');
+    }
   };
 
   return (

@@ -13,7 +13,7 @@ const LinkedInCallback = () => {
     const state = params.get('state');
 
     if (!code) {
-      setMessage('Missing LinkedIn code. Please try again.');
+      setMessage('Missing LinkedIn code. Please restart login.');
       return;
     }
 

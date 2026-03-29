@@ -25,11 +25,11 @@ import connectDB from './config/db.js';
 dotenv.config({ override: true });
 
 // Firebase is initialized in lib/firebaseAdmin.js
-// Connect MongoDB (used as backup store for text data)
+// Connect MongoDB (optional secondary backup store for text data, not required for primary Firestore). 
 if (process.env.MONGODB_URI) {
     connectDB();
 } else {
-    console.warn('MONGODB_URI not set; Mongo backups are disabled.');
+    console.warn('MONGODB_URI not set; optional secondary MongoDB backups are disabled. This is expected for local/dev setups when Firestore is the primary DB.');
 }
 
 const PORT = process.env.PORT || 5000;
@@ -56,6 +56,7 @@ app.use(
                 'http://localhost:5173',
                 'http://localhost:3000', 
                 'https://talentconnect-6e347.web.app', // Explicitly allow Firebase Hosting
+                'https://talentconnect-6e347.firebaseapp.com', // Firebase hosting alt domain
                 'https://talentconnect-api.onrender.com'
             ];
 

@@ -44,6 +44,7 @@ const UserDetail = lazy(() => import("./admin/UserDetail"));
 const FinancialReports = lazy(() => import("./admin/FinancialReports"));
 const CommunicationCenter = lazy(() => import("./admin/CommunicationCenter"));
 const GlobalSearch = lazy(() => import("./admin/GlobalSearch"));
+const MediaStorage = lazy(() => import("./admin/MediaStorage"));
 const AdminSettings = lazy(() => import('./admin/AdminSettings'));
 const AdminRBAC = lazy(() => import('./admin/AdminRBAC'));
 const SystemHealth = lazy(() => import('./admin/SystemHealth'));
@@ -80,59 +81,55 @@ function App() {
               <Route path="/register/actor" element={<RegisterActor />} />
               <Route path="/register/director" element={<RegisterDirector />} />
               <Route path="/auth/linkedin/callback" element={<LinkedInCallback />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
+              {/* Talent routes */}
+              <Route path="/dashboard/talent" element={<ProtectedRoute requiredRole="talent"><ArtistDashboard /></ProtectedRoute>} />
+              <Route path="/talent/portfolio" element={<ProtectedRoute requiredRole="talent"><TalentPortfolio /></ProtectedRoute>} />
+              <Route path="/talent/:id" element={<ProtectedRoute requiredRole="talent"><TalentPortfolio /></ProtectedRoute>} />
+              <Route path="/talent/messages" element={<ProtectedRoute requiredRole="talent"><ArtistMessages /></ProtectedRoute>} />
+              <Route path="/talent/applied-projects" element={<ProtectedRoute requiredRole="talent"><AppliedProjects /></ProtectedRoute>} />
+              <Route path="/talent/auditions" element={<ProtectedRoute requiredRole="talent"><AuditionInvites /></ProtectedRoute>} />
+              <Route path="/talent/audition/:id" element={<ProtectedRoute requiredRole="talent"><AuditionDetails /></ProtectedRoute>} />
+              <Route path="/talent/performance" element={<ProtectedRoute requiredRole="talent"><PerformanceAnalytics /></ProtectedRoute>} />
+              <Route path="/talent/settings" element={<ProtectedRoute requiredRole="talent"><ArtistSettings /></ProtectedRoute>} />
+              <Route path="/talent/discovery" element={<ProtectedRoute requiredRole="talent"><ProjectDiscovery /></ProtectedRoute>} />
+              <Route path="/talent/verify" element={<ProtectedRoute requiredRole="talent"><ProfileVerification /></ProtectedRoute>} />
+              <Route path="/talent/help" element={<ProtectedRoute requiredRole="talent"><HelpSupport /></ProtectedRoute>} />
+              <Route path="/talent/upgrade" element={<ProtectedRoute requiredRole="talent"><UpgradePlan /></ProtectedRoute>} />
+              <Route path="/talent/checkout" element={<ProtectedRoute requiredRole="talent"><Checkout /></ProtectedRoute>} />
+              <Route path="/talent/payment-success" element={<ProtectedRoute requiredRole="talent"><PaymentSuccess /></ProtectedRoute>} />
 
-              {/* Dashboards */}
-              <Route path="/dashboard/talent" element={<ArtistDashboard />} />
-              <Route path="/talent/discovery" element={<ProjectDiscovery />} />
-              <Route path="/talent/messages" element={<ArtistMessages />} />
-              <Route path="/talent/applied-projects" element={<AppliedProjects />} />
-              <Route path="/talent/audition-invites" element={<AuditionInvites />} />
-              <Route path="/talent/audition-details" element={<AuditionDetails />} />
-              <Route path="/talent/analytics" element={<PerformanceAnalytics />} />
-              <Route path="/talent/settings" element={<ArtistSettings />} />
-              <Route path="/talent/verify" element={<ProfileVerification />} />
-              <Route path="/support" element={<HelpSupport />} />
-              <Route path="/contact" element={<ContactUs />} />
-              <Route path="/community" element={<CommunityForum />} />
-              <Route path="/talent/upgrade" element={<UpgradePlan />} />
-              <Route path="/talent/checkout" element={<Checkout />} />
-              <Route path="/talent/payment-success" element={<PaymentSuccess />} />
-              <Route path="/dashboard/director" element={<DirectorDashboard />} />
+              {/* Director routes */}
+              <Route path="/dashboard/director" element={<ProtectedRoute requiredRole="director"><DirectorDashboard /></ProtectedRoute>} />
+              <Route path="/director/portfolio" element={<ProtectedRoute requiredRole="director"><DirectorPortfolio /></ProtectedRoute>} />
+
+              {/* Create Project Flow */}
+              <Route path="/director/create-project/step1" element={<ProtectedRoute requiredRole="director"><CreateProjectStep1 /></ProtectedRoute>} />
+              <Route path="/director/create-project/step2" element={<ProtectedRoute requiredRole="director"><CreateProjectStep2 /></ProtectedRoute>} />
+              <Route path="/director/my-projects" element={<ProtectedRoute requiredRole="director"><MyProjects /></ProtectedRoute>} />
+              <Route path="/director/project/:id" element={<ProtectedRoute requiredRole="director"><ProjectDetails /></ProtectedRoute>} />
+              <Route path="/director/shortlists" element={<ProtectedRoute requiredRole="director"><Shortlists /></ProtectedRoute>} />
+              <Route path="/director/auditions" element={<ProtectedRoute requiredRole="director"><AuditionRequests /></ProtectedRoute>} />
+              <Route path="/director/messages" element={<ProtectedRoute requiredRole="director"><Messages /></ProtectedRoute>} />
+              <Route path="/director/discovery" element={<ProtectedRoute requiredRole="director"><TalentDiscovery /></ProtectedRoute>} />
+              <Route path="/director/settings" element={<ProtectedRoute requiredRole="director"><DirectorSettings /></ProtectedRoute>} />
+              <Route path="/checkout/director" element={<ProtectedRoute requiredRole="director"><DirectorCheckout /></ProtectedRoute>} />
+
+              {/* Admin routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/dashboard/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/projects" element={<ProtectedRoute requiredRole="admin"><ProjectOversight /></ProtectedRoute>} />
+              <Route path="/admin/projects/:id" element={<ProtectedRoute requiredRole="admin"><ProjectDetails /></ProtectedRoute>} />
               <Route path="/admin/verifications" element={<ProtectedRoute requiredRole="admin"><VerificationReview /></ProtectedRoute>} />
               <Route path="/admin/verifications/:id" element={<ProtectedRoute requiredRole="admin"><VerificationReview /></ProtectedRoute>} />
-              <Route path="/admin/verification" element={<Navigate to="/admin/verifications" replace />} />
-              <Route path="/admin/verification/:id" element={<Navigate to="/admin/verifications/:id" replace />} />
               <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
               <Route path="/admin/users/:id" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
-              <Route path="/admin/user" element={<Navigate to="/admin/users" replace />} />
-              <Route path="/admin/user/:id" element={<Navigate to="/admin/users/:id" replace />} />
-              <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
               <Route path="/admin/financials" element={<ProtectedRoute requiredRole="admin"><FinancialReports /></ProtectedRoute>} />
               <Route path="/admin/communication" element={<ProtectedRoute requiredRole="admin"><CommunicationCenter /></ProtectedRoute>} />
               <Route path="/admin/search" element={<ProtectedRoute requiredRole="admin"><GlobalSearch /></ProtectedRoute>} />
+              <Route path="/admin/storage" element={<ProtectedRoute requiredRole="admin"><MediaStorage /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
               <Route path="/admin/rbac" element={<ProtectedRoute requiredRole="admin"><AdminRBAC /></ProtectedRoute>} />
               <Route path="/admin/health" element={<ProtectedRoute requiredRole="admin"><SystemHealth /></ProtectedRoute>} />
-
-              {/* Portfolios */}
-              <Route path="/talent/portfolio" element={<TalentPortfolio />} />
-              <Route path="/talent/:id" element={<TalentPortfolio />} />
-              <Route path="/director/portfolio" element={<DirectorPortfolio />} />
-
-              {/* Create Project Flow */}
-              <Route path="/director/create-project/step1" element={<CreateProjectStep1 />} />
-              <Route path="/director/create-project/step2" element={<CreateProjectStep2 />} />
-              <Route path="/director/my-projects" element={<MyProjects />} />
-              <Route path="/director/project/:id" element={<ProjectDetails />} />
-              <Route path="/director/shortlists" element={<Shortlists />} />
-              <Route path="/director/auditions" element={<AuditionRequests />} />
-              <Route path="/director/messages" element={<Messages />} />
-              <Route path="/director/discovery" element={<TalentDiscovery />} />
-              <Route path="/director/settings" element={<DirectorSettings />} />
-              <Route path="/checkout/director" element={<DirectorCheckout />} />
 
               {/* Catch-all route for 404 */}
               <Route path="*" element={<NotFound />} />

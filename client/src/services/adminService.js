@@ -48,3 +48,13 @@ export const getAdminProjectDetails = async (projectId) => {
     const response = await api.get(`/admin/projects/${projectId}`);
     return response.data;
 };
+
+export const searchGlobal = async (query) => {
+    const response = await api.get(`/admin/search?query=${query}`);
+    return response.data;
+};
+
+export const getMediaAssets = async (params = {}) => {
+    const response = await api.get('/admin/media', { params });
+    return response.data;
+};

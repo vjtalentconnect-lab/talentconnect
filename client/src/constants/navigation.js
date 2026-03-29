@@ -39,6 +39,7 @@ export const ADMIN_MENU = [
   { icon: 'vital_signs', label: 'System Health', path: '/admin/health' },
   { type: 'section', label: 'Operations' },
   { icon: 'payments', label: 'Financials', path: '/admin/financials' },
+  { icon: 'cloud_done', label: 'Media Storage', path: '/admin/storage' },
   { icon: 'chat_bubble', label: 'Communication Center', path: '/admin/communication' },
   { icon: 'settings', label: 'System Settings', path: '/admin/settings' },
 ];

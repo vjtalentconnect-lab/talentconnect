@@ -123,8 +123,15 @@ const ProjectOversight = () => {
           {[
             { label: 'Platform Projects', value: stats?.totalProjects || '0', icon: 'movie', color: 'primary' },
             { label: 'Active Pipeline', value: projects.filter(p => p.status === 'active').length, icon: 'bolt', color: 'emerald' },
-            { label: 'Moderation Queue', value: projects.filter(p => p.status === 'audit' || p.status === 'pending').length, icon: 'policy', color: 'amber' },
-            { label: 'Market Value', value: '₹' + (stats?.totalProductionValue || '0') + ' Cr', icon: 'token', color: 'blue' }
+            { label: 'Moderation Queue', value: projects.filter(p => !['active', 'open'].includes(p.status)).length, icon: 'policy', color: 'amber' },
+            { 
+              label: 'Market Value', 
+              value: (stats?.totalProductionValue || 0) >= 100 
+                ? '₹' + (stats.totalProductionValue / 100).toFixed(1) + ' Cr' 
+                : '₹' + (stats?.totalProductionValue || '0') + ' L', 
+              icon: 'token', 
+              color: 'blue' 
+            }
           ].map((card, idx) => (
             <div key={idx} className="bg-white dark:bg-card-dark p-6 rounded-[2rem] border border-slate-200 dark:border-border-dark flex flex-col gap-4 shadow-sm hover:shadow-xl hover:translate-y-[-4px] transition-all duration-500 group">
               <div className="flex justify-between items-center">

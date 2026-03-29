@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register, login } from '../services/authService';
+import { register, login, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
 
 const RegisterDirector = () => {
   const industryTypes = [
@@ -60,6 +60,7 @@ const RegisterDirector = () => {
     agreeTerms: false
   });
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState({ google: false, linkedin: false });
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -99,6 +100,32 @@ const RegisterDirector = () => {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError('');
+    setSocialLoading(prev => ({ ...prev, google: true }));
+    try {
+      await loginWithGoogle('director');
+      navigate('/dashboard/director');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
+    } finally {
+      setSocialLoading(prev => ({ ...prev, google: false }));
+    }
+  };
+
+  const handleLinkedIn = async () => {
+    setError('');
+    setSocialLoading(prev => ({ ...prev, linkedin: true }));
+    try {
+      await autoLinkedInLogin('director');
+      navigate('/dashboard/director');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'LinkedIn sign-in failed.');
+    } finally {
+      setSocialLoading(prev => ({ ...prev, linkedin: false }));
     }
   };
 
@@ -296,6 +323,27 @@ const RegisterDirector = () => {
                 Already have an account?
                 <a className="text-primary font-bold hover:underline ml-1" href="/login">Log in here</a>
               </p>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={socialLoading.google}
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:border-primary/60 hover:shadow-md transition-all"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5" />
+                <span>{socialLoading.google ? 'Connecting...' : 'Continue with Google'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLinkedIn}
+                disabled={socialLoading.linkedin}
+                className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:border-primary/60 hover:shadow-md transition-all"
+              >
+                <img src="https://static.licdn.com/sc/h/8fkxn8x5q2m0ln5q70a0djb7m" alt="LinkedIn" className="h-5 w-5" />
+                <span>{socialLoading.linkedin ? 'Connecting...' : 'Continue with LinkedIn'}</span>
+              </button>
             </div>
 
             <div className="mt-6 flex justify-center gap-4">

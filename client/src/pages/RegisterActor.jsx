@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../services/authService';
+import { register, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
 
 const RegisterActor = () => {
     const categories = [
@@ -43,6 +43,7 @@ const RegisterActor = () => {
         agreeTerms: false
     });
     const [loading, setLoading] = useState(false);
+    const [socialLoading, setSocialLoading] = useState({ google: false, linkedin: false });
     const [error, setError] = useState('');
 
     const handleChange = (e) => {
@@ -85,6 +86,32 @@ const RegisterActor = () => {
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleGoogle = async () => {
+        setError('');
+        setSocialLoading(prev => ({ ...prev, google: true }));
+        try {
+            await loginWithGoogle('talent');
+            navigate('/talent/verify');
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
+        } finally {
+            setSocialLoading(prev => ({ ...prev, google: false }));
+        }
+    };
+
+    const handleLinkedIn = async () => {
+        setError('');
+        setSocialLoading(prev => ({ ...prev, linkedin: true }));
+        try {
+            await autoLinkedInLogin('talent');
+            navigate('/talent/verify');
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'LinkedIn sign-in failed.');
+        } finally {
+            setSocialLoading(prev => ({ ...prev, linkedin: false }));
         }
     };
 
@@ -277,16 +304,37 @@ const RegisterActor = () => {
                                 )}
 
                                 {/* Submit */}
-                                <div className="md:col-span-2 pt-4">
-                                    <button
-                                        className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                                        type="submit"
-                                        disabled={loading}
-                                    >
-                                        <span>{loading ? 'TAKING THE STAGE...' : 'Sign Up Now'}</span>
-                                        {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
-                                    </button>
-                                </div>
+                            <div className="md:col-span-2 pt-4">
+                                <button
+                                    className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                    type="submit"
+                                    disabled={loading}
+                                >
+                                    <span>{loading ? 'TAKING THE STAGE...' : 'Sign Up Now'}</span>
+                                    {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
+                                </button>
+                            </div>
+
+                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleGoogle}
+                                    disabled={socialLoading.google}
+                                    className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:border-primary/60 hover:shadow-md transition-all"
+                                >
+                                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5" />
+                                    <span>{socialLoading.google ? 'Connecting...' : 'Continue with Google'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleLinkedIn}
+                                    disabled={socialLoading.linkedin}
+                                    className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:border-primary/60 hover:shadow-md transition-all"
+                                >
+                                    <img src="https://static.licdn.com/sc/h/8fkxn8x5q2m0ln5q70a0djb7m" alt="LinkedIn" className="h-5 w-5" />
+                                    <span>{socialLoading.linkedin ? 'Connecting...' : 'Continue with LinkedIn'}</span>
+                                </button>
+                            </div>
 
                                 <div className="md:col-span-2 flex items-start gap-3 pt-2">
                                     <input

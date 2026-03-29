@@ -39,6 +39,9 @@ const TalentPortfolio = () => {
     });
     const [savingAttrs, setSavingAttrs] = useState(false);
     const [uploadingMedia, setUploadingMedia] = useState(false);
+    const [cvUrl, setCvUrl] = useState('');
+    const [savingCv, setSavingCv] = useState(false);
+    const [mediaFilter, setMediaFilter] = useState('all'); // all | image | video
 
     const isOwnProfile = !id || (viewerProfile?.user?._id === profile?.user?._id);
 
@@ -58,6 +61,7 @@ const TalentPortfolio = () => {
                 const p = profileRes.data;
                 setProfile(p);
                 setBioText(p.bio || '');
+                setCvUrl(p.cvUrl || '');
                 setAttrs({
                     height: p.physicalAttributes?.height || '',
                     eyeColor: p.physicalAttributes?.eyeColor || '',
@@ -123,10 +127,33 @@ const TalentPortfolio = () => {
             const fd = new FormData();
             fd.append('media', file);
             const res = await uploadMedia(fd);
-            setProfile(prev => ({ ...prev, portfolio: [...(prev.portfolio || []), res.data] }));
-            showToast('Media added to portfolio!');
+        setProfile(prev => ({ ...prev, portfolio: [...(prev.portfolio || []), res.data] }));
+        showToast('Media added to portfolio!');
         } catch { showToast('Upload failed. Try again.', 'error'); }
         finally { setUploadingMedia(false); }
+    };
+
+    const handleSaveCv = async () => {
+        if (!cvUrl.trim()) { showToast('Add a CV link before saving.', 'error'); return; }
+        setSavingCv(true);
+        try {
+            const res = await updateProfile({ cvUrl: cvUrl.trim() });
+            setProfile(res.data);
+            showToast('CV link saved.');
+        } catch {
+            showToast('Failed to save CV link.', 'error');
+        } finally {
+            setSavingCv(false);
+        }
+    };
+
+    const handleCopyLink = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            showToast('Profile link copied');
+        } catch {
+            showToast('Copy failed', 'error');
+        }
     };
 
     const menuItems = viewerProfile?.user?.role === 'admin' ? ADMIN_MENU : 
@@ -238,7 +265,7 @@ const TalentPortfolio = () => {
                 </section>
 
                 <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 space-y-16">
-                    {/* Bento Grid Stats */}
+                    {/* Quick Actions + Stats */}
                     <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
                             <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Category</span>
@@ -248,11 +275,29 @@ const TalentPortfolio = () => {
                             <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Experience</span>
                             <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.skills?.length || 0} Skills</p>
                         </div>
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
-                            <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Availability</span>
-                            <div className="flex items-center gap-2 mt-2">
-                                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                                <p className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Ready to Shoot</p>
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col gap-3 shadow-sm">
+                            <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Quick Actions</span>
+                            <div className="flex flex-wrap gap-2">
+                                {isOwnProfile && (
+                                    <button onClick={() => setEditingBio(true)} className="px-3 py-2 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-all flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-sm">edit</span> Bio
+                                    </button>
+                                )}
+                                {isOwnProfile && (
+                                    <label className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-primary/40 transition-all flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-sm">photo_camera</span> Photo
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia} />
+                                    </label>
+                                )}
+                                {isOwnProfile && (
+                                    <label className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-primary/40 transition-all flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-sm">movie</span> Video
+                                        <input type="file" accept="video/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia} />
+                                    </label>
+                                )}
+                                <button onClick={handleCopyLink} className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:border-primary/40 transition-all flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">share</span> Share
+                                </button>
                             </div>
                         </div>
                     </section>
@@ -363,8 +408,13 @@ const TalentPortfolio = () => {
 
                     {/* Media Gallery */}
                     <section className="space-y-8">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
                             <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Media Gallery</h3>
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-zinc-400">
+                                <button onClick={() => setMediaFilter('all')} className={`px-3 py-1 rounded-full border ${mediaFilter === 'all' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>All</button>
+                                <button onClick={() => setMediaFilter('image')} className={`px-3 py-1 rounded-full border ${mediaFilter === 'image' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>Photos</button>
+                                <button onClick={() => setMediaFilter('video')} className={`px-3 py-1 rounded-full border ${mediaFilter === 'video' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>Videos</button>
+                            </div>
                             {isOwnProfile && (
                                 <label className={`bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-zinc-700 ${uploadingMedia ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <span className="material-symbols-outlined text-sm">upload</span> {uploadingMedia ? 'Uploading...' : 'Upload Media'}
@@ -373,7 +423,9 @@ const TalentPortfolio = () => {
                             )}
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {(profile?.portfolio || []).map((item, idx) => (
+                            {(profile?.portfolio || [])
+                                .filter(item => mediaFilter === 'all' || item.type === mediaFilter)
+                                .map((item, idx) => (
                                 <div key={idx} className={`group relative rounded-lg overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm ${idx % 3 === 2 ? 'md:col-span-2 aspect-video' : 'aspect-[3/4]'}`}>
                                     <img 
                                         alt={`Media ${idx + 1}`} 
@@ -395,6 +447,44 @@ const TalentPortfolio = () => {
                                 </div>
                             ))}
                         </div>
+                    </section>
+
+                    {/* CV & Downloads */}
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">CV / Resume</h3>
+                            {profile?.cvUrl && (
+                                <div className="flex gap-2">
+                                    <a href={profile.cvUrl} target="_blank" rel="noreferrer" className="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-all">
+                                        <span className="material-symbols-outlined text-sm">download</span> Download
+                                    </a>
+                                    <button onClick={handleCopyLink} className="px-4 py-2 text-sm font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-white rounded-lg flex items-center gap-2 border border-slate-200 dark:border-zinc-700 hover:border-primary/40 transition-all">
+                                        <span className="material-symbols-outlined text-sm">share</span> Share
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        {isOwnProfile && (
+                        <div className="flex flex-col md:flex-row gap-3 items-center">
+                            <input
+                                type="url"
+                                value={cvUrl}
+                                onChange={e => setCvUrl(e.target.value)}
+                                placeholder="Paste CV / Drive link (PDF preferred)"
+                                className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg px-4 py-3 text-sm text-slate-800 dark:text-zinc-100 outline-none focus:border-primary/40"
+                            />
+                            <button
+                                onClick={handleSaveCv}
+                                disabled={savingCv}
+                                className="px-4 py-3 bg-primary text-white font-bold rounded-lg text-sm hover:bg-primary/90 transition-all disabled:opacity-60"
+                            >
+                                {savingCv ? 'Saving...' : 'Save CV link'}
+                            </button>
+                        </div>
+                        )}
+                        {!profile?.cvUrl && !isOwnProfile && (
+                            <p className="text-sm text-slate-500 dark:text-zinc-400">No CV uploaded yet.</p>
+                        )}
                     </section>
 
                     {/* Credits Table */}
