@@ -128,7 +128,7 @@ const AuditionRequests = () => {
                                             <p className="text-slate-500 dark:text-slate-400 text-sm">Head-to-head comparison of top finalists for {project.category}</p>
                                         </div>
                                         <div className="flex gap-4">
-                                            <Link to={`/director/project/${project._id}`} className="px-5 py-2 rounded-xl border border-slate-200 dark:border-border-dark font-bold text-xs hover:bg-slate-100 dark:hover:bg-white/5 transition-colors flex items-center justify-center">
+                                            <Link to={`/director/project/${project._id || project.id}`} className="px-5 py-2 rounded-xl border border-slate-200 dark:border-border-dark font-bold text-xs hover:bg-slate-100 dark:hover:bg-white/5 transition-colors flex items-center justify-center">
                                                 View Project Brief
                                             </Link>
                                         </div>

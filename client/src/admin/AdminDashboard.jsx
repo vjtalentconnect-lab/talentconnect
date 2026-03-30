@@ -9,21 +9,39 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [verifications, setVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
 
   const fetchData = async () => {
     try {
-      const [statsRes, verifRes, profileRes] = await Promise.all([
+      const results = await Promise.allSettled([
         getAdminStats(),
         getPendingVerifications(),
         getMyProfile()
       ]);
-      
-      setStats(statsRes.data);
-      setVerifications(verifRes.data.slice(0, 5));
-      setAdminProfile(profileRes.data);
+
+      const [statsResult, verifResult, profileResult] = results;
+
+      // Handle stats - optional
+      if (statsResult.status === 'fulfilled') {
+        setStats(statsResult.value?.data || statsResult.value);
+      }
+
+      // Handle verifications - optional
+      if (verifResult.status === 'fulfilled') {
+        const verifData = verifResult.value?.data || verifResult.value;
+        setVerifications(Array.isArray(verifData) ? verifData.slice(0, 5) : []);
+      }
+
+      // Handle profile - optional
+      if (profileResult.status === 'fulfilled') {
+        setAdminProfile(profileResult.value?.data || profileResult.value);
+      }
+
+      setError(null);
     } catch (err) {
       console.error('Error fetching admin data:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load admin dashboard data');
     } finally {
       setLoading(false);
     }
@@ -32,11 +50,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchData();
 
-    // Listen for real-time admin events
     const handleAdminEvent = (event) => {
       console.log('Admin event received:', event);
       if (event.type === 'statsUpdate' || event.type === 'newUser' || event.type === 'verificationUpdate' || event.type === 'project_created') {
-        fetchData(); // Refetch all data
+        fetchData();
       }
     };
 
@@ -71,12 +88,12 @@ const AdminDashboard = () => {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-background-dark">
+    <div className="flex flex-col items-center justify-center h-screen bg-background-light dark:bg-background-dark">
       <div className="relative size-20">
         <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
         <img src="/TC Logo.png" alt="Loading" className="absolute inset-0 size-12 m-auto animate-pulse" />
       </div>
-      <p className="mt-6 text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Initializing Command Center...</p>
+      <p className="mt-6 text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Initializing Command Center...</p>
     </div>
   );
 
@@ -90,6 +107,19 @@ const AdminDashboard = () => {
       searchPlaceholder="Search users, projects, transactions..."
     >
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 flex items-center gap-4">
+            <span className="material-symbols-outlined text-red-500 text-2xl">error</span>
+            <div className="flex-1">
+              <p className="text-sm font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Data Load Error</p>
+              <p className="text-xs text-red-600 dark:text-red-300 mt-1">{error}</p>
+            </div>
+            <button onClick={fetchData} className="px-4 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-red-600 transition-all">
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-md transition-all group">
@@ -102,7 +132,7 @@ const AdminDashboard = () => {
               </span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Artists</p>
-            <h3 className="text-3xl font-black mt-1 dark:text-white leading-none">{stats?.totalTalent?.toLocaleString() || '0'}</h3>
+            <h3 className="text-3xl font-black mt-1 dark:text-white text-slate-900 leading-none">{stats?.totalTalent?.toLocaleString() || '0'}</h3>
           </div>
 
           <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-md transition-all group">
@@ -115,7 +145,7 @@ const AdminDashboard = () => {
               </span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Total Directors</p>
-            <h3 className="text-3xl font-black mt-1 dark:text-white leading-none">{stats?.totalDirectors?.toLocaleString() || '0'}</h3>
+            <h3 className="text-3xl font-black mt-1 dark:text-white text-slate-900 leading-none">{stats?.totalDirectors?.toLocaleString() || '0'}</h3>
           </div>
 
           <div className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-md transition-all group">
@@ -126,7 +156,7 @@ const AdminDashboard = () => {
               <Link to="/admin/verifications" className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline">Review All</Link>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Pending Verifications</p>
-            <h3 className="text-3xl font-black mt-1 dark:text-white leading-none">{stats?.pendingVerifications || '0'}</h3>
+            <h3 className="text-3xl font-black mt-1 dark:text-white text-slate-900 leading-none">{stats?.pendingVerifications || '0'}</h3>
           </div>
 
           <Link to="/admin/financials" className="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-border-dark shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden">
@@ -141,7 +171,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Monthly Revenue</p>
-              <h3 className="text-3xl font-black mt-1 dark:text-white leading-none">{stats?.revenue || '₹0.0L'}</h3>
+              <h3 className="text-3xl font-black mt-1 dark:text-white text-slate-900 leading-none">{stats?.revenue || '₹0.0L'}</h3>
             </div>
           </Link>
         </div>
@@ -151,7 +181,7 @@ const AdminDashboard = () => {
           <div className="lg:col-span-2 bg-white dark:bg-card-dark p-8 rounded-3xl border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden group">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h4 className="text-lg font-black dark:text-white uppercase tracking-tight">Revenue & Growth Trends</h4>
+                <h4 className="text-lg font-black dark:text-white text-slate-900 uppercase tracking-tight">Revenue & Growth Trends</h4>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Monetization performance analysis</p>
               </div>
               <div className="flex gap-2">
@@ -161,7 +191,6 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="h-64 flex flex-col justify-end relative">
-               {/* Grid Lines */}
                <div className="absolute inset-0 flex flex-col justify-between opacity-5">
                  {[...Array(5)].map((_, i) => <div key={i} className="w-full h-px bg-slate-900 dark:bg-white"></div>)}
                </div>
@@ -183,12 +212,12 @@ const AdminDashboard = () => {
           </div>
 
           <div className="bg-white dark:bg-card-dark p-8 rounded-3xl border border-slate-200 dark:border-border-dark shadow-sm">
-            <h4 className="text-lg font-black dark:text-white uppercase tracking-tight mb-8">Platform Health</h4>
+            <h4 className="text-lg font-black dark:text-white text-slate-900 uppercase tracking-tight mb-8">Platform Health</h4>
             <div className="space-y-8">
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-slate-400">Active Auditions</span>
-                  <span className="dark:text-white text-primary">{stats?.activeAuditions || '0'}</span>
+                  <span className="dark:text-white text-slate-900 text-primary">{stats?.activeAuditions || '0'}</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
                   <div className="bg-primary h-full rounded-full shadow-[0_0_8px_rgba(238,43,59,0.3)] transition-all duration-1000" style={{ width: `${Math.min((stats?.activeAuditions || 0) / 100 * 100, 100)}%` }}></div>
@@ -197,7 +226,7 @@ const AdminDashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-slate-400">Message Throughput</span>
-                  <span className="dark:text-white text-emerald-500">{stats?.messageThroughput || '0'}</span>
+                  <span className="dark:text-white text-slate-900 text-emerald-500">{stats?.messageThroughput || '0'}</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
                   <div className="bg-emerald-500 h-full rounded-full shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-all duration-1000 delay-300" style={{ width: `${Math.min((stats?.messageThroughput || 0) / 1000 * 100, 100)}%` }}></div>
@@ -206,7 +235,7 @@ const AdminDashboard = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                   <span className="text-slate-400">Server Load</span>
-                  <span className="dark:text-white text-blue-500">{stats?.serverLoad || '24'}%</span>
+                  <span className="dark:text-white text-slate-900 text-blue-500">{stats?.serverLoad || '24'}%</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
                   <div className="bg-blue-500 h-full rounded-full shadow-[0_0_8px_rgba(59,130,246,0.3)] transition-all duration-1000 delay-500" style={{ width: `${stats?.serverLoad || 24}%` }}></div>
@@ -217,7 +246,7 @@ const AdminDashboard = () => {
                   <div className="size-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.5)]"></div>
                   <div className="flex-1">
                     <p className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] leading-none mb-1">System Integrity</p>
-                    <p className="text-xs font-black dark:text-white uppercase tracking-tight">All systems operational</p>
+                    <p className="text-xs font-black dark:text-white text-slate-900 uppercase tracking-tight">All systems operational</p>
                   </div>
                   <span className="material-symbols-outlined text-emerald-500 group-hover:translate-x-1 transition-transform">arrow_right_alt</span>
                 </Link>
@@ -230,7 +259,7 @@ const AdminDashboard = () => {
         <div className="bg-white dark:bg-card-dark rounded-3xl border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden group">
           <div className="p-8 border-b border-slate-200 dark:border-border-dark flex items-center justify-between bg-slate-50/50 dark:bg-white/2 transition-colors group-hover:bg-slate-50 dark:group-hover:bg-white/5">
             <div>
-              <h4 className="text-xl font-black dark:text-white uppercase tracking-tight">Recent Verification Requests</h4>
+              <h4 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight">Recent Verification Requests</h4>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Pending approval from human moderators</p>
             </div>
             <Link to="/admin/verifications" className="px-6 py-2 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/5">View All Requests</Link>
@@ -253,18 +282,18 @@ const AdminDashboard = () => {
                   </tr>
                 ) : (
                   verifications.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group/row">
+                    <tr key={row._id || idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group/row">
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
                           <div className="size-12 rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-white/10 p-0.5 group-hover/row:border-primary/50 transition-all">
                             <img
                               className="w-full h-full object-cover rounded-[calc(1rem-2px)]"
-                              src={row.profile?.profilePicture && row.profile?.profilePicture !== 'no-photo.jpg' ? row.profile?.profilePicture : `https://ui-avatars.com/api/?name=${row.profile?.fullName || 'User'}&background=random`}
-                              alt={row.profile?.fullName}
+                              src={row.profile?.profilePicture && row.profile?.profilePicture !== 'no-photo.jpg' ? row.profile?.profilePicture : `https://ui-avatars.com/api/?name=${row.profile?.fullName || row.email || 'User'}&background=random`}
+                              alt={row.profile?.fullName || 'User'}
                             />
                           </div>
                           <div>
-                            <Link to={`/admin/users/${row._id}`} className="text-sm font-black dark:text-white uppercase tracking-tight hover:text-primary transition-colors">{row.profile?.fullName || 'Untitled Artist'}</Link>
+                            <Link to={`/admin/users/${row._id}`} className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-tight hover:text-primary transition-colors">{row.profile?.fullName || 'Untitled Artist'}</Link>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 font-mono">{row.email}</p>
                           </div>
                         </div>
@@ -274,7 +303,7 @@ const AdminDashboard = () => {
                           {row.role}
                         </span>
                       </td>
-                      <td className="px-8 py-6 text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{new Date(row.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td className="px-8 py-6 text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{row.createdAt ? new Date(row.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</td>
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-2">
                           <div className="size-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
@@ -297,4 +326,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

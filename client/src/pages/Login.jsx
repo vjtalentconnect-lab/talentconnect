@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login, loginAdmin, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin } from '../services/authService';
+import { getMyProfile } from '../services/profileService';
 
 const Login = () => {
   const [userType, setUserType] = useState('artist');
@@ -13,16 +14,31 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const navigateAfterSocial = async (role) => {
+    try {
+      const res = await getMyProfile();
+      const profile = res.data?.data || res.data || {};
+      const required =
+        role === 'director'
+          ? ['fullName', 'mobile', 'location', 'companyName', 'industryType']
+          : ['fullName', 'mobile', 'location', 'talentCategory'];
+      const missing = required.filter((field) => !profile?.[field]);
+      if (missing.length) {
+        navigate('/onboarding/complete-profile', { state: { role, missing } });
+      } else {
+        navigate(role === 'director' ? '/dashboard/director' : '/dashboard/talent');
+      }
+    } catch {
+      navigate(role === 'director' ? '/dashboard/director' : '/dashboard/talent');
+    }
+  };
+
   const handleLinkedInAuto = async () => {
     setLoading(true);
     setError('');
     try {
       const role = userType === 'director' ? 'director' : 'talent';
-      const data = await autoLinkedInLogin(role);
-      const userRole = data.user.role || role;
-      if (role === 'talent') navigate('/dashboard/talent');
-      else if (role === 'director') navigate('/dashboard/director');
-      else navigate('/dashboard/admin');
+      await autoLinkedInLogin(role);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'LinkedIn auto-login failed.');
     } finally {
@@ -62,11 +78,8 @@ const Login = () => {
     setError('');
     try {
       const role = userType === 'director' ? 'director' : 'talent';
-      const data = await loginWithGoogle(role);
-      const userRole = data.user.role || role;
-      if (role === 'talent') navigate('/dashboard/talent');
-      else if (role === 'director') navigate('/dashboard/director');
-      else navigate('/dashboard/admin');
+      await loginWithGoogle(role);
+      await navigateAfterSocial(role);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
     } finally {

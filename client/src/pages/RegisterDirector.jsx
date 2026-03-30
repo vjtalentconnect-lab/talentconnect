@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register, login, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
+import { getMyProfile } from '../services/profileService';
 
 const RegisterDirector = () => {
   const industryTypes = [
@@ -64,6 +65,22 @@ const RegisterDirector = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const navigateAfterSocial = async () => {
+    try {
+      const res = await getMyProfile();
+      const profile = res.data?.data || res.data || {};
+      const required = ['fullName', 'mobile', 'location', 'companyName', 'industryType'];
+      const missing = required.filter((field) => !profile?.[field]);
+      if (missing.length) {
+        navigate('/onboarding/complete-profile', { state: { role: 'director', missing } });
+      } else {
+        navigate('/dashboard/director');
+      }
+    } catch {
+      navigate('/dashboard/director');
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -90,6 +107,9 @@ const RegisterDirector = () => {
         role: 'director',
         fullName: formData.fullName,
         companyName: formData.productionName,
+        industryType: formData.industryType,
+        location: formData.location,
+        mobile: formData.mobile,
       };
 
       await register(userData);
@@ -108,7 +128,7 @@ const RegisterDirector = () => {
     setSocialLoading(prev => ({ ...prev, google: true }));
     try {
       await loginWithGoogle('director');
-      navigate('/dashboard/director');
+      await navigateAfterSocial();
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
     } finally {
@@ -121,7 +141,6 @@ const RegisterDirector = () => {
     setSocialLoading(prev => ({ ...prev, linkedin: true }));
     try {
       await autoLinkedInLogin('director');
-      navigate('/dashboard/director');
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'LinkedIn sign-in failed.');
     } finally {
@@ -341,7 +360,7 @@ const RegisterDirector = () => {
                 disabled={socialLoading.linkedin}
                 className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:border-primary/60 hover:shadow-md transition-all"
               >
-                <img src="https://static.licdn.com/sc/h/8fkxn8x5q2m0ln5q70a0djb7m" alt="LinkedIn" className="h-5 w-5" />
+                <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" className="h-5 w-5" />
                 <span>{socialLoading.linkedin ? 'Connecting...' : 'Continue with LinkedIn'}</span>
               </button>
             </div>

@@ -10,21 +10,41 @@ const ProjectOversight = () => {
   const [stats, setStats] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState({ search: '', category: 'all', status: 'all' });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [projectsRes, statsRes, profileRes] = await Promise.all([
+      const results = await Promise.allSettled([
         getAdminProjects(),
         getAdminStats(),
         getMyProfile()
       ]);
-      setProjects(projectsRes.data);
-      setStats(statsRes.data);
-      setAdminProfile(profileRes.data);
+      const [projectsResult, statsResult, profileResult] = results;
+
+      // Handle projects - required
+      if (projectsResult.status === 'fulfilled') {
+        const projData = projectsResult.value?.data || projectsResult.value;
+        setProjects(Array.isArray(projData) ? projData : []);
+      } else {
+        throw projectsResult.reason;
+      }
+
+      // Handle stats - optional
+      if (statsResult.status === 'fulfilled') {
+        setStats(statsResult.value?.data || statsResult.value);
+      }
+
+      // Handle profile - optional
+      if (profileResult.status === 'fulfilled') {
+        setAdminProfile(profileResult.value?.data || profileResult.value);
+      }
+
+      setError(null);
     } catch (err) {
       console.error('Error fetching oversight data:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load project data');
     } finally {
       setLoading(false);
     }
@@ -61,7 +81,7 @@ const ProjectOversight = () => {
       await updateProjectStatus(projectId, newStatus);
       fetchData();
     } catch (err) {
-      alert('Status update failed: ' + (err.response?.data?.message || err.message));
+      console.error('Status update failed:', err.response?.data?.message || err.message);
     }
   };
 
@@ -100,12 +120,12 @@ const ProjectOversight = () => {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-background-dark text-white">
+    <div className="flex flex-col items-center justify-center h-screen bg-background-light dark:bg-background-dark">
       <div className="relative size-24">
         <div className="absolute inset-0 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin"></div>
         <span className="material-symbols-outlined absolute inset-0 m-auto size-fit text-4xl text-primary animate-pulse">account_tree</span>
       </div>
-      <p className="mt-8 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Syncing Production Assets...</p>
+      <p className="mt-8 text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Syncing Production Assets...</p>
     </div>
   );
 
@@ -118,12 +138,23 @@ const ProjectOversight = () => {
       headerSubtitle={`Auditing ${projects.length} active creative pipelines.`}
     >
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 flex items-center gap-4">
+            <span className="material-symbols-outlined text-red-500 text-2xl">error</span>
+            <div className="flex-1">
+              <p className="text-sm font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Data Load Error</p>
+              <p className="text-xs text-red-600 dark:text-red-300 mt-1">{error}</p>
+            </div>
+            <button onClick={fetchData} className="px-4 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-red-600 transition-all">Retry</button>
+          </div>
+        )}
+
         {/* Intelligence Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { label: 'Platform Projects', value: stats?.totalProjects || '0', icon: 'movie', color: 'primary' },
-            { label: 'Active Pipeline', value: projects.filter(p => p.status === 'active').length, icon: 'bolt', color: 'emerald' },
-            { label: 'Moderation Queue', value: projects.filter(p => !['active', 'open'].includes(p.status)).length, icon: 'policy', color: 'amber' },
+            { label: 'Active Pipeline', value: projects.filter(p => p.status === 'open').length, icon: 'bolt', color: 'emerald' },
+            { label: 'Moderation Queue', value: projects.filter(p => !['open'].includes(p.status)).length, icon: 'policy', color: 'amber' },
             { 
               label: 'Market Value', 
               value: (stats?.totalProductionValue || 0) >= 100 
@@ -140,7 +171,7 @@ const ProjectOversight = () => {
                   <span className="material-symbols-outlined text-xl">{card.icon}</span>
                 </div>
               </div>
-              <p className="text-3xl font-black dark:text-white uppercase tracking-tighter">{card.value}</p>
+              <p className="text-3xl font-black dark:text-white text-slate-900 uppercase tracking-tighter">{card.value}</p>
             </div>
           ))}
         </div>
@@ -152,14 +183,14 @@ const ProjectOversight = () => {
              <input 
               type="text" 
               placeholder="Search pipelines by title or director..." 
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white placeholder-slate-400"
               value={filter.search}
               onChange={(e) => setFilter({...filter, search: e.target.value})}
              />
           </div>
           <div className="flex gap-3">
              <select 
-              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500"
+              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
               value={filter.category}
               onChange={(e) => setFilter({...filter, category: e.target.value})}
              >
@@ -170,14 +201,14 @@ const ProjectOversight = () => {
                 <option value="Theater">Theater</option>
              </select>
              <select 
-              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500"
+              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
               value={filter.status}
               onChange={(e) => setFilter({...filter, status: e.target.value})}
              >
-                <option value="all">Global Status</option>
-                <option value="active">Active</option>
-                <option value="audit">Under Audit</option>
-                <option value="closed">Closed</option>
+                 <option value="all">Global Status</option>
+                 <option value="open">Open</option>
+                 <option value="closed">Closed</option>
+                 <option value="draft">Draft</option>
              </select>
           </div>
         </div>
@@ -203,21 +234,21 @@ const ProjectOversight = () => {
                   </tr>
                 ) : (
                   filteredProjects.map((project) => (
-                    <tr key={project._id} className="group/row hover:bg-slate-50 dark:hover:bg-white/2 transition-all duration-300">
+                    <tr key={project._id || project.id} className="group/row hover:bg-slate-50 dark:hover:bg-white/2 transition-all duration-300">
                       <td className="px-10 py-8">
                         <div className="flex items-center gap-6">
                            <div className="relative shrink-0">
                               <div className="size-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-white/5 dark:to-white/10 flex items-center justify-center group-hover/row:scale-105 transition-transform duration-500 overflow-hidden border border-slate-200 dark:border-white/5 p-1">
-                                 {project.poster ? (
-                                    <img src={project.poster} className="w-full h-full object-cover rounded-[calc(1rem-4px)]" alt="" />
-                                 ) : (
-                                    <span className="material-symbols-outlined text-slate-400 text-3xl">movie_filter</span>
-                                 )}
-                              </div>
+                                  {project.poster ? (
+                                     <img src={project.poster} className="w-full h-full object-cover rounded-[calc(1rem-4px)]" alt="" />
+                                  ) : (
+                                     <span className="material-symbols-outlined text-slate-400 text-3xl">movie_filter</span>
+                                  )}
+                               </div>
                               <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary border-2 border-white dark:border-card-dark animate-pulse"></div>
                            </div>
                            <div>
-                              <p className="font-black dark:text-white uppercase tracking-tighter text-lg leading-none mb-1 group-hover/row:text-primary transition-colors">{project.title}</p>
+                              <p className="font-black dark:text-white text-slate-900 uppercase tracking-tighter text-lg leading-none mb-1 group-hover/row:text-primary transition-colors">{project.title}</p>
                               <div className="flex items-center gap-2">
                                  <span className="text-[9px] font-black text-primary uppercase tracking-widest">{project.category}</span>
                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">/ {project.location}</span>
@@ -228,10 +259,10 @@ const ProjectOversight = () => {
                       <td className="px-10 py-8">
                          <div className="flex items-center gap-3">
                             <div className="size-10 rounded-xl border-2 border-slate-200 dark:border-white/5 overflow-hidden p-0.5">
-                               <img src={project.director?.profilePicture ? project.director.profilePicture : `https://ui-avatars.com/api/?name=${project.director?.fullName || 'Director'}&background=random`} className="w-full h-full object-cover rounded-lg" alt="" />
+                               <img src={project.director?.profilePicture ? project.director.profilePicture : `https://ui-avatars.com/api/?name=${project.director?.fullName || project.director?.email || 'Director'}&background=random`} className="w-full h-full object-cover rounded-lg" alt="" />
                             </div>
                             <div>
-                               <p className="font-black dark:text-slate-200 uppercase tracking-tight text-xs">{project.director?.fullName || project.director?.email || 'N/A'}</p>
+                               <p className="font-black dark:text-slate-200 text-slate-700 uppercase tracking-tight text-xs">{project.director?.fullName || project.director?.email || 'N/A'}</p>
                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest font-mono italic">Creator node</p>
                             </div>
                          </div>
@@ -240,11 +271,11 @@ const ProjectOversight = () => {
                          <div className="space-y-3 max-w-[180px]">
                             <div className="flex justify-between items-end">
                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
-                                  project.status === 'active' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                                  project.status === 'audit' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                                  project.status === 'open' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                  project.status === 'closed' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
                                   'bg-slate-500/10 text-slate-500 border-slate-500/20'
                                }`}>
-                                  {project.status || 'Active'}
+                                  {project.status || 'draft'}
                                </span>
                                <span className="text-[10px] font-bold text-slate-400">{project.applications?.length || 0} Apps</span>
                             </div>
@@ -257,10 +288,10 @@ const ProjectOversight = () => {
                          <div className="flex flex-col items-end gap-2">
                             <div className="flex gap-2">
                                <button 
-                                onClick={() => handleStatusChange(project._id, project.status === 'active' ? 'audit' : 'active')}
+                                onClick={() => handleStatusChange(project._id, project.status === 'open' ? 'closed' : 'open')}
                                 className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary hover:text-white transition-all shadow-lg active:scale-95"
                                >
-                                  {project.status === 'active' ? 'Audit Mode' : 'Release'}
+                                  {project.status === 'open' ? 'Close Project' : 'Reopen'}
                                </button>
                                <button 
                                 onClick={() => handleDelete(project._id)}

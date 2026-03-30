@@ -18,31 +18,51 @@ const VerificationReview = () => {
             setLoading(true);
             setError(null);
             try {
-                const [profileRes, pendingRes, statsRes] = await Promise.all([
+                const results = await Promise.allSettled([
                     getMyProfile(),
                     getPendingVerifications(),
                     getAdminStats()
                 ]);
-                setAdminProfile(profileRes.data);
-                setPendingRequests(pendingRes.data || []);
-                setStats(statsRes.data);
-                if (pendingRes.data && pendingRes.data.length > 0) {
-                    setSelectedUser(pendingRes.data[0]);
+                const [profileResult, pendingResult, statsResult] = results;
+
+                // Handle profile - optional
+                if (profileResult.status === 'fulfilled') {
+                    setAdminProfile(profileResult.value?.data || profileResult.value);
+                }
+
+                // Handle pending - required
+                if (pendingResult.status === 'fulfilled') {
+                    const rawPending = pendingResult.value?.data || pendingResult.value;
+                    const normalizedPending = (Array.isArray(rawPending) ? rawPending : []).map((u) => ({
+                        ...u,
+                        _id: u._id || u.id,
+                        id: u.id || u._id,
+                    }));
+                    setPendingRequests(normalizedPending);
+                    if (normalizedPending.length > 0) {
+                        setSelectedUser(normalizedPending[0]);
+                    }
+                } else {
+                    throw pendingResult.reason;
+                }
+
+                // Handle stats - optional
+                if (statsResult.status === 'fulfilled') {
+                    setStats(statsResult.value?.data || statsResult.value);
                 }
             } catch (err) {
                 console.error('Error fetching Governance context:', err);
-                setError('Failed to load verification queue. Please check connection.');
+                setError(err.response?.data?.message || err.message || 'Failed to load verification queue');
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
 
-        // Listen for real-time admin events
         const handleAdminEvent = (event) => {
             console.log('Admin event received:', event);
             if (event.type === 'newUser' || event.type === 'verificationUpdate') {
-                fetchData(); // Refetch pending verifications
+                fetchData();
             }
         };
 
@@ -57,21 +77,20 @@ const VerificationReview = () => {
         setActionLoading(true);
         try {
             await verifyUser(userId, { verificationStatus });
-            // Refresh list
             const updatedPending = await getPendingVerifications();
-            setPendingRequests(updatedPending.data);
+            const rawPending = updatedPending?.data || updatedPending;
+            const pending = Array.isArray(rawPending) ? rawPending : [];
+            setPendingRequests(pending);
             if (userId === selectedUser?._id) {
-                // Find the updated user in the new list or clear selection
-                const stillPending = updatedPending.data.find(u => u._id === userId);
+                const stillPending = pending.find(u => u._id === userId);
                 if (stillPending) {
                     setSelectedUser(stillPending);
                 } else {
-                    setSelectedUser(updatedPending.data[0] || null);
+                    setSelectedUser(pending[0] || null);
                 }
             }
-            // Refresh stats
             const updatedStats = await getAdminStats();
-            setStats(updatedStats.data);
+            setStats(updatedStats?.data || updatedStats);
         } catch (err) {
             console.error('Error updating identity state:', err);
         } finally {
@@ -103,13 +122,13 @@ const VerificationReview = () => {
     };
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center h-screen bg-background-dark text-white">
+        <div className="flex flex-col items-center justify-center h-screen bg-background-light dark:bg-background-dark">
             <div className="size-24 relative mb-10">
                 <div className="absolute inset-0 border-[6px] border-primary/20 border-t-primary rounded-full animate-spin"></div>
                 <div className="absolute inset-3 border-[6px] border-primary/10 border-b-primary rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
                 <span className="material-symbols-outlined absolute inset-0 m-auto size-fit text-primary text-4xl animate-pulse">verified_user</span>
             </div>
-            <p className="text-slate-400 font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Scanning Identity Database...</p>
+            <p className="text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Scanning Identity Database...</p>
         </div>
     );
 
@@ -125,12 +144,23 @@ const VerificationReview = () => {
             headerSubtitle="Biometric and professional verification matrix"
         >
             <div className="max-w-7xl mx-auto space-y-12 py-8 lg:px-4 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                {error && (
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 flex items-center gap-4">
+                        <span className="material-symbols-outlined text-red-500 text-2xl">error</span>
+                        <div className="flex-1">
+                            <p className="text-sm font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Data Load Error</p>
+                            <p className="text-xs text-red-600 dark:text-red-300 mt-1">{error}</p>
+                        </div>
+                        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-red-600 transition-all">Retry</button>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                     {/* Left List */}
                     <div className="lg:col-span-4 space-y-10">
                         <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3rem] shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)] group">
                             <div className="p-10 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/2">
-                                <h3 className="text-xl font-black dark:text-white uppercase tracking-tight flex items-center justify-between">
+                                <h3 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight flex items-center justify-between">
                                     Queue
                                     <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] uppercase font-black tracking-widest leading-none ring-1 ring-primary/20">
                                         {pendingRequests.length} PENDING
@@ -154,10 +184,10 @@ const VerificationReview = () => {
                                         >
                                             <div className="flex items-center gap-6">
                                                 <div className="size-16 rounded-full overflow-hidden ring-4 ring-white/10 group-hover/card:scale-105 transition-transform">
-                                                    <img className="w-full h-full object-cover" src={req.profile?.profilePicture && req.profile?.profilePicture !== 'no-photo.jpg' ? req.profile?.profilePicture : `https://ui-avatars.com/api/?name=${req.profile?.fullName || 'User'}&background=ee2b3b&color=fff`} alt={req.profile?.fullName} />
+                                                    <img className="w-full h-full object-cover" src={req.profile?.profilePicture && req.profile?.profilePicture !== 'no-photo.jpg' ? req.profile?.profilePicture : `https://ui-avatars.com/api/?name=${req.profile?.fullName || req.email || 'User'}&background=ee2b3b&color=fff`} alt={req.profile?.fullName || 'User'} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className={`text-sm font-black uppercase tracking-tighter truncate ${selectedUser?._id === req._id ? 'text-white' : 'dark:text-white'}`}>{req.profile?.fullName || 'Unnamed Artist'}</h4>
+                                                    <h4 className={`text-sm font-black uppercase tracking-tighter truncate ${selectedUser?._id === req._id ? 'text-white' : 'dark:text-white text-slate-900'}`}>{req.profile?.fullName || 'Unnamed Artist'}</h4>
                                                     <p className={`text-[9px] font-black uppercase tracking-widest truncate ${selectedUser?._id === req._id ? 'text-white/70' : 'text-slate-400'}`}>{req.email}</p>
                                                 </div>
                                                 <span className={`material-symbols-outlined text-lg ${selectedUser?._id === req._id ? 'text-white' : 'text-slate-300'}`}>chevron_right</span>
@@ -178,15 +208,15 @@ const VerificationReview = () => {
                                     <div className="absolute top-0 right-0 size-96 bg-primary/2 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                                     <div className="relative flex flex-col md:flex-row gap-12 items-center md:items-start text-center md:text-left">
                                         <div className="size-48 rounded-[3.5rem] bg-slate-100 dark:bg-white/5 overflow-hidden ring-8 ring-primary/5 p-1 group-hover:rotate-3 transition-transform duration-700">
-                                            <img className="w-full h-full object-cover rounded-[3.2rem]" src={selectedUser.profile?.profilePicture && selectedUser.profile?.profilePicture !== 'no-photo.jpg' ? selectedUser.profile?.profilePicture : `https://ui-avatars.com/api/?name=${selectedUser.profile?.fullName || 'User'}&background=ee2b3b&color=fff`} alt={selectedUser.profile?.fullName} />
+                                            <img className="w-full h-full object-cover rounded-[3.2rem]" src={selectedUser.profile?.profilePicture && selectedUser.profile?.profilePicture !== 'no-photo.jpg' ? selectedUser.profile?.profilePicture : `https://ui-avatars.com/api/?name=${selectedUser.profile?.fullName || selectedUser.email || 'User'}&background=ee2b3b&color=fff`} alt={selectedUser.profile?.fullName || 'User'} />
                                         </div>
                                         <div className="space-y-8 flex-1">
                                             <div>
                                                 <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
-                                                    <h2 className="text-4xl font-black dark:text-white uppercase tracking-tighter">{selectedUser.profile?.fullName || 'Unnamed Artist'}</h2>
-                                                    <span className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 backdrop-blur-3xl">ID: {selectedUser._id.slice(-8)}</span>
+                                                    <h2 className="text-4xl font-black dark:text-white text-slate-900 uppercase tracking-tighter">{selectedUser.profile?.fullName || 'Unnamed Artist'}</h2>
+                                                    <span className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 backdrop-blur-3xl">ID: {(selectedUser._id || '').slice(-8)}</span>
                                                 </div>
-                                                <p className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">IDENTITY_STATE: {selectedUser.verificationStatus.toUpperCase()}</p>
+                                                <p className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">IDENTITY_STATE: {(selectedUser.verificationStatus || 'pending').toUpperCase()}</p>
                                             </div>
 
                                             <div className="flex flex-wrap gap-8 items-center justify-center md:justify-start">
@@ -196,7 +226,7 @@ const VerificationReview = () => {
                                                     </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Signal Channel</p>
-                                                        <p className="text-sm font-black dark:text-white truncate">{selectedUser.email}</p>
+                                                        <p className="text-sm font-black dark:text-white text-slate-900 truncate">{selectedUser.email}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
@@ -205,7 +235,7 @@ const VerificationReview = () => {
                                                     </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Professional Focus</p>
-                                                        <p className="text-sm font-black dark:text-white uppercase tracking-tighter">{selectedUser.profile?.talentCategory || 'Unspecified Artist'}</p>
+                                                        <p className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-tighter">{selectedUser.profile?.talentCategory || 'Unspecified Artist'}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -217,7 +247,7 @@ const VerificationReview = () => {
                                 <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                     {/* Links and Metadata */}
                                     <div className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3rem] p-10 shadow-sm space-y-8">
-                                        <h4 className="text-[12px] font-black dark:text-white uppercase tracking-[0.3em] flex items-center gap-4">
+                                        <h4 className="text-[12px] font-black dark:text-white text-slate-900 uppercase tracking-[0.3em] flex items-center gap-4">
                                             <span className="material-symbols-outlined text-primary">history_edu</span>
                                             Dossier Metadata
                                         </h4>
@@ -231,7 +261,7 @@ const VerificationReview = () => {
                                             ].map((item, idx) => (
                                                 <div key={idx} className="flex items-center justify-between border-b border-slate-50 dark:border-white/2 pb-4">
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
-                                                    <span className="text-[11px] font-black dark:text-white uppercase tracking-tighter">{item.val}</span>
+                                                    <span className="text-[11px] font-black dark:text-white text-slate-700 uppercase tracking-tighter">{item.val}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -242,7 +272,7 @@ const VerificationReview = () => {
                                                 {vState.idFileUrl && (
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between px-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700">
                                                                 <span className="material-symbols-outlined text-sm text-primary">badge</span>
                                                                 ID Document ({vState.idType})
                                                             </span>
@@ -260,7 +290,7 @@ const VerificationReview = () => {
                                                 {vState.videoSelfieUrl && (
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between px-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700">
                                                                 <span className="material-symbols-outlined text-sm text-primary">videocam</span>
                                                                 Biometric Verification Video
                                                             </span>
@@ -278,7 +308,7 @@ const VerificationReview = () => {
                                                 {vState.membershipCardUrl && (
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between px-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700">
                                                                 <span className="material-symbols-outlined text-sm text-primary">contact_emergency</span>
                                                                 Association Membership
                                                             </span>
@@ -300,7 +330,7 @@ const VerificationReview = () => {
                                     <div className="bg-slate-900 dark:bg-card-dark border border-slate-800 dark:border-white/5 rounded-[3rem] p-10 shadow-sm relative overflow-hidden group">
                                         <span className="material-symbols-outlined absolute -right-8 -top-8 text-[140px] text-white/5 rotate-12 group-hover:rotate-0 transition-transform duration-1000">gavel</span>
                                         <div className="relative space-y-10">
-                                            <h4 className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Governance Action</h4>
+                                            <h4 className="text-[12px] font-black text-white dark:text-white uppercase tracking-[0.3em]">Governance Action</h4>
                                             <div className="space-y-6">
                                                 <button 
                                                     disabled={actionLoading}
@@ -349,7 +379,7 @@ const VerificationReview = () => {
                                     <span className="material-symbols-outlined text-6xl">search_off</span>
                                 </div>
                                 <div className="max-w-md space-y-4">
-                                    <h3 className="text-2xl font-black dark:text-white uppercase tracking-tighter">Identity Vacuum Detected</h3>
+                                    <h3 className="text-2xl font-black dark:text-white text-slate-900 uppercase tracking-tighter">Identity Vacuum Detected</h3>
                                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] leading-relaxed">The verification queue is currently empty or no case has been selected for investigation.</p>
                                 </div>
                             </div>

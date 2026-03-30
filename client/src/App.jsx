@@ -58,6 +58,7 @@ const AboutUs = lazy(() => import("./pages/AboutUs"));
 const ArtistGuidelines = lazy(() => import("./pages/ArtistGuidelines"));
 const SuccessStories = lazy(() => import("./pages/SuccessStories"));
 const LinkedInCallback = lazy(() => import("./pages/LinkedInCallback"));
+const CompleteProfile = lazy(() => import("./pages/CompleteProfile"));
 
 
 function App() {
@@ -81,6 +82,7 @@ function App() {
               <Route path="/register/actor" element={<RegisterActor />} />
               <Route path="/register/director" element={<RegisterDirector />} />
               <Route path="/auth/linkedin/callback" element={<LinkedInCallback />} />
+              <Route path="/onboarding/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
               {/* Talent routes */}
               <Route path="/dashboard/talent" element={<ProtectedRoute requiredRole="talent"><ArtistDashboard /></ProtectedRoute>} />
               <Route path="/talent/portfolio" element={<ProtectedRoute requiredRole="talent"><TalentPortfolio /></ProtectedRoute>} />

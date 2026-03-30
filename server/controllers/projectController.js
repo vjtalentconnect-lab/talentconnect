@@ -75,12 +75,12 @@ export const createProject = async (req, res) => {
 
     try {
         const projectRef = await addWithBackup('projects', projectData);
-        const project = { id: projectRef.id, ...projectData };
+        const project = { id: projectRef.id, _id: projectRef.id, ...projectData };
 
         // Fetch director for population
         const directorDoc = await db.collection('users').doc(req.user.id).get();
         const directorData = directorDoc.data();
-        project.director = { id: req.user.id, email: directorData.email, role: directorData.role, profile: directorData.profile };
+        project.director = { id: req.user.id, _id: req.user.id, email: directorData.email, role: directorData.role, profile: directorData.profile };
 
         // Notify admins about new project
         const adminsSnapshot = await db.collection('users').where('role', '==', 'admin').get();
@@ -238,9 +238,10 @@ export const getMyProjects = async (req, res) => {
     try {
         const snapshot = await db.collection('projects')
             .where('director', '==', req.user.id)
-            .orderBy('createdAt', 'desc')
             .get();
-        const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const projects = snapshot.docs
+            .map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         res.status(200).json({ success: true, count: projects.length, data: projects });
     } catch (err) {
         res.status(400).json({ message: err.message });

@@ -86,7 +86,22 @@ const sendResetPasswordEmail = async ({ userId, email }) => {
 };
 
 // Ensure Firestore user + profile exist; used by social logins
-const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent', mobile = '', location = '', provider = 'password' }) => {
+// Ensures that a Firestore user + profile exist. Used by social logins so we can
+// hydrate as much metadata (name/photo/contact) as the provider gives us, and
+// still leave room for the client to fill missing fields.
+const ensureUserAndProfile = async ({
+    uid,
+    email,
+    fullName = '',
+    role = 'talent',
+    mobile = '',
+    location = '',
+    provider = 'password',
+    talentCategory = '',
+    companyName = '',
+    industryType = '',
+    profilePicture = '',
+}) => {
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
 
@@ -96,7 +111,8 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
             email,
             role,
             isVerified: false,
-            verificationStatus: role === 'talent' ? 'pending' : 'none',
+            // Start as "none"; they will move to "pending" only after submitting verification
+            verificationStatus: 'none',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             plan: 'free',
@@ -110,8 +126,10 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
             fullName,
             location,
             mobile,
-            talentCategory: role === 'talent' ? 'Actor' : null,
-            profilePicture: 'no-photo.jpg',
+            talentCategory: role === 'talent' ? (talentCategory || 'Actor') : null,
+            companyName: role === 'director' ? companyName : undefined,
+            industryType: role === 'director' ? industryType : undefined,
+            profilePicture: profilePicture || 'no-photo.jpg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             portfolio: [],
@@ -129,7 +147,7 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
         const patch = {};
         const data = userDoc.data() || {};
 
-        if (!data.verificationStatus) patch.verificationStatus = role === 'talent' ? 'pending' : 'none';
+        if (!data.verificationStatus) patch.verificationStatus = 'none';
         if (data.isVerified === undefined) patch.isVerified = false;
         if (!data.role) patch.role = role || 'talent';
         if (!data.authProvider && provider) patch.authProvider = provider;
@@ -143,8 +161,10 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
                 fullName,
                 location,
                 mobile,
-                talentCategory: (role || data.role) === 'talent' ? 'Actor' : null,
-                profilePicture: 'no-photo.jpg',
+                talentCategory: (role || data.role) === 'talent' ? (talentCategory || 'Actor') : null,
+                companyName: role === 'director' ? companyName : undefined,
+                industryType: role === 'director' ? industryType : undefined,
+                profilePicture: profilePicture || 'no-photo.jpg',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 portfolio: [],
@@ -156,6 +176,31 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
                 }
             });
             patch.profile = profileRef.id;
+        }
+
+        // Backfill missing profile fields without overwriting user-provided values
+        if (data.profile) {
+            const profileRef = db.collection('profiles').doc(data.profile);
+            const profileDoc = await profileRef.get();
+            const profile = profileDoc.exists ? profileDoc.data() : {};
+            const profilePatch = {};
+
+            if (!profile.fullName && fullName) profilePatch.fullName = fullName;
+            if (!profile.location && location) profilePatch.location = location;
+            if (!profile.mobile && mobile) profilePatch.mobile = mobile;
+            if ((role || data.role) === 'talent' && !profile.talentCategory && talentCategory) {
+                profilePatch.talentCategory = talentCategory;
+            }
+            if ((role || data.role) === 'director') {
+                if (!profile.companyName && companyName) profilePatch.companyName = companyName;
+                if (!profile.industryType && industryType) profilePatch.industryType = industryType;
+            }
+            const hasPlaceholderPhoto = !profile.profilePicture || profile.profilePicture === 'no-photo.jpg';
+            if (hasPlaceholderPhoto && profilePicture) profilePatch.profilePicture = profilePicture;
+
+            if (Object.keys(profilePatch).length > 0) {
+                await updateWithBackup('profiles', data.profile, profilePatch);
+            }
         }
 
         if (Object.keys(patch).length > 0) {
@@ -172,7 +217,7 @@ const ensureUserAndProfile = async ({ uid, email, fullName = '', role = 'talent'
 // @route   POST /api/auth/register
 // @access  Public
 export const register = async (req, res) => {
-    const { email, password, role, fullName, talentCategory, location, mobile } = req.body;
+    const { email, password, role, fullName, talentCategory, location, mobile, companyName, industryType } = req.body;
 
     try {
         // Create user in Firebase Auth
@@ -189,7 +234,7 @@ export const register = async (req, res) => {
             email,
             role: role || 'talent',
             isVerified: false,
-            verificationStatus: role === 'talent' ? 'pending' : 'none',
+            verificationStatus: 'none', // mark pending only after user submits verification
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             plan: 'free',
@@ -211,6 +256,8 @@ export const register = async (req, res) => {
             location: location || '',
             mobile: mobile || '',
             talentCategory: role === 'talent' ? talentCategory : null,
+            companyName: role === 'director' ? companyName || '' : undefined,
+            industryType: role === 'director' ? industryType || '' : undefined,
             profilePicture: 'no-photo.jpg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -285,12 +332,14 @@ export const googleLogin = async (req, res) => {
         const uid = decoded.uid;
         const email = decoded.email;
         const fullName = decoded.name || '';
+        const profilePicture = decoded.picture || '';
 
         const userData = await ensureUserAndProfile({
             uid,
             email,
             fullName,
             role: role || 'talent',
+            profilePicture,
             provider: 'google',
         });
 
@@ -324,29 +373,36 @@ export const linkedinLogin = async (req, res) => {
     }
 
     try {
-        let accessToken;
+        console.log('🔵 LinkedIn OAuth - Debug Info:');
+        console.log('  Code:', code.substring(0, 20) + '...');
+        console.log('  Redirect URI:', redirectUri);
+        console.log('  Client ID:', process.env.LINKEDIN_CLIENT_ID);
 
-        if (code === 'AUTO') {
-            accessToken = process.env.LINKEDIN_CLIENT_SECRET;
-        } else {
-            // Exchange code for access token
-            const tokenResp = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', null, {
-                params: {
-                    grant_type: 'authorization_code',
-                    code,
-                    redirect_uri: redirectUri,
-                    client_id: process.env.LINKEDIN_CLIENT_ID,
-                    client_secret: process.env.LINKEDIN_CLIENT_SECRET,
-                },
+        // Exchange authorization code for access token
+        // LinkedIn requires form-encoded data in the request body
+        const tokenResp = await axios.post(
+            'https://www.linkedin.com/oauth/v2/accessToken',
+            new URLSearchParams({
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirectUri,
+                client_id: process.env.LINKEDIN_CLIENT_ID,
+                client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+            }).toString(),
+            {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            });
-            accessToken = tokenResp.data.access_token;
-        }
+            }
+        );
+        const accessToken = tokenResp.data.access_token;
+        console.log('✅ LinkedIn - Access token obtained');
 
         // Fetch basic profile
-        const profileResp = await axios.get('https://api.linkedin.com/v2/me', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        });
+        const profileResp = await axios.get(
+            'https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))',
+            {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            }
+        );
         const emailResp = await axios.get('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
             headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -354,6 +410,9 @@ export const linkedinLogin = async (req, res) => {
         const linkedinId = profileResp.data.id;
         const fullName = `${profileResp.data.localizedFirstName || ''} ${profileResp.data.localizedLastName || ''}`.trim();
         const email = emailResp.data.elements?.[0]?.['handle~']?.emailAddress;
+        const photoCandidates = profileResp.data?.profilePicture?.['displayImage~']?.elements || [];
+        const bestPhoto = photoCandidates[photoCandidates.length - 1];
+        const profilePicture = bestPhoto?.identifiers?.[0]?.identifier || '';
 
         if (!email) {
             return res.status(400).json({ message: 'Unable to fetch LinkedIn email' });
@@ -365,6 +424,7 @@ export const linkedinLogin = async (req, res) => {
             email,
             fullName,
             role: role || 'talent',
+            profilePicture,
             provider: 'linkedin',
         });
 
@@ -391,8 +451,13 @@ export const linkedinLogin = async (req, res) => {
             user: { id: uid, email, role: userData.role },
         });
     } catch (err) {
-        console.error('LinkedIn login error:', err?.response?.data || err.message);
-        res.status(401).json({ message: 'LinkedIn login failed' });
+        console.error('❌ LinkedIn login error:');
+        console.error('  Status:', err?.response?.status);
+        console.error('  Error:', err?.response?.data || err.message);
+        res.status(err?.response?.status || 401).json({ 
+            message: err?.response?.data?.error_description || err?.response?.data?.error || 'LinkedIn login failed',
+            details: process.env.NODE_ENV === 'development' ? err?.response?.data : undefined
+        });
     }
 };
 

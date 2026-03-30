@@ -18,7 +18,13 @@ const DirectorPortfolio = () => {
                     getMyProjects()
                 ]);
                 setProfile(profileRes.data);
-                setProjects(projectsRes.data || []);
+                const rawProjects = projectsRes.data || [];
+                const normalizedProjects = rawProjects.map((project) => ({
+                    ...project,
+                    _id: project._id || project.id,
+                    id: project.id || project._id,
+                }));
+                setProjects(normalizedProjects);
             } catch (err) {
                 console.error('Error fetching director portfolio data:', err);
             } finally {
@@ -168,9 +174,10 @@ const DirectorPortfolio = () => {
                                         </div>
                                         <div className="space-y-4">
                                             {activeProjects.length > 0 ? activeProjects.map(project => {
+                                                const projectId = project._id || project.id;
                                                 const daysUntilDue = Math.ceil((new Date(project.deadline) - new Date()) / (1000 * 60 * 60 * 24));
                                                 return (
-                                                    <Link to={`/director/project/${project._id}`} key={project._id} className="block p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-transparent hover:border-primary/30 transition-all cursor-pointer group">
+                                                    <Link to={`/director/project/${projectId}`} key={projectId} className="block p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-transparent hover:border-primary/30 transition-all cursor-pointer group">
                                                         <p className="font-bold text-sm mb-1 group-hover:text-primary transition-colors">{project.title}</p>
                                                         <p className="text-xs text-slate-500 font-medium truncate">{project.roles?.[0]?.title || 'Multiple Roles'} • {project.location}</p>
                                                         <div className="mt-4 flex items-center justify-between">

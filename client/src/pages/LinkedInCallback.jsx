@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { completeLinkedInLogin } from '../services/authService';
+import { getMyProfile } from '../services/profileService';
 
 const LinkedInCallback = () => {
   const location = useLocation();
@@ -19,13 +20,39 @@ const LinkedInCallback = () => {
 
     const finish = async () => {
       try {
-        const data = await completeLinkedInLogin(code, state);
-        const role = data.user.role || 'talent';
-        if (role === 'talent') navigate('/dashboard/talent');
-        else if (role === 'director') navigate('/dashboard/director');
+        console.log('LinkedInCallback - Exchanging code for token');
+        console.log('  Code:', code.substring(0, 20) + '...');
+        console.log('  State:', state);
+
+        const role = localStorage.getItem('linkedin_oauth_role') || 'talent';
+        const data = await completeLinkedInLogin(code, state, role);
+        localStorage.removeItem('linkedin_oauth_role');
+
+        console.log('LinkedInCallback - Login successful');
+        const userRole = data.user.role || role;
+
+        try {
+          const res = await getMyProfile();
+          const profile = res.data?.data || res.data || {};
+          const required =
+            userRole === 'director'
+              ? ['fullName', 'mobile', 'location', 'companyName', 'industryType']
+              : ['fullName', 'mobile', 'location', 'talentCategory'];
+          const missing = required.filter((field) => !profile?.[field]);
+          if (missing.length) {
+            navigate('/onboarding/complete-profile', { state: { role: userRole, missing } });
+            return;
+          }
+        } catch (profileErr) {
+          console.error('LinkedInCallback - profile fetch failed', profileErr);
+        }
+
+        if (userRole === 'talent') navigate('/dashboard/talent');
+        else if (userRole === 'director') navigate('/dashboard/director');
         else navigate('/dashboard/admin');
       } catch (err) {
-        console.error(err);
+        console.error('LinkedInCallback - Error:', err);
+        console.error('  Response data:', err.response?.data);
         setMessage(err.response?.data?.message || err.message || 'LinkedIn login failed.');
       }
     };

@@ -21,10 +21,10 @@ export const getPendingVerifications = async () => {
 };
 
 export const verifyUser = async (userId, data) => {
-    // data should be { verificationStatus: 'verified' | 'rejected' | 'pending' }
     const response = await api.put(`/admin/verify/${userId}`, data);
     return response.data;
 };
+
 export const updateProjectStatus = async (projectId, status) => {
     const response = await api.put(`/admin/projects/${projectId}/status`, { status });
     return response.data;
@@ -39,6 +39,7 @@ export const deleteUser = async (userId) => {
     const response = await api.delete(`/admin/users/${userId}`);
     return response.data;
 };
+
 export const deleteProject = async (projectId) => {
     const response = await api.delete(`/admin/projects/${projectId}`);
     return response.data;
@@ -50,7 +51,7 @@ export const getAdminProjectDetails = async (projectId) => {
 };
 
 export const searchGlobal = async (query) => {
-    const response = await api.get(`/admin/search?query=${query}`);
+    const response = await api.get(`/admin/search?query=${encodeURIComponent(query)}`);
     return response.data;
 };
 

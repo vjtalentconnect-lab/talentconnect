@@ -8,6 +8,7 @@ const GlobalSearch = () => {
     const [adminProfile, setAdminProfile] = useState(null);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [activeFilter, setActiveFilter] = useState('All Results');
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -17,14 +18,22 @@ const GlobalSearch = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [profileRes, statsRes] = await Promise.all([
+                const results = await Promise.allSettled([
                     getMyProfile(),
                     getAdminStats()
                 ]);
-                setAdminProfile(profileRes.data);
-                setStats(statsRes.data);
+                const [profileResult, statsResult] = results;
+
+                if (profileResult.status === 'fulfilled') {
+                    setAdminProfile(profileResult.value?.data || profileResult.value);
+                }
+                if (statsResult.status === 'fulfilled') {
+                    setStats(statsResult.value?.data || statsResult.value);
+                }
+                setError(null);
             } catch (err) {
                 console.error('Error fetching System context:', err);
+                setError(err.response?.data?.message || err.message || 'Failed to load search context');
             } finally {
                 setLoading(false);
             }
@@ -38,7 +47,11 @@ const GlobalSearch = () => {
             setSearching(true);
             try {
                 const res = await searchGlobal(val);
-                setSearchResults(res.data);
+                const data = res?.data || res;
+                setSearchResults({
+                    users: Array.isArray(data?.users) ? data.users : [],
+                    projects: Array.isArray(data?.projects) ? data.projects : []
+                });
             } catch (err) {
                 console.error('Search error:', err);
             } finally {
@@ -81,13 +94,13 @@ const GlobalSearch = () => {
     ];
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center h-screen bg-background-dark text-white">
+        <div className="flex flex-col items-center justify-center h-screen bg-background-light dark:bg-background-dark">
             <div className="size-24 relative mb-10">
                 <div className="absolute inset-0 border-[6px] border-primary/20 border-t-primary rounded-full animate-spin"></div>
                 <div className="absolute inset-3 border-[6px] border-primary/10 border-b-primary rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
                 <span className="material-symbols-outlined absolute inset-0 m-auto size-fit text-primary text-4xl animate-pulse">database</span>
             </div>
-            <p className="text-slate-400 font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Indexing Platform Nexus...</p>
+            <p className="text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.5em] text-[10px] animate-pulse">Indexing Platform Nexus...</p>
         </div>
     );
 
@@ -101,6 +114,13 @@ const GlobalSearch = () => {
             searchPlaceholder="Search name, ID, or hash..."
         >
             <div className="max-w-7xl mx-auto space-y-12 py-8 lg:px-4 pb-32 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                {error && (
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 flex items-center gap-4">
+                        <span className="material-symbols-outlined text-red-500 text-2xl">error</span>
+                        <p className="text-sm text-red-700 dark:text-red-400 flex-1">{error}</p>
+                    </div>
+                )}
+
                 {/* Search Bar Area */}
                 <div className="space-y-10">
                     <div className="relative group max-w-5xl mx-auto">
@@ -166,7 +186,7 @@ const GlobalSearch = () => {
                         {/* Users Section */}
                         <section className="group">
                             <div className="flex items-center justify-between mb-8 px-4">
-                                <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight flex items-center gap-6">
+                                <h3 className="text-2xl font-black dark:text-white text-slate-900 uppercase tracking-tight flex items-center gap-6">
                                     <div className="size-14 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/20 transform -rotate-3 group-hover:rotate-0 transition-transform">
                                         <span className="material-symbols-outlined text-2xl">group</span>
                                     </div>
@@ -181,25 +201,25 @@ const GlobalSearch = () => {
                                     </div>
                                 ) : (
                                     searchResults.users.map((user, idx) => (
-                                        <div key={idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between hover:border-primary/40 transition-all group/card shadow-sm hover:shadow-2xl hover:shadow-primary/5">
+                                        <div key={user._id || idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between hover:border-primary/40 transition-all group/card shadow-sm hover:shadow-2xl hover:shadow-primary/5">
                                             <div className="flex items-center gap-8">
                                                 <div className="size-20 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden ring-8 ring-primary/5 group-hover/card:ring-primary/10 transition-all p-1">
-                                                    <img className="w-full h-full object-cover rounded-full" src={user.profile?.profilePicture && user.profile?.profilePicture !== 'no-photo.jpg' ? user.profile?.profilePicture : `https://ui-avatars.com/api/?name=${user.profile?.fullName || 'User'}&background=ee2b3b&color=fff`} alt={user.name} />
+                                                    <img className="w-full h-full object-cover rounded-full" src={user.profile?.profilePicture && user.profile?.profilePicture !== 'no-photo.jpg' ? user.profile?.profilePicture : `https://ui-avatars.com/api/?name=${user.profile?.fullName || user.email || 'User'}&background=ee2b3b&color=fff`} alt={user.profile?.fullName || 'User'} />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-3 mb-2">
-                                                        <h4 className="text-xl font-black dark:text-white uppercase tracking-tighter">{user.profile?.fullName || 'Anonymous Node'}</h4>
+                                                        <h4 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tighter">{user.profile?.fullName || 'Anonymous Node'}</h4>
                                                         {user.isVerified && <span className="material-symbols-outlined text-sm text-blue-400 fill-1">verified</span>}
                                                     </div>
                                                     <div className="flex items-center gap-4">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{user.role} • {user.profile?.location || 'Unknown Sector'}</p>
                                                         <div className="size-1 bg-slate-200 dark:bg-white/10 rounded-full"></div>
-                                                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">#{user._id.slice(-6).toUpperCase()}</p>
+                                                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">#{(user._id || user.id || '').slice(-6).toUpperCase()}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
-                                                <Link to={`/admin/users/${user._id}`} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-95 leading-none">Access Dossier</Link>
+                                                <Link to={`/admin/users/${user._id || user.id}`} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-95 leading-none">Access Dossier</Link>
                                             </div>
                                         </div>
                                     ))
@@ -210,7 +230,7 @@ const GlobalSearch = () => {
                         {/* Projects Section */}
                         <section className="group">
                             <div className="flex items-center justify-between mb-8 px-4">
-                                <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight flex items-center gap-6">
+                                <h3 className="text-2xl font-black dark:text-white text-slate-900 uppercase tracking-tight flex items-center gap-6">
                                     <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-xl shadow-primary/5">
                                         <span className="material-symbols-outlined text-2xl">theater_comedy</span>
                                     </div>
@@ -225,7 +245,7 @@ const GlobalSearch = () => {
                                     </div>
                                 ) : (
                                     searchResults.projects.map((project, idx) => (
-                                        <div key={idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] overflow-hidden group/item hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:shadow-primary/5">
+                                        <div key={project._id || idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] overflow-hidden group/item hover:border-primary/40 transition-all shadow-sm hover:shadow-2xl hover:shadow-primary/5">
                                             <div className="h-64 w-full relative overflow-hidden">
                                                 <img className="w-full h-full object-cover transition-transform duration-1000 group-hover/item:scale-110" src={project.poster || 'https://images.unsplash.com/photo-1485846234645-a62644ffb1e7?q=80&w=2069&auto=format&fit=crop'} alt={project.title} />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent"></div>
@@ -236,7 +256,7 @@ const GlobalSearch = () => {
                                                 </div>
                                             </div>
                                             <div className="p-10">
-                                                <h4 className="text-xl font-black dark:text-white uppercase tracking-tighter mb-2">{project.title}</h4>
+                                                <h4 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tighter mb-2">{project.title}</h4>
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">{project.category} • {project.location}</p>
                                                 <Link to={`/admin/projects`} className="block w-full text-center py-5 bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black rounded-2xl uppercase tracking-[0.3em] hover:bg-primary transition-all leading-none">ANALYZE_PROJECT</Link>
                                             </div>
@@ -252,7 +272,7 @@ const GlobalSearch = () => {
                         {/* History */}
                         <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] p-12 shadow-sm relative overflow-hidden group">
                            <div className="absolute top-0 right-0 size-32 bg-primary/2 rounded-full blur-[60px] -mr-16 -mt-16 group-hover:bg-primary/5 transition-colors"></div>
-                            <h3 className="text-xl font-black dark:text-white uppercase tracking-tight mb-10 flex items-center gap-6">
+                            <h3 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight mb-10 flex items-center gap-6">
                                 <div className="size-12 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
                                     <span className="material-symbols-outlined text-2xl animate-spin-slow">history</span>
                                 </div>
@@ -283,7 +303,7 @@ const GlobalSearch = () => {
 
                         {/* Tags */}
                         <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] p-12 shadow-sm">
-                            <h3 className="text-xl font-black dark:text-white uppercase tracking-tight mb-10 flex items-center gap-6">
+                            <h3 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight mb-10 flex items-center gap-6">
                                 <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
                                     <span className="material-symbols-outlined text-2xl">label</span>
                                 </div>

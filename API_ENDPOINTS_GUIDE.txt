@@ -1,0 +1,200 @@
+================================================================================
+                    TALENTCONNECT - ULTIMATE API TESTING GUIDE
+================================================================================
+This guide contains every active endpoint in the project with full URLs, 
+descriptions, and step-by-step instructions for Postman.
+
+🚀 BACKEND BASE URL: http://localhost:5001/api
+🌐 FRONTEND URL: http://localhost:5173
+
+--------------------------------------------------------------------------------
+PART 1: POSTMAN SETUP (CRITICAL)
+--------------------------------------------------------------------------------
+
+Before you start, configure Postman to handle logins automatically:
+
+1. Create a new Environment in Postman (Top right -> Environments -> Create).
+2. Add a variable named: "token"
+3. In every request (except Login/Register):
+   - Go to the 'Authorization' tab.
+   - Select Type: 'Bearer Token'.
+   - In the Token field, type: {{token}}
+4. IMPORTANT: Make sure your server is running (npm run dev in /server).
+
+--------------------------------------------------------------------------------
+PART 2: PUBLIC & AUTHENTICATION (NO TOKEN REQUIRED)
+--------------------------------------------------------------------------------
+
+🔹 [Register New Account]
+URL:    http://localhost:5001/api/auth/register
+Method: POST
+Description: Creates a new Talent or Director account.
+Body (JSON):
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "fullName": "John Doe",
+  "role": "talent",
+  "talentCategory": "Actor",
+  "location": "Mumbai",
+  "mobile": "9876543210"
+}
+STEPS: Send request -> You will receive a 'token' in response.
+
+🔹 [User Login]
+URL:    http://localhost:5001/api/auth/login
+Method: POST
+Description: Standard login for Talents and Directors.
+Body (JSON):
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+🔹 [Admin Login]
+URL:    http://localhost:5001/api/auth/admin-login
+Method: POST
+Description: Special login for the Platform Admin using credentials from .env.
+Body (JSON):
+{
+  "email": "admin@mail.com",
+  "password": "adminpassword123"
+}
+
+🔹 [Forgot Password]
+URL:    http://localhost:5001/api/auth/forgot-password
+Method: POST
+Description: Sends a password reset link to the user's email.
+Body (JSON): { "email": "user@example.com" }
+
+--------------------------------------------------------------------------------
+PART 3: ADMIN DASHBOARD (REQUIRES ADMIN TOKEN)
+--------------------------------------------------------------------------------
+
+🔹 [Dashboard Stats]
+URL:    http://localhost:5001/api/admin/stats
+Method: GET
+Description: Returns total users, revenue, growth, and server health.
+
+🔹 [Global Search]
+URL:    http://localhost:5001/api/admin/search?query=Lakshya
+Method: GET
+Description: Search for any user (by name/email) or project (by title).
+Params: query = [search_term]
+
+🔹 [User Management]
+URL:    http://localhost:5001/api/admin/users
+Method: GET
+Description: Fetches every user on the platform with their full profile data.
+
+🔹 [Update User Role]
+URL:    http://localhost:5001/api/admin/users/YcQRsVBEeXTUYRbLgHOduhov9Xx1/role
+Method: PUT
+Description: Change a user's role (e.g., promote Talent to Admin).
+Body (JSON): { "role": "admin" }
+
+🔹 [Verify User Identity]
+URL:    http://localhost:5001/api/admin/verify/YcQRsVBEeXTUYRbLgHOduhov9Xx1
+Method: PUT
+Description: Approves a user's ID verification. User gets an instant browser notification.
+Body (JSON): { "verificationStatus": "verified" }
+
+🔹 [Delete User]
+URL:    http://localhost:5001/api/admin/users/USER_ID
+Method: DELETE
+Description: Permanently removes the user and all their projects/messages.
+
+🔹 [All Projects Tracking]
+URL:    http://localhost:5001/api/admin/projects
+Method: GET
+Description: Admin view of every project created on the platform.
+
+--------------------------------------------------------------------------------
+PART 4: TALENT FEATURES (REQUIRES TALENT TOKEN)
+--------------------------------------------------------------------------------
+
+🔹 [Get My Profile]
+URL:    http://localhost:5001/api/profile/me
+Method: GET
+Description: Fetch profile, portfolio, and physical attributes for current user.
+
+🔹 [Project Discovery]
+URL:    http://localhost:5001/api/projects
+Method: GET
+Description: Public list of all 'open' casting calls.
+
+🔹 [Apply to Project]
+URL:    http://localhost:5001/api/projects/PROJECT_ID/apply
+Method: POST
+Description: Talent submits their profile to a director for a specific project.
+
+🔹 [My Applications]
+URL:    http://localhost:5001/api/projects/my-applications
+Method: GET
+Description: Track the status of your applications (Pending, Shortlisted, Rejected).
+
+🔹 [Submit Audition]
+URL:    http://localhost:5001/api/projects/applications/APP_ID/submit-video
+Method: PUT
+Description: Upload your audition video link for a shortlisted project.
+Body (JSON): { "videoUrl": "https://vimeo.com/..." }
+
+--------------------------------------------------------------------------------
+PART 5: DIRECTOR FEATURES (REQUIRES DIRECTOR TOKEN)
+--------------------------------------------------------------------------------
+
+🔹 [Post a Project]
+URL:    http://localhost:5001/api/projects
+Method: POST
+Description: Create a new casting call/project listing.
+Body (JSON):
+{
+  "title": "Netflix Series - Lead Role",
+  "description": "Looking for fresh faces...",
+  "budget": "₹75,000",
+  "location": "Mumbai",
+  "roleType": "Lead"
+}
+
+🔹 [Manage My Projects]
+URL:    http://localhost:5001/api/projects/my-projects
+Method: GET
+Description: View only the projects YOU created.
+
+🔹 [Review Applicants]
+URL:    http://localhost:5001/api/projects/PROJECT_ID/applications
+Method: GET
+Description: Get a list of all talents who applied for your project.
+
+🔹 [Shortlist Talent]
+URL:    http://localhost:5001/api/projects/applications/APP_ID/status
+Method: PUT
+Description: Move an applicant to 'shortlisted' or 'rejected'.
+Body (JSON): { "status": "shortlisted" }
+
+--------------------------------------------------------------------------------
+PART 6: MESSAGES & NOTIFICATIONS (COMMON)
+--------------------------------------------------------------------------------
+
+🔹 [Fetch Chats]
+URL:    http://localhost:5001/api/messages/conversations
+Method: GET
+Description: List all active conversations with other users.
+
+🔹 [Send Instant Message]
+URL:    http://localhost:5001/api/messages
+Method: POST
+Description: Send a message to any user using their ID.
+Body (JSON): { "recipientId": "RECIPIENT_ID", "content": "Hi there!" }
+
+🔹 [Check Notifications]
+URL:    http://localhost:5001/api/notifications
+Method: GET
+Description: Get all unread alerts (profile views, application updates).
+
+--------------------------------------------------------------------------------
+FINAL NOTES:
+1. Always use User ID (starts with string like 'YcQR...') for /verify and /users routes.
+2. If you get "404 Not Found", verify you are using the correct HTTP method (GET vs PUT).
+3. If you get "Unauthorized", refresh your token by logging in again.
+--------------------------------------------------------------------------------

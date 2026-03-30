@@ -73,7 +73,7 @@ export const getUsers = async (req, res) => {
                 const profileDoc = await db.collection('profiles').doc(userData.profile).get();
                 profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
             }
-            return { id: doc.id, ...userData, profile: profileData };
+            return { id: doc.id, _id: doc.id, ...userData, profile: profileData };
         }));
 
         console.log(`[AdminController] Fetched ${users.length} users`);
@@ -89,21 +89,18 @@ export const getUsers = async (req, res) => {
 // @access  Private (Admin)
 export const getPendingVerifications = async (req, res) => {
     try {
-        // Firestore doesn't support $in and $ne together in simple queries easily.
-        // We'll fetch and filter.
-        const snapshot = await db.collection('users').get();
-        let usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Fetch only users who are awaiting human review.
+        // We keep the logic strict to avoid flooding the queue with brand‑new users
+        // who haven't actually requested verification yet.
+        const snapshot = await db.collection('users')
+            .where('verificationStatus', '==', 'pending')
+            .get();
 
-        // Include users who are unverified or missing the verificationStatus field (common with some social logins)
-        const filteredUsers = usersData.filter(u => 
-            u.role !== 'admin' && 
-            (
-                ['pending', 'none'].includes(u.verificationStatus) ||
-                (u.verificationStatus === undefined && (u.isVerified === false || u.isVerified === undefined))
-            )
-        );
+        const pendingUsers = snapshot.docs
+            .filter(doc => (doc.data().role || 'talent') !== 'admin')
+            .map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const populatedUsers = await Promise.all(filteredUsers.map(async (u) => {
+        const populatedUsers = await Promise.all(pendingUsers.map(async (u) => {
             let profileData = null;
             if (u.profile) {
                 const pDoc = await db.collection('profiles').doc(u.profile).get();

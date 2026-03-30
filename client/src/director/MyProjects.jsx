@@ -20,7 +20,13 @@ const MyProjects = () => {
                     getMyProjects()
                 ]);
                 setProfile(profileRes.data);
-                setProjects(projectsRes.data || []);
+                const rawProjects = (projectsRes?.data || []);
+                const normalizedProjects = rawProjects.map((project) => ({
+                    ...project,
+                    _id: project._id || project.id,
+                    id: project.id || project._id,
+                }));
+                setProjects(normalizedProjects);
             } catch (err) {
                 console.error('Error fetching director data:', err);
             } finally {
@@ -34,11 +40,18 @@ const MyProjects = () => {
     useEffect(() => {
         const handleProjectCreated = (project) => {
             const currentUserId = profile?.user?._id || profile?._id;
+            const projectDirectorId = project?.director?._id || project?.director?.id || project?.director;
+
             // If it's my project, add it
-            if (project?.director?._id === currentUserId || project?.director === currentUserId) {
+            if (projectDirectorId === currentUserId) {
+                const normalizedProject = {
+                    ...project,
+                    _id: project._id || project.id,
+                    id: project.id || project._id,
+                };
                 setProjects((prev) => {
-                    if (prev.find(p => p._id === project._id)) return prev;
-                    return [project, ...prev];
+                    if (prev.find(p => p._id === normalizedProject._id || p.id === normalizedProject.id)) return prev;
+                    return [normalizedProject, ...prev];
                 });
             }
         };
@@ -85,8 +98,9 @@ const MyProjects = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {projects.map((project) => {
                                 const daysUntilDue = Math.ceil((new Date(project.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+                                const projectId = project._id || project.id;
                                 return (
-                                <div key={project._id} className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-primary/10 rounded-xl overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
+                                <div key={projectId} className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-primary/10 rounded-xl overflow-hidden group hover:border-primary/50 transition-all flex flex-col">
                                     <div className="relative h-48 w-full overflow-hidden shrink-0">
                                         <div className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80')" }}></div>
                                         <div className="absolute top-4 left-4 z-10">
@@ -114,10 +128,10 @@ const MyProjects = () => {
                                             </span>
                                         </div>
                                         <div className="mt-auto pt-4 flex gap-3">
-                                            <Link to={`/director/project/${project._id}`} className="flex-1 bg-slate-100 dark:bg-primary/10 text-slate-900 dark:text-primary hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2">
+                                            <Link to={`/director/project/${projectId}`} className="flex-1 bg-slate-100 dark:bg-primary/10 text-slate-900 dark:text-primary hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2">
                                                 Overview
                                             </Link>
-                                            <Link to={`/director/project/${project._id}/auditions`} className="flex-1 bg-primary text-white hover:brightness-110 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                                            <Link to={`/director/project/${projectId}/auditions`} className="flex-1 bg-primary text-white hover:brightness-110 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                                                 Auditions
                                             </Link>
                                         </div>

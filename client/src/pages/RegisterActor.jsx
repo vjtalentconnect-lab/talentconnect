@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
+import { getMyProfile } from '../services/profileService';
 
 const RegisterActor = () => {
     const categories = [
@@ -56,6 +57,22 @@ const RegisterActor = () => {
 
     const navigate = useNavigate();
 
+    const navigateAfterSocial = async () => {
+        try {
+            const res = await getMyProfile();
+            const profile = res.data?.data || res.data || {};
+            const required = ['fullName', 'mobile', 'location', 'talentCategory'];
+            const missing = required.filter((field) => !profile?.[field]);
+            if (missing.length) {
+                navigate('/onboarding/complete-profile', { state: { role: 'talent', missing } });
+            } else {
+                navigate('/dashboard/talent');
+            }
+        } catch {
+            navigate('/dashboard/talent');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -94,7 +111,7 @@ const RegisterActor = () => {
         setSocialLoading(prev => ({ ...prev, google: true }));
         try {
             await loginWithGoogle('talent');
-            navigate('/talent/verify');
+            await navigateAfterSocial();
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
         } finally {
@@ -107,7 +124,6 @@ const RegisterActor = () => {
         setSocialLoading(prev => ({ ...prev, linkedin: true }));
         try {
             await autoLinkedInLogin('talent');
-            navigate('/talent/verify');
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'LinkedIn sign-in failed.');
         } finally {
@@ -331,7 +347,7 @@ const RegisterActor = () => {
                                     disabled={socialLoading.linkedin}
                                     className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:border-primary/60 hover:shadow-md transition-all"
                                 >
-                                    <img src="https://static.licdn.com/sc/h/8fkxn8x5q2m0ln5q70a0djb7m" alt="LinkedIn" className="h-5 w-5" />
+                                    <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" className="h-5 w-5" />
                                     <span>{socialLoading.linkedin ? 'Connecting...' : 'Continue with LinkedIn'}</span>
                                 </button>
                             </div>

@@ -17,6 +17,7 @@ import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import workshopRoutes from './routes/workshopRoutes.js';
 import { init as initSocket } from './socket.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import connectDB from './config/db.js';
@@ -79,10 +80,21 @@ app.use(helmet({
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
             scriptSrc: ["'self'"],
-            connectSrc: ["'self'", "https://api.stripe.com", "ws:", "wss:"],
+            // Allow frontend app + websocket + Stripe + LinkedIn/Google auth redirects
+            connectSrc: [
+                "'self'",
+                "https://api.stripe.com",
+                "ws:",
+                "wss:",
+                process.env.FRONTEND_URL || "http://localhost:5173",
+                "https://talentconnect-6e347.web.app",
+                "https://talentconnect-6e347.firebaseapp.com",
+                "https://talentconnect-api.onrender.com"
+            ],
         },
     },
     crossOriginEmbedderPolicy: false, // Allow embedding for Stripe
+    crossOriginOpenerPolicy: false, // Needed so oauth popups (Google/LinkedIn) can close themselves
 }));
 
 // Rate limiting
@@ -124,6 +136,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/workshops', workshopRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

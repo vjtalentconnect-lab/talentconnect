@@ -25,7 +25,13 @@ const DirectorDashboard = () => {
         getDirectorApplications()
       ]);
       setProfile(profileData.data);
-      setProjects(projectsData.data || []);
+      const rawProjects = projectsData.data || [];
+      const normalizedProjects = rawProjects.map((project) => ({
+        ...project,
+        _id: project._id || project.id,
+        id: project.id || project._id,
+      }));
+      setProjects(normalizedProjects);
       
       const applications = applicationsData.data || [];
       const shortlisted = applications.filter(app => app.status === 'shortlisted' || app.status === 'selected').length;
@@ -130,30 +136,33 @@ const DirectorDashboard = () => {
             {projects.length === 0 ? (
               <p className="text-slate-500">You haven't created any projects yet.</p>
             ) : (
-              projects.map((project) => (
-                <div key={project?._id} className="min-w-[340px] bg-white dark:bg-card-dark rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden group hover:border-primary/50 transition-all shadow-sm">
-                  <div className="h-40 bg-slate-800 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:scale-105 transition-transform duration-700" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80')" }}></div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
-                    <div className="absolute bottom-4 left-4">
-                      <span className="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-lg uppercase tracking-widest shadow-lg">
-                        {project?.category || 'Category'}
-                      </span>
+              projects.map((project) => {
+                const projectId = project?._id || project?.id;
+                return (
+                  <div key={projectId} className="min-w-[340px] bg-white dark:bg-card-dark rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden group hover:border-primary/50 transition-all shadow-sm">
+                    <div className="h-40 bg-slate-800 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-cover bg-center opacity-60 group-hover:scale-105 transition-transform duration-700" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80')" }}></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
+                      <div className="absolute bottom-4 left-4">
+                        <span className="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-lg uppercase tracking-widest shadow-lg">
+                          {project?.category || 'Category'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="font-extrabold text-xl text-slate-900 dark:text-white mb-1 group-hover:text-primary transition-colors">{project?.title || 'Untitled Project'}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">{project?.location || 'Location'} • {project?.deadline ? new Date(project.deadline).toLocaleDateString() : 'No Deadline'}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Applications</span>
+                        <span className="text-xs font-black text-primary">New</span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
+                        <div className="bg-primary h-full rounded-full shadow-[0_0_12px_rgba(236,91,19,0.4)] transition-all duration-1000" style={{ width: '10%' }}></div>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className="font-extrabold text-xl text-slate-900 dark:text-white mb-1 group-hover:text-primary transition-colors">{project?.title || 'Untitled Project'}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">{project?.location || 'Location'} • {project?.deadline ? new Date(project.deadline).toLocaleDateString() : 'No Deadline'}</p>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Applications</span>
-                      <span className="text-xs font-black text-primary">New</span>
-                    </div>
-                    <div className="w-full bg-slate-100 dark:bg-white/5 h-2 rounded-full overflow-hidden">
-                      <div className="bg-primary h-full rounded-full shadow-[0_0_12px_rgba(236,91,19,0.4)] transition-all duration-1000" style={{ width: '10%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>

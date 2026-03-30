@@ -14,30 +14,52 @@ const UserDetail = () => {
   const [adminProfile, setAdminProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState({ search: '', role: 'all', status: 'all' });
+  const [error, setError] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [adminRes, allUsersRes, statsRes] = await Promise.all([
+      const results = await Promise.allSettled([
         getMyProfile(),
         getAdminUsers(),
         getAdminStats()
       ]);
 
-      setAdminProfile(adminRes?.data || adminRes);
-      
-      // Ensure we extract the array correctly depending on the response structure
-      const userList = allUsersRes?.data || (Array.isArray(allUsersRes) ? allUsersRes : []);
-      setUsers(userList);
-      
-      setStats(statsRes?.data || statsRes);
+      const [profileResult, usersResult, statsResult] = results;
 
-      if (id) {
-        const user = userList.find(u => u._id === id);
-        setSelectedUser(user);
+      // Handle profile - optional
+      if (profileResult.status === 'fulfilled') {
+        setAdminProfile(profileResult.value?.data || profileResult.value);
       }
+      
+      // Handle users - required
+      if (usersResult.status === 'fulfilled') {
+        const rawUsers = usersResult.value?.data || usersResult.value;
+        const normalizedUsers = (Array.isArray(rawUsers) ? rawUsers : []).map((u) => ({
+          ...u,
+          _id: u._id || u.id,
+          id: u.id || u._id,
+        }));
+
+        setUsers(normalizedUsers);
+
+        if (id) {
+          const user = normalizedUsers.find(u => u._id === id);
+          setSelectedUser(user);
+        }
+      } else {
+        throw usersResult.reason;
+      }
+
+      // Handle stats - optional
+      if (statsResult.status === 'fulfilled') {
+        setStats(statsResult.value?.data || statsResult.value);
+      }
+
+      setError(null);
     } catch (err) {
       console.error('Error fetching user data:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to load user data');
     } finally {
       setLoading(false);
     }
@@ -46,11 +68,10 @@ const UserDetail = () => {
   useEffect(() => {
     fetchData();
 
-    // Listen for real-time admin events
     const handleAdminEvent = (event) => {
       console.log('Admin event received:', event);
       if (event.type === 'newUser' || event.type === 'verificationUpdate') {
-        fetchData(); // Refetch users data
+        fetchData();
       }
     };
 
@@ -126,12 +147,12 @@ const UserDetail = () => {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-background-dark">
+    <div className="flex flex-col items-center justify-center h-screen bg-background-light dark:bg-background-dark">
       <div className="relative size-20">
         <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
         <img src="/TC Logo.png" alt="Loading" className="absolute inset-0 size-12 m-auto animate-pulse" />
       </div>
-      <p className="mt-6 text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Accessing Personnel Directory...</p>
+      <p className="mt-6 text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Accessing Personnel Directory...</p>
     </div>
   );
 
@@ -145,6 +166,17 @@ const UserDetail = () => {
         headerSubtitle={`Managing ${users.length} registered platform entities.`}
       >
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 flex items-center gap-4">
+              <span className="material-symbols-outlined text-red-500 text-2xl">error</span>
+              <div className="flex-1">
+                <p className="text-sm font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Data Load Error</p>
+                <p className="text-xs text-red-600 dark:text-red-300 mt-1">{error}</p>
+              </div>
+              <button onClick={fetchData} className="px-4 py-2 bg-red-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl hover:bg-red-600 transition-all">Retry</button>
+            </div>
+          )}
+
           {/* Filters Bar */}
           <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-card-dark p-6 rounded-3xl border border-slate-200 dark:border-border-dark shadow-sm">
              <div className="relative flex-1 min-w-[300px]">
@@ -152,13 +184,13 @@ const UserDetail = () => {
                 <input 
                   type="text" 
                   placeholder="Filter by name, email, or ID..." 
-                  className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/5 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-white/5 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white placeholder-slate-400"
                   value={filter.search}
                   onChange={(e) => setFilter({...filter, search: e.target.value})}
                 />
              </div>
              <select 
-              className="px-6 py-3 bg-slate-50 dark:bg-white/5 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500"
+              className="px-6 py-3 bg-slate-50 dark:bg-white/5 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
               value={filter.role}
               onChange={(e) => setFilter({...filter, role: e.target.value})}
              >
@@ -168,7 +200,7 @@ const UserDetail = () => {
                 <option value="admin">Admin</option>
              </select>
              <select 
-              className="px-6 py-3 bg-slate-50 dark:bg-white/5 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500"
+              className="px-6 py-3 bg-slate-50 dark:bg-white/5 border-none rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
               value={filter.status}
               onChange={(e) => setFilter({...filter, status: e.target.value})}
              >
@@ -201,10 +233,10 @@ const UserDetail = () => {
                         <td className="px-8 py-6">
                           <div className="flex items-center gap-4">
                             <div className="size-12 rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-white/10 p-0.5 group-hover/row:border-primary/50 transition-all">
-                              <img className="w-full h-full object-cover rounded-[calc(1rem-2px)]" src={user.profile?.profilePicture && user.profile?.profilePicture !== 'no-photo.jpg' ? user.profile?.profilePicture : `https://ui-avatars.com/api/?name=${user.profile?.fullName || 'User'}&background=random`} alt="" />
+                              <img className="w-full h-full object-cover rounded-[calc(1rem-2px)]" src={user.profile?.profilePicture && user.profile?.profilePicture !== 'no-photo.jpg' ? user.profile?.profilePicture : `https://ui-avatars.com/api/?name=${user.profile?.fullName || user.email || 'User'}&background=random`} alt="" />
                             </div>
                             <div>
-                              <p className="font-black dark:text-white uppercase tracking-tight group-hover/row:text-primary transition-colors">{user.profile?.fullName || 'Anonymous Node'}</p>
+                              <p className="font-black dark:text-white text-slate-900 uppercase tracking-tight group-hover/row:text-primary transition-colors">{user.profile?.fullName || 'Anonymous Node'}</p>
                               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-mono">{user.email}</p>
                             </div>
                           </div>
@@ -221,7 +253,7 @@ const UserDetail = () => {
                           </span>
                         </td>
                         <td className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          {new Date(user.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                         </td>
                         <td className="px-8 py-6 text-right">
                           <Link to={`/admin/users/${user._id}`} className="px-5 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary hover:text-white transition-all shadow-lg hover:scale-105 active:scale-95">Manage Node</Link>
@@ -244,7 +276,7 @@ const UserDetail = () => {
       userRole="Admin Control"
       userData={userData}
       headerTitle="Personnel Overview"
-      headerSubtitle={`Investigating profile nodes for @${selectedUser?.email?.split('@')[0]}`}
+      headerSubtitle={`Investigating profile nodes for @${selectedUser?.email?.split('@')[0] || 'unknown'}`}
     >
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
@@ -262,7 +294,7 @@ const UserDetail = () => {
                     <div className="relative group shrink-0 self-start">
                        <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl group-hover:bg-primary/30 transition-all duration-700"></div>
                        <div className="relative w-40 h-40 rounded-[2.5rem] overflow-hidden border-8 border-white dark:border-surface-dark shadow-2xl p-1 bg-white dark:bg-surface-dark transition-transform duration-700 group-hover:-rotate-3">
-                          <img className="w-full h-full object-cover rounded-[2rem]" src={selectedUser?.profile?.profilePicture && selectedUser?.profile?.profilePicture !== 'no-photo.jpg' ? selectedUser?.profile?.profilePicture : `https://ui-avatars.com/api/?name=${selectedUser?.profile?.fullName || 'User'}&background=random`} alt="" />
+                          <img className="w-full h-full object-cover rounded-[2rem]" src={selectedUser?.profile?.profilePicture && selectedUser?.profile?.profilePicture !== 'no-photo.jpg' ? selectedUser?.profile?.profilePicture : `https://ui-avatars.com/api/?name=${selectedUser?.profile?.fullName || selectedUser?.email || 'User'}&background=random`} alt="" />
                        </div>
                        {selectedUser?.isVerified && (
                           <div className="absolute -bottom-3 -right-3 size-12 bg-emerald-500 rounded-2xl border-4 border-white dark:border-background-dark flex items-center justify-center text-white shadow-xl">
@@ -273,7 +305,7 @@ const UserDetail = () => {
                     
                     <div className="flex-1">
                        <div className="flex flex-wrap items-center gap-4 mb-3">
-                          <h1 className="text-4xl font-black dark:text-white uppercase tracking-tighter leading-none">{selectedUser?.profile?.fullName || 'Anonymous Node'}</h1>
+                          <h1 className="text-4xl font-black dark:text-white text-slate-900 uppercase tracking-tighter leading-none">{selectedUser?.profile?.fullName || 'Anonymous Node'}</h1>
                           <div className="px-4 py-1.5 bg-primary/10 text-primary text-[10px] font-black rounded-xl uppercase tracking-[0.2em] border border-primary/20">{selectedUser?.role}</div>
                        </div>
                        <p className="text-slate-500 font-bold uppercase tracking-widest flex items-center gap-3 mb-8 text-xs font-mono">
@@ -283,11 +315,11 @@ const UserDetail = () => {
                        <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
                           <div>
                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Email Connection</p>
-                             <p className="text-sm font-black dark:text-white uppercase tracking-tight">{selectedUser?.email}</p>
+                             <p className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-tight">{selectedUser?.email}</p>
                           </div>
                           <div>
                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Node Origin</p>
-                             <p className="text-sm font-black dark:text-white uppercase tracking-tight">{new Date(selectedUser?.createdAt).toLocaleDateString([], { month: 'long', year: 'numeric' })}</p>
+                             <p className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-tight">{selectedUser?.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString([], { month: 'long', year: 'numeric' }) : 'N/A'}</p>
                           </div>
                           <div>
                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Integrity</p>
@@ -301,7 +333,7 @@ const UserDetail = () => {
               </section>
 
               <section className="bg-white dark:bg-card-dark rounded-[2.5rem] p-10 border border-slate-200 dark:border-border-dark shadow-sm">
-                 <h3 className="text-xl font-black dark:text-white uppercase tracking-tight mb-10 flex items-center gap-4">
+                 <h3 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight mb-10 flex items-center gap-4">
                     <div className="size-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center">
                        <span className="material-symbols-outlined">person_search</span>
                     </div>
@@ -311,7 +343,7 @@ const UserDetail = () => {
                     <div className="space-y-8">
                        <div>
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Entity Biography</label>
-                          <div className="p-6 bg-slate-50 dark:bg-white/2 rounded-3xl border border-slate-100 dark:border-white/5 text-sm font-bold dark:text-slate-300 leading-relaxed italic">
+                          <div className="p-6 bg-slate-50 dark:bg-white/2 rounded-3xl border border-slate-100 dark:border-white/5 text-sm font-bold dark:text-slate-300 text-slate-600 leading-relaxed italic">
                              "{selectedUser?.profile?.bio || 'No strategic narrative provided for this entity.'}"
                           </div>
                        </div>
@@ -321,14 +353,14 @@ const UserDetail = () => {
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Primary Deployment</label>
                           <div className="flex items-center gap-3">
                              <span className="material-symbols-outlined text-slate-400">location_on</span>
-                             <p className="text-sm font-black dark:text-white uppercase tracking-widest">{selectedUser?.profile?.location || 'Undisclosed'}</p>
+                             <p className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-widest">{selectedUser?.profile?.location || 'Undisclosed'}</p>
                           </div>
                        </div>
                        <div>
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Classification Tier</label>
                           <div className="flex items-center gap-3">
                              <span className="material-symbols-outlined text-slate-400">category</span>
-                             <p className="text-sm font-black dark:text-white uppercase tracking-widest">{selectedUser?.profile?.talentCategory || 'Generalist'}</p>
+                             <p className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-widest">{selectedUser?.profile?.talentCategory || 'Generalist'}</p>
                           </div>
                        </div>
                     </div>
@@ -338,11 +370,11 @@ const UserDetail = () => {
 
            <div className="w-full lg:w-80 space-y-8">
               <section className="bg-white dark:bg-card-dark rounded-[2.5rem] p-8 border border-slate-200 dark:border-border-dark shadow-xl sticky top-8">
-                 <h4 className="text-lg font-black dark:text-white uppercase tracking-tight mb-8 text-center">Node Control</h4>
+                 <h4 className="text-lg font-black dark:text-white text-slate-900 uppercase tracking-tight mb-8 text-center">Node Control</h4>
                  
                  <div className="space-y-6">
                     <button 
-                      onClick={() => handleVerify(selectedUser._id, { status: !selectedUser.isVerified })}
+                      onClick={() => handleVerify(selectedUser._id, { verificationStatus: selectedUser?.isVerified ? 'rejected' : 'verified' })}
                       className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${selectedUser?.isVerified ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 hover:scale-105'}`}
                     >
                        <span className="material-symbols-outlined text-lg">{selectedUser?.isVerified ? 'lock_open' : 'verified_user'}</span>
@@ -356,7 +388,7 @@ const UserDetail = () => {
                             <button 
                               key={role}
                               onClick={() => handleRoleChange(selectedUser._id, role)}
-                              className="py-3 bg-white dark:bg-card-dark rounded-xl text-[9px] font-black uppercase tracking-widest dark:text-white border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-all capitalize"
+                              className="py-3 bg-white dark:bg-card-dark rounded-xl text-[9px] font-black uppercase tracking-widest dark:text-white text-slate-700 border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-all capitalize"
                             >
                                {role}
                             </button>
