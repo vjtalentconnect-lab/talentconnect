@@ -67,6 +67,29 @@ Method: POST
 Description: Sends a password reset link to the user's email.
 Body (JSON): { "email": "user@example.com" }
 
+🔹 [Reset Password]
+URL:    http://localhost:5001/api/auth/reset-password
+Method: POST
+Description: Resets the password using the token received in the email.
+Body (JSON): 
+{ 
+  "token": "TOKEN_FROM_EMAIL", 
+  "newPassword": "new_secure_password" 
+}
+
+🔹 [Resend Verification]
+URL:    http://localhost:5001/api/auth/resend-verification
+Method: POST
+Description: Resends the verification email to the user.
+Body (JSON): { "email": "user@example.com" }
+
+🔹 [Verify Email]
+URL:    http://localhost:5001/api/auth/verify-email
+Method: POST
+Description: Verifies the account using the token from the verification email.
+Body (JSON): { "token": "TOKEN_FROM_EMAIL" }
+
+
 --------------------------------------------------------------------------------
 PART 3: ADMIN DASHBOARD (REQUIRES ADMIN TOKEN)
 --------------------------------------------------------------------------------

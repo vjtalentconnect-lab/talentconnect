@@ -8,8 +8,8 @@ import VerificationStatus from './VerificationStatus';
 import VerificationSuccess from './VerificationSuccess';
 import { updateProfile, uploadMedia, submitForVerification } from '../../services/profileService';
 
-const ProfileVerification = () => {
-    const [currentStep, setCurrentStep] = useState(0);
+const ProfileVerification = ({ defaultValue = 0 }) => {
+    const [currentStep, setCurrentStep] = useState(defaultValue);
     const [direction, setDirection] = useState('forward'); // 'forward' | 'backward'
     const [isAnimating, setIsAnimating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);

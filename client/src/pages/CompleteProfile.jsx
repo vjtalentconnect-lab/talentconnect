@@ -122,7 +122,15 @@ const CompleteProfile = () => {
       }
 
       await updateProfile(payload);
-      navigate(role === 'director' ? '/dashboard/director' : '/dashboard/talent');
+      
+      if (role === 'talent') {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Update local user status if needed, though usually the backend returns it on next fetch
+        // For now, redirect to verification as requested
+        navigate('/talent/verify');
+      } else {
+        navigate(role === 'director' ? '/dashboard/director' : '/dashboard/talent');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Could not save your details. Please try again.');
     } finally {

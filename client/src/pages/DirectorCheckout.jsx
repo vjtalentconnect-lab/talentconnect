@@ -218,9 +218,9 @@ const DirectorCheckout = () => {
                 <footer className="px-6 md:px-20 py-8 border-t border-border-dark bg-background-dark text-slate-500 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-xs text-slate-400">© 2026 TALENTCONNECT. All rights reserved.</p>
                     <div className="flex gap-6 text-xs font-semibold">
-                        <a className="hover:text-primary text-slate-400" href="#">Privacy</a>
-                        <a className="hover:text-primary text-slate-400" href="#">Terms</a>
-                        <a className="hover:text-primary text-slate-400" href="#">Refund Policy</a>
+                        <a className="hover:text-primary text-slate-400" href="/privacy-policy">Privacy</a>
+                        <a className="hover:text-primary text-slate-400" href="/terms-and-conditions">Terms</a>
+                        <a className="hover:text-primary text-slate-400" href="/help-support">Refund Policy</a>
                     </div>
                 </footer>
             </div>

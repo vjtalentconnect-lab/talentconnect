@@ -7,6 +7,7 @@ import {
     getProjectApplications,
     getMyApplications,
     getMyProjects,
+    updateProject,
     updateApplicationStatus,
     getDirectorApplications,
     scheduleAudition,
@@ -25,6 +26,7 @@ router.get('/:id', getProject);
 
 // Director only routes
 router.post('/', protect, authorize('director', 'admin'), enforceDirectorBilling, createProject);
+router.put('/:id', protect, authorize('director', 'admin'), enforceDirectorBilling, updateProject);
 router.get('/:id/applications', protect, authorize('director', 'admin'), enforceDirectorBilling, getProjectApplications);
 router.put('/applications/:appId/status', protect, authorize('director', 'admin'), enforceDirectorBilling, updateApplicationStatus);
 router.put('/applications/:appId/schedule-audition', protect, authorize('director', 'admin'), enforceDirectorBilling, scheduleAudition);

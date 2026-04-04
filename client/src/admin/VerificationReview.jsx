@@ -159,8 +159,8 @@ const VerificationReview = () => {
                     {/* Left List */}
                     <div className="lg:col-span-4 space-y-10">
                         <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3rem] shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)] group">
-                            <div className="p-10 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/2">
-                                <h3 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight flex items-center justify-between">
+                            <div className="p-10 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-card-dark/2">
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center justify-between">
                                     Queue
                                     <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary text-[10px] uppercase font-black tracking-widest leading-none ring-1 ring-primary/20">
                                         {pendingRequests.length} PENDING
@@ -170,7 +170,7 @@ const VerificationReview = () => {
                             <div className="flex-1 overflow-y-auto scrollbar-hide py-6 space-y-2 px-4">
                                 {pendingRequests.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center p-12 text-center space-y-6">
-                                        <div className="size-24 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+                                        <div className="size-24 rounded-full bg-slate-100 dark:bg-card-dark/5 flex items-center justify-center">
                                             <span className="material-symbols-outlined text-4xl text-slate-300">verified</span>
                                         </div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Queue holds zero anomalies.</p>
@@ -180,14 +180,14 @@ const VerificationReview = () => {
                                         <div 
                                             key={req._id}
                                             onClick={() => setSelectedUser(req)}
-                                            className={`p-6 rounded-[2rem] cursor-pointer transition-all border group/card ${selectedUser?._id === req._id ? 'bg-primary shadow-2xl shadow-primary/30 border-primary' : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                                            className={`p-6 rounded-[2rem] cursor-pointer transition-all border group/card ${selectedUser?._id === req._id ? 'bg-primary shadow-2xl shadow-primary/30 border-primary' : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-card-dark/10 dark:bg-card-dark/5'}`}
                                         >
                                             <div className="flex items-center gap-6">
                                                 <div className="size-16 rounded-full overflow-hidden ring-4 ring-white/10 group-hover/card:scale-105 transition-transform">
                                                     <img className="w-full h-full object-cover" src={req.profile?.profilePicture && req.profile?.profilePicture !== 'no-photo.jpg' ? req.profile?.profilePicture : `https://ui-avatars.com/api/?name=${req.profile?.fullName || req.email || 'User'}&background=ee2b3b&color=fff`} alt={req.profile?.fullName || 'User'} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h4 className={`text-sm font-black uppercase tracking-tighter truncate ${selectedUser?._id === req._id ? 'text-white' : 'dark:text-white text-slate-900'}`}>{req.profile?.fullName || 'Unnamed Artist'}</h4>
+                                                    <h4 className={`text-sm font-black uppercase tracking-tighter truncate ${selectedUser?._id === req._id ? 'text-white' : 'text-slate-900'}`}>{req.profile?.fullName || 'Unnamed Artist'}</h4>
                                                     <p className={`text-[9px] font-black uppercase tracking-widest truncate ${selectedUser?._id === req._id ? 'text-white/70' : 'text-slate-400'}`}>{req.email}</p>
                                                 </div>
                                                 <span className={`material-symbols-outlined text-lg ${selectedUser?._id === req._id ? 'text-white' : 'text-slate-300'}`}>chevron_right</span>
@@ -207,14 +207,14 @@ const VerificationReview = () => {
                                 <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] p-12 shadow-sm relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 size-96 bg-primary/2 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                                     <div className="relative flex flex-col md:flex-row gap-12 items-center md:items-start text-center md:text-left">
-                                        <div className="size-48 rounded-[3.5rem] bg-slate-100 dark:bg-white/5 overflow-hidden ring-8 ring-primary/5 p-1 group-hover:rotate-3 transition-transform duration-700">
+                                        <div className="size-48 rounded-[3.5rem] bg-slate-100 dark:bg-card-dark/5 overflow-hidden ring-8 ring-primary/5 p-1 group-hover:rotate-3 transition-transform duration-700">
                                             <img className="w-full h-full object-cover rounded-[3.2rem]" src={selectedUser.profile?.profilePicture && selectedUser.profile?.profilePicture !== 'no-photo.jpg' ? selectedUser.profile?.profilePicture : `https://ui-avatars.com/api/?name=${selectedUser.profile?.fullName || selectedUser.email || 'User'}&background=ee2b3b&color=fff`} alt={selectedUser.profile?.fullName || 'User'} />
                                         </div>
                                         <div className="space-y-8 flex-1">
                                             <div>
                                                 <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
-                                                    <h2 className="text-4xl font-black dark:text-white text-slate-900 uppercase tracking-tighter">{selectedUser.profile?.fullName || 'Unnamed Artist'}</h2>
-                                                    <span className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 backdrop-blur-3xl">ID: {(selectedUser._id || '').slice(-8)}</span>
+                                                    <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">{selectedUser.profile?.fullName || 'Unnamed Artist'}</h2>
+                                                    <span className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-card-dark/10 text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 backdrop-blur-3xl">ID: {(selectedUser._id || '').slice(-8)}</span>
                                                 </div>
                                                 <p className="text-[11px] font-black text-primary uppercase tracking-[0.4em]">IDENTITY_STATE: {(selectedUser.verificationStatus || 'pending').toUpperCase()}</p>
                                             </div>
@@ -226,7 +226,7 @@ const VerificationReview = () => {
                                                     </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Signal Channel</p>
-                                                        <p className="text-sm font-black dark:text-white text-slate-900 truncate">{selectedUser.email}</p>
+                                                        <p className="text-sm font-black text-slate-900 truncate">{selectedUser.email}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-4">
@@ -235,7 +235,7 @@ const VerificationReview = () => {
                                                     </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Professional Focus</p>
-                                                        <p className="text-sm font-black dark:text-white text-slate-900 uppercase tracking-tighter">{selectedUser.profile?.talentCategory || 'Unspecified Artist'}</p>
+                                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tighter">{selectedUser.profile?.talentCategory || 'Unspecified Artist'}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -247,7 +247,7 @@ const VerificationReview = () => {
                                 <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                     {/* Links and Metadata */}
                                     <div className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3rem] p-10 shadow-sm space-y-8">
-                                        <h4 className="text-[12px] font-black dark:text-white text-slate-900 uppercase tracking-[0.3em] flex items-center gap-4">
+                                        <h4 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em] flex items-center gap-4">
                                             <span className="material-symbols-outlined text-primary">history_edu</span>
                                             Dossier Metadata
                                         </h4>
@@ -261,7 +261,7 @@ const VerificationReview = () => {
                                             ].map((item, idx) => (
                                                 <div key={idx} className="flex items-center justify-between border-b border-slate-50 dark:border-white/2 pb-4">
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
-                                                    <span className="text-[11px] font-black dark:text-white text-slate-700 uppercase tracking-tighter">{item.val}</span>
+                                                    <span className="text-[11px] font-black dark:text-white text-slate-700 dark:text-slate-300 uppercase tracking-tighter">{item.val}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -272,13 +272,13 @@ const VerificationReview = () => {
                                                 {vState.idFileUrl && (
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between px-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700 dark:text-slate-300">
                                                                 <span className="material-symbols-outlined text-sm text-primary">badge</span>
                                                                 ID Document ({vState.idType})
                                                             </span>
                                                             <a href={vState.idFileUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[9px] font-black uppercase tracking-widest">Full Shard</a>
                                                         </div>
-                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/2 aspect-video group/preview relative">
+                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-card-dark/2 aspect-video group/preview relative">
                                                             <img src={vState.idFileUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Identity ID" />
                                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                 <span className="material-symbols-outlined text-white text-3xl">zoom_in</span>
@@ -290,7 +290,7 @@ const VerificationReview = () => {
                                                 {vState.videoSelfieUrl && (
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between px-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700 dark:text-slate-300">
                                                                 <span className="material-symbols-outlined text-sm text-primary">videocam</span>
                                                                 Biometric Verification Video
                                                             </span>
@@ -308,13 +308,13 @@ const VerificationReview = () => {
                                                 {vState.membershipCardUrl && (
                                                     <div className="space-y-4">
                                                         <div className="flex items-center justify-between px-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-3 dark:text-white text-slate-700 dark:text-slate-300">
                                                                 <span className="material-symbols-outlined text-sm text-primary">contact_emergency</span>
                                                                 Association Membership
                                                             </span>
                                                             <a href={vState.membershipCardUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[9px] font-black uppercase tracking-widest">Full Shard</a>
                                                         </div>
-                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/2 aspect-video group/preview relative">
+                                                        <div className="rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-card-dark/2 aspect-video group/preview relative">
                                                             <img src={vState.membershipCardUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Membership Card" />
                                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                                 <span className="material-symbols-outlined text-white text-3xl">zoom_in</span>
@@ -343,7 +343,7 @@ const VerificationReview = () => {
                                                 <button 
                                                     disabled={actionLoading}
                                                     onClick={() => handleVerification(selectedUser._id, 'rejected')}
-                                                    className="w-full py-6 bg-white/5 border border-white/10 text-white text-[11px] font-black rounded-3xl uppercase tracking-[0.3em] hover:bg-rose-600 hover:border-rose-600 transition-all active:scale-95 flex items-center justify-center gap-4 leading-none disabled:opacity-50"
+                                                    className="w-full py-6 bg-white dark:bg-card-dark/5 border border-white/10 text-white text-[11px] font-black rounded-3xl uppercase tracking-[0.3em] hover:bg-rose-600 hover:border-rose-600 transition-all active:scale-95 flex items-center justify-center gap-4 leading-none disabled:opacity-50"
                                                 >
                                                     <span className="material-symbols-outlined text-lg">gpp_bad</span>
                                                     Reject & Restrict Access
@@ -374,12 +374,12 @@ const VerificationReview = () => {
                                 </section>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-20 text-center space-y-8 bg-slate-50 dark:bg-white/2 rounded-[4rem] border-2 border-dashed border-slate-200 dark:border-white/5">
-                                <div className="size-32 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-300">
+                            <div className="h-full flex flex-col items-center justify-center p-20 text-center space-y-8 bg-slate-50 dark:bg-card-dark/2 rounded-[4rem] border-2 border-dashed border-slate-200 dark:border-white/5">
+                                <div className="size-32 rounded-full bg-slate-100 dark:bg-card-dark/5 flex items-center justify-center text-slate-300">
                                     <span className="material-symbols-outlined text-6xl">search_off</span>
                                 </div>
                                 <div className="max-w-md space-y-4">
-                                    <h3 className="text-2xl font-black dark:text-white text-slate-900 uppercase tracking-tighter">Identity Vacuum Detected</h3>
+                                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Identity Vacuum Detected</h3>
                                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] leading-relaxed">The verification queue is currently empty or no case has been selected for investigation.</p>
                                 </div>
                             </div>

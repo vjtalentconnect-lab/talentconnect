@@ -183,14 +183,14 @@ const ProjectOversight = () => {
              <input 
               type="text" 
               placeholder="Search pipelines by title or director..." 
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white placeholder-slate-400"
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-card-dark/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-white placeholder-slate-400"
               value={filter.search}
               onChange={(e) => setFilter({...filter, search: e.target.value})}
              />
           </div>
           <div className="flex gap-3">
              <select 
-              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
+              className="px-6 py-4 bg-slate-50 dark:bg-card-dark/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
               value={filter.category}
               onChange={(e) => setFilter({...filter, category: e.target.value})}
              >
@@ -201,7 +201,7 @@ const ProjectOversight = () => {
                 <option value="Theater">Theater</option>
              </select>
              <select 
-              className="px-6 py-4 bg-slate-50 dark:bg-white/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
+              className="px-6 py-4 bg-slate-50 dark:bg-card-dark/2 border-none rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] focus:ring-2 focus:ring-primary/20 cursor-pointer text-slate-500 dark:text-slate-400"
               value={filter.status}
               onChange={(e) => setFilter({...filter, status: e.target.value})}
              >
@@ -218,7 +218,7 @@ const ProjectOversight = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50 dark:bg-white/2 uppercase tracking-[0.3em] text-[10px] font-black text-slate-400 border-b border-slate-200 dark:border-border-dark font-mono">
+                <tr className="bg-slate-50 dark:bg-card-dark/2 uppercase tracking-[0.3em] text-[10px] font-black text-slate-400 border-b border-slate-200 dark:border-border-dark font-mono">
                   <th className="px-10 py-6">Production ID & Title</th>
                   <th className="px-10 py-6">Directorate</th>
                   <th className="px-10 py-6">Operational Status</th>
@@ -234,7 +234,7 @@ const ProjectOversight = () => {
                   </tr>
                 ) : (
                   filteredProjects.map((project) => (
-                    <tr key={project._id || project.id} className="group/row hover:bg-slate-50 dark:hover:bg-white/2 transition-all duration-300">
+                    <tr key={project._id || project.id} className="group/row hover:bg-slate-50 dark:hover:bg-card-dark/2 dark:bg-card-dark/2 transition-all duration-300">
                       <td className="px-10 py-8">
                         <div className="flex items-center gap-6">
                            <div className="relative shrink-0">
@@ -248,7 +248,7 @@ const ProjectOversight = () => {
                               <div className="absolute -top-1 -right-1 size-4 rounded-full bg-primary border-2 border-white dark:border-card-dark animate-pulse"></div>
                            </div>
                            <div>
-                              <p className="font-black dark:text-white text-slate-900 uppercase tracking-tighter text-lg leading-none mb-1 group-hover/row:text-primary transition-colors">{project.title}</p>
+                              <p className="font-black dark:text-white text-slate-900 dark:text-white uppercase tracking-tighter text-lg leading-none mb-1 group-hover/row:text-primary transition-colors">{project.title}</p>
                               <div className="flex items-center gap-2">
                                  <span className="text-[9px] font-black text-primary uppercase tracking-widest">{project.category}</span>
                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">/ {project.location}</span>
@@ -262,7 +262,7 @@ const ProjectOversight = () => {
                                <img src={project.director?.profilePicture ? project.director.profilePicture : `https://ui-avatars.com/api/?name=${project.director?.fullName || project.director?.email || 'Director'}&background=random`} className="w-full h-full object-cover rounded-lg" alt="" />
                             </div>
                             <div>
-                               <p className="font-black dark:text-slate-200 text-slate-700 uppercase tracking-tight text-xs">{project.director?.fullName || project.director?.email || 'N/A'}</p>
+                               <p className="font-black text-slate-700 dark:text-slate-300 uppercase tracking-tight text-xs">{project.director?.fullName || project.director?.email || 'N/A'}</p>
                                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest font-mono italic">Creator node</p>
                             </div>
                          </div>
@@ -279,7 +279,7 @@ const ProjectOversight = () => {
                                </span>
                                <span className="text-[10px] font-bold text-slate-400">{project.applications?.length || 0} Apps</span>
                             </div>
-                            <div className="w-full h-1 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-slate-100 dark:bg-card-dark/5 rounded-full overflow-hidden">
                                <div className="h-full bg-primary rounded-full" style={{ width: '45%' }}></div>
                             </div>
                          </div>
@@ -289,7 +289,7 @@ const ProjectOversight = () => {
                             <div className="flex gap-2">
                                <button 
                                 onClick={() => handleStatusChange(project._id, project.status === 'open' ? 'closed' : 'open')}
-                                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary hover:text-white transition-all shadow-lg active:scale-95"
+                                className="px-4 py-2 bg-slate-900 dark:bg-card-dark text-white dark:text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-primary hover:text-white transition-all shadow-lg active:scale-95"
                                >
                                   {project.status === 'open' ? 'Close Project' : 'Reopen'}
                                </button>
@@ -317,17 +317,17 @@ const ProjectOversight = () => {
                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] font-mono">Platform Integrity Monitoring: Operational</p>
             </div>
             <div className="flex gap-2">
-              <button className="px-5 py-3 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+              <button className="px-5 py-3 bg-slate-100 dark:bg-card-dark/5 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all">
                 <span className="material-symbols-outlined text-lg">arrow_back_ios</span>
               </button>
               <div className="flex gap-1.5">
                  {[1, 2, 3].map(n => (
-                    <button key={n} className={`size-12 rounded-2xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all ${n === 1 ? 'bg-primary text-white shadow-xl shadow-primary/25' : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary'}`}>
+                    <button key={n} className={`size-12 rounded-2xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest transition-all ${n === 1 ? 'bg-primary text-white shadow-xl shadow-primary/25' : 'bg-slate-100 dark:bg-card-dark/5 text-slate-400 hover:text-primary'}`}>
                        {n}
                     </button>
                  ))}
               </div>
-              <button className="px-5 py-3 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all">
+              <button className="px-5 py-3 bg-slate-100 dark:bg-card-dark/5 text-slate-500 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all">
                 <span className="material-symbols-outlined text-lg">arrow_forward_ios</span>
               </button>
             </div>

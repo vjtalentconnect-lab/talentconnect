@@ -318,7 +318,7 @@ const RegisterDirector = () => {
                   className="mt-1 rounded text-primary focus:ring-primary"
                 />
                 <label className="text-xs text-slate-600 dark:text-slate-400 leading-tight" htmlFor="terms">
-                  By signing up, I agree to TalentConnect<a className="text-primary hover:underline" href="#">Terms of Service</a> and <a className="text-primary hover:underline" href="#">Privacy Policy</a>.
+                  By signing up, I agree to TalentConnect<a className="text-primary hover:underline" href="/terms-and-conditions">Terms of Service</a> and <a className="text-primary hover:underline" href="/privacy-policy">Privacy Policy</a>.
                 </label>
               </div>
 

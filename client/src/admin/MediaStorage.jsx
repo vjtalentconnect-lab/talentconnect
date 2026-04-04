@@ -85,7 +85,7 @@ const MediaStorage = () => {
             headerSubtitle="Centralized cloud asset management and propagation"
             headerActions={
                 <div className="flex gap-4">
-                    <button onClick={fetchData} className="size-12 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-500 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+                    <button onClick={fetchData} className="size-12 rounded-2xl bg-slate-100 dark:bg-card-dark/5 text-slate-500 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
                         <span className="material-symbols-outlined">refresh</span>
                     </button>
                     <button className="px-8 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95 leading-none">
@@ -97,39 +97,20 @@ const MediaStorage = () => {
             <div className="max-w-7xl mx-auto py-8 lg:px-4 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-32">
                 {/* Control Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-6 bg-white dark:bg-card-dark p-6 rounded-[2.5rem] border border-slate-200 dark:border-border-dark shadow-sm">
-                    <div className="flex bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl">
-                        {[
-                            { id: 'auto', label: 'All Files', icon: 'all_inclusive' },
-                            { id: 'image', label: 'Images', icon: 'image' },
-                            { id: 'video', label: 'Videos', icon: 'videocam' }
-                        ].map(t => (
-                            <button
-                                key={t.id}
-                                onClick={() => setFilter(t.id)}
-                                className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filter === t.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
-                            >
-                                <span className="material-symbols-outlined text-lg">{t.icon}</span>
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl">
-                            <button onClick={() => setViewMode('grid')} className={`size-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+<div className="flex bg-slate-100 dark:bg-card-dark/5 p-1.5 rounded-2xl">
+                            <button onClick={() => setViewMode('grid')} className={`size-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-card-dark/10 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:text-slate-400'}`}>
                                 <span className="material-symbols-outlined">grid_view</span>
                             </button>
-                            <button onClick={() => setViewMode('list')} className={`size-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                            <button onClick={() => setViewMode('list')} className={`size-10 flex items-center justify-center rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-card-dark/10 text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:text-slate-400'}`}>
                                 <span className="material-symbols-outlined">list</span>
                             </button>
                         </div>
                     </div>
-                </div>
 
                 {/* Asset Explorer */}
                 {assets.length === 0 ? (
                     <div className="h-[400px] flex flex-col items-center justify-center bg-slate-50 dark:bg-card-dark rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-white/5 space-y-6">
-                        <div className="size-20 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-300">
+                        <div className="size-20 rounded-full bg-slate-100 dark:bg-card-dark/5 flex items-center justify-center text-slate-300">
                              <span className="material-symbols-outlined text-4xl">folder_off</span>
                         </div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Shard directory is currently null.</p>
@@ -172,10 +153,10 @@ const MediaStorage = () => {
 
                                 {viewMode === 'list' && (
                                     <div className="flex items-center gap-4">
-                                        <a href={asset.secure_url} target="_blank" rel="noreferrer" className="size-10 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary transition-colors">
+                                        <a href={asset.secure_url} target="_blank" rel="noreferrer" className="size-10 rounded-xl bg-slate-50 dark:bg-card-dark/5 flex items-center justify-center text-slate-400 hover:text-primary transition-colors">
                                             <span className="material-symbols-outlined text-xl">open_in_new</span>
                                         </a>
-                                        <button className="size-10 rounded-xl bg-slate-50 dark:bg-white/5 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
+                                        <button className="size-10 rounded-xl bg-slate-50 dark:bg-card-dark/5 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors">
                                             <span className="material-symbols-outlined text-xl">delete</span>
                                         </button>
                                     </div>
@@ -194,7 +175,7 @@ const MediaStorage = () => {
                             <span className="text-4xl font-black text-white tracking-tighter">94.2%</span>
                             <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-lg mb-1">+1.2%</span>
                         </div>
-                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-white dark:bg-card-dark/5 rounded-full overflow-hidden">
                             <div className="h-full bg-primary shadow-[0_0_15px_rgba(238,43,59,0.5)] w-[94.2%]"></div>
                         </div>
                      </div>
@@ -245,7 +226,7 @@ const MediaStorage = () => {
                                     <h4 className="text-2xl font-black dark:text-white uppercase tracking-tighter leading-none mb-2">Asset Details</h4>
                                     <span className="px-3 py-1 bg-primary/10 text-primary text-[8px] font-black rounded-lg uppercase tracking-widest border border-primary/20">PUBLIC_NODE</span>
                                 </div>
-                                <button onClick={() => setSelectedAsset(null)} className="size-10 rounded-full hover:bg-slate-200 dark:hover:bg-white/5 flex items-center justify-center text-slate-400 transition-all">
+                                <button onClick={() => setSelectedAsset(null)} className="size-10 rounded-full hover:bg-slate-200 dark:hover:bg-white dark:bg-card-dark/5 flex items-center justify-center text-slate-400 transition-all">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
@@ -276,7 +257,7 @@ const MediaStorage = () => {
                                     <span className="material-symbols-outlined text-lg">download</span>
                                     Propagate Locally
                                 </a>
-                                <button className="w-full py-4 bg-white/5 border border-white/10 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all">
+                                <button className="w-full py-4 bg-white dark:bg-card-dark/5 border border-white/10 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all">
                                     Purge Resource
                                 </button>
                             </div>

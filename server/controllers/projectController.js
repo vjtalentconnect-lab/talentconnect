@@ -248,6 +248,47 @@ export const getMyProjects = async (req, res) => {
     }
 };
 
+// @desc    Update project (for director)
+// @route   PUT /api/projects/:id
+// @access  Private (Director only)
+export const updateProject = async (req, res) => {
+    try {
+        const projectDoc = await db.collection('projects').doc(req.params.id).get();
+        if (!projectDoc.exists) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
+        const project = projectDoc.data();
+
+        // Check if user is director of project
+        if (project.director !== req.user.id) {
+            return res.status(403).json({ message: 'Not authorized to update this project' });
+        }
+
+        const { title, description, category, requirements, budget, location, deadline, status, projectImage } = req.body;
+
+        const updateData = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (category !== undefined) updateData.category = category;
+        if (requirements !== undefined) updateData.requirements = requirements;
+        if (budget !== undefined) updateData.budget = budget;
+        if (location !== undefined) updateData.location = location;
+        if (deadline !== undefined) updateData.deadline = deadline;
+        if (status !== undefined) updateData.status = status;
+        if (projectImage !== undefined) updateData.projectImage = projectImage;
+        updateData.updatedAt = new Date().toISOString();
+
+        await updateWithBackup('projects', req.params.id, updateData);
+
+        const updatedProjectDoc = await db.collection('projects').doc(req.params.id).get();
+        const updatedProject = { id: updatedProjectDoc.id, ...updatedProjectDoc.data() };
+
+        res.status(200).json({ success: true, data: updatedProject });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
 // @desc    Update application status
 // @route   PUT /api/projects/applications/:appId/status
 // @access  Private (Director only)
@@ -276,7 +317,39 @@ export const updateApplicationStatus = async (req, res) => {
 
         await updateWithBackup('applications', req.params.appId, { status, updatedAt: new Date().toISOString() });
 
-        // Notify Talent
+        // If talent is selected, send a default congratulatory message
+        if (status === 'selected') {
+            const defaultMessage = `Congratulations! You have been selected for the project "${project.title}". Welcome to the team! Let's discuss the next steps.`;
+
+            const messageData = {
+                sender: req.user.id,
+                receiver: application.talent,
+                content: defaultMessage,
+                createdAt: new Date().toISOString()
+            };
+
+            const msgRef = await addWithBackup('messages', messageData);
+            const message = { id: msgRef.id, ...messageData };
+
+            // Get director profile for name
+            const senderProfileSnapshot = await db.collection('profiles').where('user', '==', req.user.id).limit(1).get();
+            const senderProfile = !senderProfileSnapshot.empty ? senderProfileSnapshot.docs[0].data() : null;
+            const senderName = senderProfile?.fullName || 'Director';
+
+            // Notify talent about the message
+            const messageNotificationDoc = {
+                user: application.talent,
+                type: 'message',
+                title: 'New Message',
+                message: `You have a new message from ${senderName}`,
+                link: '/talent/messages',
+                createdAt: new Date().toISOString()
+            };
+            const messageNoteRef = await addWithBackup('notifications', messageNotificationDoc);
+            sendNotification(application.talent, { id: messageNoteRef.id, ...messageNotificationDoc });
+        }
+
+        // Notify Talent about status update
         const notificationDoc = {
             user: application.talent,
             type: 'application_update',

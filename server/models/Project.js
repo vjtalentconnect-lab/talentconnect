@@ -39,6 +39,10 @@ const projectSchema = new mongoose.Schema(
             enum: ['open', 'closed', 'draft'],
             default: 'open',
         },
+        projectImage: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,

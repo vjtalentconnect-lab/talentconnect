@@ -455,7 +455,9 @@ const Home = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 text-center text-xs">
-            © 2026 TALENT<span className="text-primary">CONNECT</span> • Where World Cinema Talent Meets Opportunity | Privacy Policy | Terms of Service
+            © 2026 TALENT<span className="text-primary">CONNECT</span> • Where World Cinema Talent Meets Opportunity |{' '}
+            <a href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</a> |{' '}
+            <a href="/terms-and-conditions" className="hover:text-primary transition-colors">Terms of Service</a>
           </div>
         </div>
       </footer>

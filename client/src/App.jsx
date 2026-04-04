@@ -10,44 +10,45 @@ const Home = lazy(() => import("./pages/Home"));
 const Login = lazy(() => import("./pages/Login"));
 const RegisterActor = lazy(() => import("./pages/RegisterActor"));
 const RegisterDirector = lazy(() => import("./pages/RegisterDirector"));
-const ArtistDashboard = lazy(() => import("./talent/ArtistDashboard"));
-const TalentPortfolio = lazy(() => import("./talent/TalentPortfolio"));
-const ArtistMessages = lazy(() => import("./talent/ArtistMessages"));
-const AppliedProjects = lazy(() => import("./talent/AppliedProjects"));
-const AuditionInvites = lazy(() => import("./talent/AuditionInvites"));
-const AuditionDetails = lazy(() => import("./talent/AuditionDetails"));
-const PerformanceAnalytics = lazy(() => import('./talent/PerformanceAnalytics'));
-const ArtistSettings = lazy(() => import('./talent/ArtistSettings'));
-const ProjectDiscovery = lazy(() => import('./talent/ProjectDiscovery'));
-const ProfileVerification = lazy(() => import('./talent/verification/ProfileVerification'));
+import ArtistDashboard from "./talent/ArtistDashboard";
+import TalentPortfolio from "./talent/TalentPortfolio";
+import ArtistMessages from "./talent/ArtistMessages";
+import AppliedProjects from "./talent/AppliedProjects";
+import AuditionInvites from "./talent/AuditionInvites";
+import AuditionDetails from "./talent/AuditionDetails";
+import PerformanceAnalytics from './talent/PerformanceAnalytics';
+import ArtistSettings from './talent/ArtistSettings';
+import ProjectDiscovery from './talent/ProjectDiscovery';
+import ProfileVerification from './talent/verification/ProfileVerification';
 const HelpSupport = lazy(() => import('./pages/HelpSupport'));
 const ContactUs = lazy(() => import('./pages/ContactUs'));
 const CommunityForum = lazy(() => import("./pages/CommunityForum"));
 const UpgradePlan = lazy(() => import("./talent/UpgradePlan"));
 const Checkout = lazy(() => import("./talent/Checkout"));
 const PaymentSuccess = lazy(() => import("./talent/PaymentSuccess"));
-const DirectorDashboard = lazy(() => import("./director/DirectorDashboard"));
-const DirectorPortfolio = lazy(() => import("./director/DirectorPortfolio"));
-const CreateProjectStep1 = lazy(() => import("./director/CreateProjectStep1"));
-const CreateProjectStep2 = lazy(() => import("./director/CreateProjectStep2"));
-const MyProjects = lazy(() => import("./director/MyProjects"));
-const ProjectDetails = lazy(() => import("./director/ProjectDetails"));
-const Shortlists = lazy(() => import("./director/Shortlists"));
-const AuditionRequests = lazy(() => import("./director/AuditionRequests"));
-const Messages = lazy(() => import("./director/Messages"));
-const TalentDiscovery = lazy(() => import("./director/TalentDiscovery"));
-const DirectorSettings = lazy(() => import("./director/DirectorSettings"));
-const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
-const ProjectOversight = lazy(() => import("./admin/ProjectOversight"));
-const VerificationReview = lazy(() => import("./admin/VerificationReview"));
-const UserDetail = lazy(() => import("./admin/UserDetail"));
-const FinancialReports = lazy(() => import("./admin/FinancialReports"));
-const CommunicationCenter = lazy(() => import("./admin/CommunicationCenter"));
-const GlobalSearch = lazy(() => import("./admin/GlobalSearch"));
-const MediaStorage = lazy(() => import("./admin/MediaStorage"));
-const AdminSettings = lazy(() => import('./admin/AdminSettings'));
-const AdminRBAC = lazy(() => import('./admin/AdminRBAC'));
-const SystemHealth = lazy(() => import('./admin/SystemHealth'));
+import DirectorDashboard from "./director/DirectorDashboard";
+import DirectorPortfolio from "./director/DirectorPortfolio";
+import PublicDirectorProfile from "./director/PublicDirectorProfile";
+import CreateProjectStep1 from "./director/CreateProjectStep1";
+import CreateProjectStep2 from "./director/CreateProjectStep2";
+import MyProjects from "./director/MyProjects";
+import ProjectDetails from "./director/ProjectDetails";
+import Shortlists from "./director/Shortlists";
+import AuditionRequests from "./director/AuditionRequests";
+import Messages from "./director/Messages";
+import TalentDiscovery from "./director/TalentDiscovery";
+import DirectorSettings from "./director/DirectorSettings";
+import AdminDashboard from "./admin/AdminDashboard";
+import ProjectOversight from "./admin/ProjectOversight";
+import VerificationReview from "./admin/VerificationReview";
+import UserDetail from "./admin/UserDetail";
+import FinancialReports from "./admin/FinancialReports";
+import CommunicationCenter from "./admin/CommunicationCenter";
+import GlobalSearch from "./admin/GlobalSearch";
+import MediaStorage from "./admin/MediaStorage";
+import AdminSettings from './admin/AdminSettings';
+import AdminRBAC from './admin/AdminRBAC';
+import SystemHealth from './admin/SystemHealth';
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const DirectorCheckout = lazy(() => import("./pages/DirectorCheckout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -57,6 +58,8 @@ const Productions = lazy(() => import("./pages/Productions"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const ArtistGuidelines = lazy(() => import("./pages/ArtistGuidelines"));
 const SuccessStories = lazy(() => import("./pages/SuccessStories"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 const LinkedInCallback = lazy(() => import("./pages/LinkedInCallback"));
 const CompleteProfile = lazy(() => import("./pages/CompleteProfile"));
 
@@ -77,6 +80,8 @@ function App() {
               <Route path="/about-us" element={<AboutUs />} />
               <Route path="/artist-guidelines" element={<ArtistGuidelines />} />
               <Route path="/success-stories" element={<SuccessStories />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
               <Route path="/login" element={<Login />} />
               <Route path="/loginPage" element={<Login />} />
               <Route path="/register/actor" element={<RegisterActor />} />
@@ -86,15 +91,17 @@ function App() {
               {/* Talent routes */}
               <Route path="/dashboard/talent" element={<ProtectedRoute requiredRole="talent"><ArtistDashboard /></ProtectedRoute>} />
               <Route path="/talent/portfolio" element={<ProtectedRoute requiredRole="talent"><TalentPortfolio /></ProtectedRoute>} />
-              <Route path="/talent/:id" element={<ProtectedRoute requiredRole="talent"><TalentPortfolio /></ProtectedRoute>} />
-              <Route path="/talent/messages" element={<ProtectedRoute requiredRole="talent"><ArtistMessages /></ProtectedRoute>} />
-              <Route path="/talent/applied-projects" element={<ProtectedRoute requiredRole="talent"><AppliedProjects /></ProtectedRoute>} />
-              <Route path="/talent/auditions" element={<ProtectedRoute requiredRole="talent"><AuditionInvites /></ProtectedRoute>} />
-              <Route path="/talent/audition/:id" element={<ProtectedRoute requiredRole="talent"><AuditionDetails /></ProtectedRoute>} />
-              <Route path="/talent/performance" element={<ProtectedRoute requiredRole="talent"><PerformanceAnalytics /></ProtectedRoute>} />
-              <Route path="/talent/settings" element={<ProtectedRoute requiredRole="talent"><ArtistSettings /></ProtectedRoute>} />
               <Route path="/talent/discovery" element={<ProtectedRoute requiredRole="talent"><ProjectDiscovery /></ProtectedRoute>} />
+              <Route path="/talent/messages/:userId?" element={<ProtectedRoute requiredRole="talent"><ArtistMessages /></ProtectedRoute>} />
+              <Route path="/talent/applied-projects" element={<ProtectedRoute requiredRole="talent"><AppliedProjects /></ProtectedRoute>} />
+              <Route path="/talent/audition-invites" element={<ProtectedRoute requiredRole="talent"><AuditionInvites /></ProtectedRoute>} />
+              <Route path="/talent/audition/:id" element={<ProtectedRoute requiredRole="talent"><AuditionDetails /></ProtectedRoute>} />
+              <Route path="/talent/analytics" element={<ProtectedRoute requiredRole="talent"><PerformanceAnalytics /></ProtectedRoute>} />
+              <Route path="/talent/settings" element={<ProtectedRoute requiredRole="talent"><ArtistSettings /></ProtectedRoute>} />
+              <Route path="/talent/:id" element={<ProtectedRoute allowedRoles={['talent', 'director', 'admin']}><TalentPortfolio /></ProtectedRoute>} />
+              <Route path="/talent/project/:id" element={<ProtectedRoute requiredRole="talent"><ProjectDetails /></ProtectedRoute>} />
               <Route path="/talent/verify" element={<ProtectedRoute requiredRole="talent"><ProfileVerification /></ProtectedRoute>} />
+              <Route path="/talent/verification/status" element={<ProtectedRoute requiredRole="talent"><ProfileVerification defaultValue={4} /></ProtectedRoute>} />
               <Route path="/talent/help" element={<ProtectedRoute requiredRole="talent"><HelpSupport /></ProtectedRoute>} />
               <Route path="/talent/upgrade" element={<ProtectedRoute requiredRole="talent"><UpgradePlan /></ProtectedRoute>} />
               <Route path="/talent/checkout" element={<ProtectedRoute requiredRole="talent"><Checkout /></ProtectedRoute>} />
@@ -111,10 +118,12 @@ function App() {
               <Route path="/director/project/:id" element={<ProtectedRoute requiredRole="director"><ProjectDetails /></ProtectedRoute>} />
               <Route path="/director/shortlists" element={<ProtectedRoute requiredRole="director"><Shortlists /></ProtectedRoute>} />
               <Route path="/director/auditions" element={<ProtectedRoute requiredRole="director"><AuditionRequests /></ProtectedRoute>} />
-              <Route path="/director/messages" element={<ProtectedRoute requiredRole="director"><Messages /></ProtectedRoute>} />
+              <Route path="/director/messages/:userId?" element={<ProtectedRoute requiredRole="director"><Messages /></ProtectedRoute>} />
               <Route path="/director/discovery" element={<ProtectedRoute requiredRole="director"><TalentDiscovery /></ProtectedRoute>} />
               <Route path="/director/settings" element={<ProtectedRoute requiredRole="director"><DirectorSettings /></ProtectedRoute>} />
-              <Route path="/checkout/director" element={<ProtectedRoute requiredRole="director"><DirectorCheckout /></ProtectedRoute>} />
+              <Route path="/director/checkout" element={<ProtectedRoute requiredRole="director"><DirectorCheckout /></ProtectedRoute>} />
+              {/* Public director profile — viewable by talent, director, admin */}
+              <Route path="/director/:id" element={<ProtectedRoute allowedRoles={['talent','director','admin']}><PublicDirectorProfile /></ProtectedRoute>} />
 
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLogin />} />

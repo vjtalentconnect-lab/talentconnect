@@ -43,7 +43,10 @@ const TalentPortfolio = () => {
     const [savingCv, setSavingCv] = useState(false);
     const [mediaFilter, setMediaFilter] = useState('all'); // all | image | video
 
-    const isOwnProfile = !id || (viewerProfile?.user?._id === profile?.user?._id);
+    const profileUserIdRaw = profile?.user?.id || profile?.user?._id || profile?.id || '';
+    const profileUserId = profileUserIdRaw ? profileUserIdRaw.toString() : '';
+    const viewerUserId = viewerProfile?.user?.id || viewerProfile?.user?._id || '';
+    const isOwnProfile = !id || (viewerUserId && profileUserId && viewerUserId === profileUserId);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -231,30 +234,30 @@ const TalentPortfolio = () => {
 
             <div className="pb-24 text-slate-900 dark:text-zinc-100 font-sans">
                 {/* Hero Section */}
-                <section className="relative h-[614px] min-h-[450px] w-full overflow-hidden rounded-3xl mb-12 border border-slate-200 dark:border-zinc-800">
+                <section className="relative h-[400px] md:h-[500px] lg:h-[614px] min-h-[300px] w-full overflow-hidden rounded-2xl md:rounded-3xl mb-8 md:mb-12 border border-slate-200 dark:border-zinc-800">
                     <div className="absolute inset-0">
                         <img alt={profile?.fullName || "Hero"} className="w-full h-full object-cover object-top" src={avatarUrl} />
                         <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-zinc-950 via-white/40 dark:via-zinc-950/40 to-transparent"></div>
                     </div>
-                    <div className="absolute bottom-0 left-0 w-full p-8 lg:p-12">
-                        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div className="absolute bottom-0 left-0 w-full p-4 md:p-8 lg:p-12">
+                        <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
                             <div>
-                                <span className="inline-block px-3 py-1 bg-red-600 text-white text-[10px] font-black tracking-widest uppercase mb-4 rounded-sm">
-                                    Artist ID: {(profile?.user?._id || '000000').substring(0,6)}
+                                <span className="inline-block px-2 md:px-3 py-1 bg-red-600 text-white text-[9px] md:text-[10px] font-black tracking-widest uppercase mb-2 md:mb-4 rounded-sm">
+                                    Artist ID: {(profileUserId ? profileUserId.substring(0, 6) : '000000')}
                                 </span>
-                                <h1 className="text-5xl lg:text-7xl font-black tracking-tighter text-white mb-2">{profile?.fullName}</h1>
-                                <p className="text-red-500 font-medium text-lg flex items-center gap-2">
+                                <h1 className="text-3xl md:text-5xl lg:text-7xl font-black tracking-tighter text-white mb-2">{profile?.fullName}</h1>
+                                <p className="text-red-500 font-medium text-base md:text-lg flex items-center gap-2">
                                     <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
                                     {profile?.location || 'Location Not Set'}
                                 </p>
                             </div>
                             {isOwnProfile && (
-                            <div className="flex gap-3">
-                                <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-lg font-bold transition-all">
+                            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                                <button className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold transition-all text-sm">
                                     <span className="material-symbols-outlined text-sm z-0">edit</span>
                                     Edit Profile
                                 </button>
-                                <button className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg shadow-red-600/20 transition-all">
+                                <button className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold shadow-lg shadow-red-600/20 transition-all text-sm">
                                     <span className="material-symbols-outlined text-sm">share</span>
                                     Share
                                 </button>
@@ -264,38 +267,38 @@ const TalentPortfolio = () => {
                     </div>
                 </section>
 
-                <div className="max-w-5xl mx-auto px-4 md:px-8 py-12 space-y-16">
+                <div className="max-w-5xl mx-auto px-3 md:px-4 lg:px-8 py-8 md:py-12 space-y-12 md:space-y-16">
                     {/* Quick Actions + Stats */}
-                    <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
+                    <section className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        <div className="bg-white dark:bg-zinc-900 p-4 md:p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
                             <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Category</span>
-                            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.talentCategory || 'Actor'}</p>
+                            <p className="text-xl md:text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.talentCategory || 'Actor'}</p>
                         </div>
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 p-4 md:p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col justify-between shadow-sm">
                             <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Experience</span>
-                            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.skills?.length || 0} Skills</p>
+                            <p className="text-xl md:text-2xl font-bold mt-2 text-slate-900 dark:text-zinc-100">{profile?.skills?.length || 0} Skills</p>
                         </div>
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col gap-3 shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 p-4 md:p-6 rounded-xl border border-slate-200 dark:border-zinc-800 flex flex-col gap-3 shadow-sm">
                             <span className="text-slate-500 dark:text-zinc-500 text-xs font-bold uppercase tracking-widest">Quick Actions</span>
                             <div className="flex flex-wrap gap-2">
                                 {isOwnProfile && (
-                                    <button onClick={() => setEditingBio(true)} className="px-3 py-2 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-all flex items-center gap-1">
+                                    <button onClick={() => setEditingBio(true)} className="px-2 md:px-3 py-1 md:py-2 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/15 transition-all flex items-center gap-1">
                                         <span className="material-symbols-outlined text-sm">edit</span> Bio
                                     </button>
                                 )}
                                 {isOwnProfile && (
-                                    <label className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-primary/40 transition-all flex items-center gap-1">
+                                    <label className="px-2 md:px-3 py-1 md:py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-primary/40 transition-all flex items-center gap-1">
                                         <span className="material-symbols-outlined text-sm">photo_camera</span> Photo
                                         <input type="file" accept="image/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia} />
                                     </label>
                                 )}
                                 {isOwnProfile && (
-                                    <label className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-primary/40 transition-all flex items-center gap-1">
+                                    <label className="px-2 md:px-3 py-1 md:py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer hover:border-primary/40 transition-all flex items-center gap-1">
                                         <span className="material-symbols-outlined text-sm">movie</span> Video
                                         <input type="file" accept="video/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia} />
                                     </label>
                                 )}
-                                <button onClick={handleCopyLink} className="px-3 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:border-primary/40 transition-all flex items-center gap-1">
+                                <button onClick={handleCopyLink} className="px-2 md:px-3 py-1 md:py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 hover:border-primary/40 transition-all flex items-center gap-1">
                                     <span className="material-symbols-outlined text-sm">share</span> Share
                                 </button>
                             </div>
@@ -303,12 +306,12 @@ const TalentPortfolio = () => {
                     </section>
 
                     {/* Bio & Attributes Asymmetric Layout */}
-                    <section className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                        <div className="lg:col-span-7 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Professional Biography</h3>
+                    <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
+                        <div className="lg:col-span-7 space-y-4 md:space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <h3 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Professional Biography</h3>
                                 {isOwnProfile && !editingBio && (
-                                <button onClick={() => setEditingBio(true)} className="text-primary hover:text-red-400 text-sm font-bold flex items-center gap-1">
+                                <button onClick={() => setEditingBio(true)} className="text-primary hover:text-red-400 text-sm font-bold flex items-center gap-1 self-start sm:self-center">
                                     <span className="material-symbols-outlined text-sm">edit</span> Edit Bio
                                 </button>
                                 )}
@@ -319,20 +322,20 @@ const TalentPortfolio = () => {
                                         rows={6}
                                         value={bioText}
                                         onChange={e => setBioText(e.target.value)}
-                                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-6 py-5 text-slate-700 dark:text-zinc-300 font-medium outline-none focus:border-red-500/50 transition-all shadow-inner resize-none leading-relaxed"
+                                        className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 md:px-6 py-4 md:py-5 text-slate-700 dark:text-zinc-300 font-medium outline-none focus:border-red-500/50 transition-all shadow-inner resize-none leading-relaxed"
                                         placeholder="Express your artistic journey..."
                                     />
-                                    <div className="flex gap-4">
+                                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                                         <button 
                                             onClick={handleSaveBio} 
                                             disabled={savingBio}
-                                            className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold text-sm tracking-wide hover:bg-red-700 transition-all disabled:opacity-50"
+                                            className="px-4 md:px-6 py-2 md:py-3 bg-red-600 text-white rounded-lg font-bold text-sm tracking-wide hover:bg-red-700 transition-all disabled:opacity-50"
                                         >
                                             {savingBio ? 'Saving...' : 'Save Biography'}
                                         </button>
                                         <button 
                                             onClick={() => setEditingBio(false)}
-                                            className="px-6 py-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-lg font-bold text-sm tracking-wide hover:bg-zinc-700 transition-all"
+                                            className="px-4 md:px-6 py-2 md:py-3 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-lg font-bold text-sm tracking-wide hover:bg-zinc-700 transition-all"
                                         >
                                             Cancel
                                         </button>
@@ -340,21 +343,21 @@ const TalentPortfolio = () => {
                                 </div>
                             ) : (
                                 <div className="text-zinc-400 leading-relaxed space-y-4">
-                                    {bioText ? bioText.split('\n').map((para, i) => <p key={i}>{para}</p>) : <p>No history recorded yet in the archives.</p>}
+                                    {bioText ? bioText.split('\n').map((para, i) => <p key={i} className="text-slate-600 dark:text-zinc-400">{para}</p>) : <p className="text-slate-500 dark:text-zinc-500 italic">No history recorded yet in the archives.</p>}
                                 </div>
                             )}
                         </div>
 
-                        <div className="lg:col-span-5 space-y-6">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Physical Attributes</h3>
+                        <div className="lg:col-span-5 space-y-4 md:space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <h3 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Physical Attributes</h3>
                                 {isOwnProfile && !editingAttrs && (
-                                <button onClick={() => setEditingAttrs(true)} className="text-primary hover:text-red-400 text-sm font-bold">Manage</button>
+                                <button onClick={() => setEditingAttrs(true)} className="text-primary hover:text-red-400 text-sm font-bold self-start sm:self-center">Manage</button>
                                 )}
                             </div>
                             {editingAttrs ? (
-                                <div className="bg-zinc-900/50 p-6 rounded-lg border border-zinc-800 space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-zinc-900/50 p-4 md:p-6 rounded-lg border border-zinc-800 space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {[
                                             { key: 'height', label: 'Height' },
                                             { key: 'eyeColor', label: 'Eyes' },
@@ -372,33 +375,33 @@ const TalentPortfolio = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="flex gap-3 pt-2">
+                                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                         <button 
                                             onClick={handleSaveAttrs} 
                                             disabled={savingAttrs}
-                                            className="flex-1 py-2 bg-red-600 text-white rounded-md font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
+                                            className="flex-1 py-2 md:py-3 bg-red-600 text-white rounded-md font-bold text-xs uppercase tracking-wider hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
                                         >
                                             {savingAttrs ? 'Saving...' : 'Confirm'}
                                         </button>
                                         <button 
                                             onClick={() => setEditingAttrs(false)}
-                                            className="flex-1 py-2 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-md font-bold text-xs uppercase tracking-wider"
+                                            className="flex-1 py-2 md:py-3 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded-md font-bold text-xs uppercase tracking-wider"
                                         >
                                             Abort
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3 md:gap-4">
                                     {[
                                         { label: 'Height', value: profile?.physicalAttributes?.height || attrs.height || '-' },
                                         { label: 'Eyes', value: profile?.physicalAttributes?.eyeColor || attrs.eyeColor || '-' },
                                         { label: 'Hair', value: profile?.physicalAttributes?.hairColor || attrs.hairColor || '-' },
                                         { label: 'Build', value: profile?.physicalAttributes?.build || attrs.build || '-' }
                                     ].map(({ label, value }) => (
-                                        <div key={label} className="bg-white dark:bg-zinc-900/50 p-4 rounded-lg border border-slate-200 dark:border-zinc-800 shadow-sm">
+                                        <div key={label} className="bg-white dark:bg-zinc-900/50 p-3 md:p-4 rounded-lg border border-slate-200 dark:border-zinc-800 shadow-sm">
                                             <span className="text-slate-500 dark:text-zinc-500 text-[10px] font-bold uppercase block mb-1">{label}</span>
-                                            <span className="text-lg font-semibold text-slate-900 dark:text-zinc-100">{value}</span>
+                                            <span className="text-base md:text-lg font-semibold text-slate-900 dark:text-zinc-100">{value}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -407,22 +410,22 @@ const TalentPortfolio = () => {
                     </section>
 
                     {/* Media Gallery */}
-                    <section className="space-y-8">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Media Gallery</h3>
-                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-zinc-400">
-                                <button onClick={() => setMediaFilter('all')} className={`px-3 py-1 rounded-full border ${mediaFilter === 'all' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>All</button>
-                                <button onClick={() => setMediaFilter('image')} className={`px-3 py-1 rounded-full border ${mediaFilter === 'image' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>Photos</button>
-                                <button onClick={() => setMediaFilter('video')} className={`px-3 py-1 rounded-full border ${mediaFilter === 'video' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>Videos</button>
+                    <section className="space-y-6 md:space-y-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Media Gallery</h3>
+                            <div className="flex items-center gap-1 md:gap-2 text-xs font-bold text-slate-500 dark:text-zinc-400 flex-wrap">
+                                <button onClick={() => setMediaFilter('all')} className={`px-2 md:px-3 py-1 rounded-full border transition-colors ${mediaFilter === 'all' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>All</button>
+                                <button onClick={() => setMediaFilter('image')} className={`px-2 md:px-3 py-1 rounded-full border transition-colors ${mediaFilter === 'image' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>Photos</button>
+                                <button onClick={() => setMediaFilter('video')} className={`px-2 md:px-3 py-1 rounded-full border transition-colors ${mediaFilter === 'video' ? 'border-primary text-primary' : 'border-transparent hover:border-slate-200 dark:hover:border-zinc-700'}`}>Videos</button>
                             </div>
                             {isOwnProfile && (
-                                <label className={`bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-white px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-zinc-700 ${uploadingMedia ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                <label className={`bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-white px-3 md:px-4 py-2 rounded font-bold text-sm flex items-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-zinc-700 ${uploadingMedia ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                     <span className="material-symbols-outlined text-sm">upload</span> {uploadingMedia ? 'Uploading...' : 'Upload Media'}
                                     <input type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} disabled={uploadingMedia}/>
                                 </label>
                             )}
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                             {(profile?.portfolio || [])
                                 .filter(item => mediaFilter === 'all' || item.type === mediaFilter)
                                 .map((item, idx) => (
@@ -433,15 +436,15 @@ const TalentPortfolio = () => {
                                         src={item.url || item} 
                                     />
                                     {idx % 3 === 2 ? (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-                                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                                <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 md:p-6">
+                                            <div className="w-12 h-12 md:w-16 md:h-16 bg-red-600 rounded-full flex items-center justify-center mb-2 md:mb-4 group-hover:scale-110 transition-transform">
+                                                <span className="material-symbols-outlined text-white text-2xl md:text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
                                             </div>
-                                            <span className="text-white font-bold text-lg">Showreel</span>
+                                            <span className="text-white font-bold text-sm md:text-lg">Showreel</span>
                                         </div>
                                     ) : (
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            <span className="material-symbols-outlined text-white text-3xl">fullscreen</span>
+                                            <span className="material-symbols-outlined text-white text-2xl md:text-3xl">fullscreen</span>
                                         </div>
                                     )}
                                 </div>
@@ -450,33 +453,33 @@ const TalentPortfolio = () => {
                     </section>
 
                     {/* CV & Downloads */}
-                    <section className="space-y-4">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">CV / Resume</h3>
+                    <section className="space-y-3 md:space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">CV / Resume</h3>
                             {profile?.cvUrl && (
-                                <div className="flex gap-2">
-                                    <a href={profile.cvUrl} target="_blank" rel="noreferrer" className="px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-all">
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <a href={profile.cvUrl} target="_blank" rel="noreferrer" className="px-3 md:px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-all">
                                         <span className="material-symbols-outlined text-sm">download</span> Download
                                     </a>
-                                    <button onClick={handleCopyLink} className="px-4 py-2 text-sm font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-white rounded-lg flex items-center gap-2 border border-slate-200 dark:border-zinc-700 hover:border-primary/40 transition-all">
+                                    <button onClick={handleCopyLink} className="px-3 md:px-4 py-2 text-sm font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-white rounded-lg flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-700 hover:border-primary/40 transition-all">
                                         <span className="material-symbols-outlined text-sm">share</span> Share
                                     </button>
                                 </div>
                             )}
                         </div>
                         {isOwnProfile && (
-                        <div className="flex flex-col md:flex-row gap-3 items-center">
+                        <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-stretch md:items-center">
                             <input
                                 type="url"
                                 value={cvUrl}
                                 onChange={e => setCvUrl(e.target.value)}
                                 placeholder="Paste CV / Drive link (PDF preferred)"
-                                className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg px-4 py-3 text-sm text-slate-800 dark:text-zinc-100 outline-none focus:border-primary/40"
+                                className="w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 md:px-4 py-2 md:py-3 text-sm text-slate-800 dark:text-zinc-100 outline-none focus:border-primary/40"
                             />
                             <button
                                 onClick={handleSaveCv}
                                 disabled={savingCv}
-                                className="px-4 py-3 bg-primary text-white font-bold rounded-lg text-sm hover:bg-primary/90 transition-all disabled:opacity-60"
+                                className="px-3 md:px-4 py-2 md:py-3 bg-primary text-white font-bold rounded-lg text-sm hover:bg-primary/90 transition-all disabled:opacity-60 whitespace-nowrap"
                             >
                                 {savingCv ? 'Saving...' : 'Save CV link'}
                             </button>
@@ -488,36 +491,36 @@ const TalentPortfolio = () => {
                     </section>
 
                     {/* Credits Table */}
-                    <section className="space-y-8">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Filmography</h3>
+                    <section className="space-y-6 md:space-y-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <h3 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Filmography</h3>
                             {isOwnProfile && (
-                            <button className="bg-primary/5 hover:bg-primary/10 text-primary px-4 py-2 rounded font-bold text-sm flex items-center gap-2 border border-primary/20 transition-all">
+                            <button className="bg-primary/5 hover:bg-primary/10 text-primary px-3 md:px-4 py-2 rounded font-bold text-sm flex items-center justify-center gap-2 border border-primary/20 transition-all self-start sm:self-center">
                                 <span className="material-symbols-outlined text-sm">add</span> Add New Credit
                             </button>
                             )}
                         </div>
-                        <div className="overflow-hidden border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/30 backdrop-blur-sm shadow-sm">
-                            <table className="w-full text-left">
+                        <div className="overflow-x-auto border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/30 backdrop-blur-sm shadow-sm">
+                            <table className="w-full text-left text-sm md:text-base">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-zinc-900/80 text-slate-500 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">
-                                        <th className="px-6 py-4">Project Title</th>
-                                        <th className="px-6 py-4">Role</th>
-                                        <th className="px-6 py-4">Year</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4 text-right">Action</th>
+                                    <tr className="bg-slate-50 dark:bg-zinc-900/80 text-slate-500 dark:text-zinc-500 text-[10px] md:text-xs font-bold uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">
+                                        <th className="px-3 md:px-6 py-3 md:py-4">Project Title</th>
+                                        <th className="px-3 md:px-6 py-3 md:py-4">Role</th>
+                                        <th className="px-3 md:px-6 py-3 md:py-4">Year</th>
+                                        <th className="px-3 md:px-6 py-3 md:py-4">Status</th>
+                                        <th className="px-3 md:px-6 py-3 md:py-4 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                                     {filmCredits.length > 0 ? filmCredits.map((credit, idx) => (
                                     <tr key={credit.id || idx} className="group hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                        <td className="px-6 py-5 font-bold text-slate-900 dark:text-zinc-100">{credit.title}</td>
-                                        <td className="px-6 py-5 text-slate-500 dark:text-zinc-400">{credit.role}</td>
-                                        <td className="px-6 py-5 text-slate-500 dark:text-zinc-400">{credit.year}</td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-3 md:px-6 py-3 md:py-5 font-bold text-slate-900 dark:text-zinc-100 text-sm md:text-base">{credit.title}</td>
+                                        <td className="px-3 md:px-6 py-3 md:py-5 text-slate-500 dark:text-zinc-400 text-sm md:text-base">{credit.role}</td>
+                                        <td className="px-3 md:px-6 py-3 md:py-5 text-slate-500 dark:text-zinc-400 text-sm md:text-base">{credit.year}</td>
+                                        <td className="px-3 md:px-6 py-3 md:py-5">
                                             <span className="px-2 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold rounded">Completed</span>
                                         </td>
-                                        <td className="px-6 py-5 text-right">
+                                        <td className="px-3 md:px-6 py-3 md:py-5 text-right">
                                             <button className="text-zinc-500 hover:text-white transition-colors">
                                                 <span className="material-symbols-outlined text-sm">more_vert</span>
                                             </button>
@@ -525,7 +528,7 @@ const TalentPortfolio = () => {
                                     </tr>
                                     )) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-zinc-500 font-medium">No performance records added yet.</td>
+                                        <td colSpan="5" className="px-3 md:px-6 py-6 md:py-8 text-center text-zinc-500 font-medium">No performance records added yet.</td>
                                     </tr>
                                     )}
                                 </tbody>

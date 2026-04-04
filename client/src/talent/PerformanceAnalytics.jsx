@@ -4,6 +4,7 @@ import { TALENT_MENU } from '../constants/navigation';
 import { getMyProfile } from '../services/profileService';
 import { getMyApplications } from '../services/projectService';
 import { useNotifications } from '../context/NotificationContext';
+import socket from '../services/socket';
 
 const PerformanceAnalytics = () => {
     const [profile, setProfile] = useState(null);
@@ -28,7 +29,19 @@ const PerformanceAnalytics = () => {
         
         // Listen for real-time verification updates
         window.addEventListener('userStateChange', fetchData);
-        return () => window.removeEventListener('userStateChange', fetchData);
+
+        // Real-time listener
+        const handleNotification = (note) => {
+            if (['application_update', 'audition_scheduled'].includes(note.type)) {
+                fetchData();
+            }
+        };
+        socket.on('newNotification', handleNotification);
+
+        return () => {
+            window.removeEventListener('userStateChange', fetchData);
+            socket.off('newNotification', handleNotification);
+        };
     }, []);
 
     const userData = {
@@ -56,12 +69,37 @@ const PerformanceAnalytics = () => {
     const topApps = applications.filter(a => ['shortlisted', 'auditioning', 'selected'].includes(a.status)).slice(0, 4);
 
     // Generate SVG chart points based on real data range
+    // Generate SVG chart points based on real application history
     const generateChartData = () => {
-        const points = chartRange === '30d' ? 12 : chartRange === '3m' ? 8 : 5;
-        return Array.from({ length: points }, (_, i) => ({
-            x: i,
-            y: Math.max(5, totalApps > 0 ? Math.round(Math.sin(i * 0.7 + 1) * 25 + 50) : 20 + Math.random() * 40),
-        }));
+        const now = new Date();
+        const days = chartRange === '30d' ? 30 : chartRange === '3m' ? 90 : 365;
+        const data = [];
+        
+        for (let i = days; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(now.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            const count = applications.filter(app => {
+                const appDate = new Date(app.createdAt).toISOString().split('T')[0];
+                return appDate === dateStr;
+            }).length;
+            
+            data.push({ date: dateStr, count });
+        }
+        
+        // Sampling for the chart
+        const points = chartRange === '30d' ? 12 : chartRange === '3m' ? 12 : 12;
+        const sampled = [];
+        const step = Math.max(1, Math.floor(data.length / points));
+        
+        for (let i = 0; i < data.length; i += step) {
+            sampled.push({
+                x: sampled.length,
+                y: data.slice(i, i + step).reduce((sum, item) => sum + item.count, 0)
+            });
+        }
+        return sampled;
     };
     const chartData = generateChartData();
     const maxY = Math.max(...chartData.map(d => d.y), 1);

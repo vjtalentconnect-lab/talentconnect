@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { completeLinkedInLogin } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
@@ -6,29 +6,39 @@ import { getMyProfile } from '../services/profileService';
 const LinkedInCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [message, setMessage] = useState('Finishing LinkedIn sign-in...');
+
+
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const hasRun = useRef(false);
+  const error = params.get('error');
+  const errorDescription = params.get('error_description');
+
+  const urlErrorMessage = error
+    ? error === 'unauthorized_scope_error'
+      ? 'LinkedIn scope authorization failed: your app does not have access to r_liteprofile/r_emailaddress. Please open LinkedIn Developer Portal and add Sign In with LinkedIn product and the required scopes.'
+      : `LinkedIn auth error: ${error}${errorDescription ? ` - ${decodeURIComponent(errorDescription)}` : ''}. Please retry and ensure LinkedIn app scopes are approved.`
+    : !code
+    ? 'Missing LinkedIn code. Please restart login.'
+    : null;
+
+  const [message, setMessage] = useState(urlErrorMessage || 'Finishing LinkedIn sign-in...');
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-
-    if (!code) {
-      setMessage('Missing LinkedIn code. Please restart login.');
+    if (urlErrorMessage) {
       return;
     }
 
     const finish = async () => {
-      try {
-        console.log('LinkedInCallback - Exchanging code for token');
-        console.log('  Code:', code.substring(0, 20) + '...');
-        console.log('  State:', state);
+      if (hasRun.current) return;
+      hasRun.current = true;
 
+      try {
         const role = localStorage.getItem('linkedin_oauth_role') || 'talent';
         const data = await completeLinkedInLogin(code, state, role);
         localStorage.removeItem('linkedin_oauth_role');
 
-        console.log('LinkedInCallback - Login successful');
         const userRole = data.user.role || role;
 
         try {
@@ -47,7 +57,14 @@ const LinkedInCallback = () => {
           console.error('LinkedInCallback - profile fetch failed', profileErr);
         }
 
-        if (userRole === 'talent') navigate('/dashboard/talent');
+        if (userRole === 'talent') {
+          const vStatus = data.user?.verificationStatus || 'none';
+          if (vStatus === 'none') {
+            navigate('/talent/verify');
+          } else {
+            navigate('/dashboard/talent');
+          }
+        }
         else if (userRole === 'director') navigate('/dashboard/director');
         else navigate('/dashboard/admin');
       } catch (err) {

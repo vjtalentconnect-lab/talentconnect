@@ -145,8 +145,8 @@ const ContactUs = () => {
                             <p className="text-sm text-slate-600 dark:text-slate-400">© 2026 TALENT<span className="text-primary">CONNECT</span>. All Rights Reserved.</p>
                         </div>
                         <div className="flex gap-8">
-                            <a className="text-xs text-slate-500 hover:text-primary" href="#">Privacy Policy</a>
-                            <a className="text-xs text-slate-500 hover:text-primary" href="#">Terms of Service</a>
+                            <a className="text-xs text-slate-500 hover:text-primary" href="/privacy-policy">Privacy Policy</a>
+                            <a className="text-xs text-slate-500 hover:text-primary" href="/terms-and-conditions">Terms of Service</a>
                             <a className="text-xs text-slate-500 hover:text-primary" href="#">Legal</a>
                         </div>
                     </div>

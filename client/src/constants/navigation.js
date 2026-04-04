@@ -20,6 +20,7 @@ export const TALENT_MENU = [
 export const DIRECTOR_MENU = [
   { icon: 'dashboard', label: 'Dashboard', path: '/dashboard/director' },
   { icon: 'search', label: 'Discovery', path: '/director/discovery' },
+  { icon: 'badge', label: 'My Portfolio', path: '/director/portfolio' },
   { icon: 'folder', label: 'My Projects', path: '/director/my-projects' },
   { icon: 'star', label: 'Shortlists', path: '/director/shortlists' },
   { icon: 'chat', label: 'Messages', path: '/director/messages' },

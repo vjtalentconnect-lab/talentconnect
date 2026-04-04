@@ -100,60 +100,60 @@ const AdminRBAC = () => {
             headerTitle="Governance Policy"
             headerSubtitle={`Configuring authorization mesh for ${activeRole}`}
             headerActions={
-                <div className="flex gap-4">
-                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+                <div className="flex gap-2 sm:gap-4">
+                    <button className="flex items-center gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-2xl bg-slate-100 dark:bg-card-dark/5 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-card-dark/10 transition-all">
                         <span className="material-symbols-outlined text-sm">history</span>
-                        Audit Log
+                        <span className="hidden sm:inline">Audit Log</span>
                     </button>
-                    <button className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all active:scale-95 leading-none">
+                    <button className="flex items-center gap-2 px-4 sm:px-8 py-2 sm:py-3 rounded-2xl bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all active:scale-95 leading-none">
                         <span className="material-symbols-outlined text-sm">save</span>
-                        Save Protocol
+                        <span className="hidden sm:inline">Save Protocol</span>
                     </button>
                 </div>
             }
             searchPlaceholder="Search permissions or roles..."
         >
-            <div className="max-w-6xl mx-auto py-8 lg:px-4 space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="max-w-full lg:max-w-6xl mx-auto py-4 lg:py-8 px-3 sm:px-4 lg:px-4 space-y-8 lg:space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
                 {/* Role Tabs */}
-                <div className="flex border-b border-slate-200 dark:border-white/5 gap-10 overflow-x-auto pb-px custom-scrollbar mb-8">
+                <div className="flex border-b border-slate-200 dark:border-card-dark/5 gap-4 lg:gap-10 overflow-x-auto pb-px custom-scrollbar mb-6 lg:mb-8">
                     {roles.map(role => (
                         <button
                             key={role.id}
                             onClick={() => setActiveRole(role.label)}
-                            className={`flex items-center gap-3 pb-5 px-1 text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-b-2 relative ${activeRole === role.label
+                            className={`flex items-center gap-2 lg:gap-3 pb-5 px-1 text-[10px] lg:text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-b-2 relative ${activeRole === role.label
                                 ? 'border-primary text-primary'
-                                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                                : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
-                            <span className="material-symbols-outlined text-lg">{role.icon}</span>
-                            {role.label}
+                            <span className="material-symbols-outlined text-base lg:text-lg">{role.icon}</span>
+                            <span className="hidden sm:inline">{role.label}</span>
                             {activeRole === role.label && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-full shadow-[0_-2px_8px_rgba(238,43,59,0.4)]"></div>}
                         </button>
                     ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                    <div className="lg:col-span-2 space-y-10">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+                    <div className="lg:col-span-2 space-y-6 lg:space-y-10">
                         {permissionCategories.map((category, catIdx) => (
                             <div key={catIdx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 group">
-                                <div className="bg-slate-50 dark:bg-white/2 px-10 py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
-                                    <div className="flex items-center gap-5">
-                                        <div className="size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                            <span className="material-symbols-outlined">{category.icon}</span>
+                                <div className="bg-slate-50 dark:bg-card-dark/2 px-4 sm:px-8 lg:px-10 py-6 lg:py-8 border-b border-slate-100 dark:border-card-dark/5 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3 sm:gap-5 min-w-0">
+                                        <div className="size-10 sm:size-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform flex-shrink-0">
+                                            <span className="material-symbols-outlined text-lg">{category.icon}</span>
                                         </div>
-                                        <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">{category.title}</h3>
+                                        <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight truncate">{category.title}</h3>
                                     </div>
-                                    <span className="text-[10px] font-black text-slate-400 px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl uppercase tracking-widest">{category.permissions.length} Nodes</span>
+                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 px-3 py-2 bg-slate-100 dark:bg-card-dark/5 rounded-xl uppercase tracking-widest whitespace-nowrap">{category.permissions.length} Nodes</span>
                                 </div>
-                                <div className="divide-y divide-slate-50 dark:divide-white/5">
+                                <div className="divide-y divide-slate-50 dark:divide-card-dark/5">
                                     {category.permissions.map((perm, permIdx) => (
-                                        <div key={permIdx} className="flex items-center justify-between p-10 hover:bg-slate-50/50 dark:hover:bg-white/2 transition-colors">
-                                            <div className="flex flex-col gap-2">
+                                        <div key={permIdx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 lg:p-10 hover:bg-slate-50/50 dark:hover:bg-card-dark/2 transition-colors gap-4">
+                                            <div className="flex flex-col gap-2 min-w-0 flex-1">
                                                 <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{perm.label}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed max-w-md">{perm.desc}</p>
+                                                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-relaxed">{perm.desc}</p>
                                             </div>
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input defaultChecked={perm.checked} className="sr-only peer" type="checkbox" />
-                                                <div className="w-14 h-7 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[6px] after:bg-white dark:after:bg-slate-400 after:rounded-full after:h-[16px] after:w-[16px] after:transition-all peer-checked:bg-primary"></div>
+                                                <div className="w-14 h-7 bg-slate-200 dark:bg-card-dark/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[6px] after:bg-white dark:after:bg-slate-400 after:rounded-full after:h-[16px] after:w-[16px] after:transition-all peer-checked:bg-primary"></div>
                                             </label>
                                         </div>
                                     ))}
@@ -162,58 +162,58 @@ const AdminRBAC = () => {
                         ))}
                     </div>
 
-                    <div className="space-y-10">
-                        <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-[2.5rem] p-10 shadow-sm relative overflow-hidden group">
+                    <div className="space-y-6 lg:space-y-10">
+                        <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-[2.5rem] p-4 sm:p-6 lg:p-10 shadow-sm relative overflow-hidden group">
                            <div className="absolute top-0 right-0 size-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                            <h4 className="text-slate-900 dark:text-white font-black uppercase tracking-tight mb-10 flex items-center gap-3">
-                               <span className="material-symbols-outlined text-primary">data_usage</span>
+                            <h4 className="text-base sm:text-lg text-slate-900 dark:text-white font-black uppercase tracking-tight mb-6 lg:mb-10 flex items-center gap-3">
+                               <span className="material-symbols-outlined text-primary text-lg">data_usage</span>
                                Protocol Summary
                             </h4>
-                            <div className="space-y-8">
-                                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-white/5">
-                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Linked Entities</span>
+                            <div className="space-y-6 lg:space-y-8">
+                                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-card-dark/5">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest">Linked Entities</span>
                                     <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase">12 Nodes</span>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-white/5">
-                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Access Quotient</span>
+                                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-card-dark/5">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest">Access Quotient</span>
                                     <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase">24 / 48</span>
                                 </div>
                                 <div className="flex justify-between items-center py-2">
-                                    <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Criticality</span>
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-widest">Criticality</span>
                                     <span className="flex items-center gap-2 text-[11px] font-black text-orange-500 uppercase">
                                         <span className="material-symbols-outlined text-sm">security</span>
                                         Tier 2
                                     </span>
                                 </div>
                             </div>
-                            <button className="w-full mt-10 py-4 rounded-3xl border border-slate-100 dark:border-white/5 text-slate-500 dark:text-slate-400 text-[10px] font-black hover:bg-slate-50 dark:hover:bg-white/5 transition-all uppercase tracking-[0.3em]">
+                            <button className="w-full mt-8 lg:mt-10 py-3 lg:py-4 rounded-3xl border border-slate-100 dark:border-card-dark/5 text-slate-500 dark:text-slate-400 text-[10px] font-black hover:bg-slate-50 dark:hover:bg-card-dark/5 transition-all uppercase tracking-[0.3em]">
                                 Reset Policy Node
                             </button>
                         </section>
 
-                        <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-[2.5rem] p-10 shadow-sm">
-                            <div className="flex items-center justify-between mb-10">
-                                <h4 className="text-slate-900 dark:text-white font-black uppercase tracking-tight">Governance Log</h4>
+                        <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-[2.5rem] p-4 sm:p-6 lg:p-10 shadow-sm">
+                            <div className="flex items-center justify-between mb-6 lg:mb-10">
+                                <h4 className="text-base sm:text-lg text-slate-900 dark:text-white font-black uppercase tracking-tight">Governance Log</h4>
                                 <button className="text-[9px] font-black text-primary uppercase tracking-[0.3em] hover:underline">Stream</button>
                             </div>
-                            <div className="space-y-10 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100 dark:before:bg-white/5">
+                            <div className="space-y-6 lg:space-y-10 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100 dark:before:bg-card-dark/5">
                                 {auditLogs.map((log, idx) => (
-                                    <div key={idx} className="relative pl-10 group">
-                                        <div className={`absolute left-0 top-0 size-6 rounded-full border-4 border-white dark:border-card-dark flex items-center justify-center z-10 transition-all ${log.type === 'update' ? 'bg-primary/20 scale-110' : 'bg-slate-200 dark:bg-white/10'}`}>
+                                    <div key={idx} className="relative pl-8 lg:pl-10 group">
+                                        <div className={`absolute left-0 top-0 size-6 rounded-full border-4 border-white dark:border-card-dark flex items-center justify-center z-10 transition-all ${log.type === 'update' ? 'bg-primary/20 scale-110' : 'bg-slate-200 dark:bg-card-dark/10'}`}>
                                             <div className={`size-1.5 rounded-full ${log.type === 'update' ? 'bg-primary' : 'bg-slate-400'}`}></div>
                                         </div>
                                         <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight group-hover:text-primary transition-colors leading-tight">{log.title}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">{log.desc}</p>
+                                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-2 uppercase tracking-widest leading-relaxed">{log.desc}</p>
                                     </div>
                                 ))}
                             </div>
                         </section>
 
-                        <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden group border border-white/5">
+                        <div className="bg-slate-900 rounded-[2.5rem] p-4 sm:p-6 lg:p-10 text-white shadow-2xl relative overflow-hidden group border border-white/5">
                             <div className="absolute -right-10 -bottom-10 size-48 bg-primary/20 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000"></div>
                             <div className="relative z-10">
-                                <div className="flex gap-6">
-                                    <span className="material-symbols-outlined text-4xl text-primary animate-pulse">shield_locked</span>
+                                <div className="flex gap-4 lg:gap-6">
+                                    <span className="material-symbols-outlined text-3xl lg:text-4xl text-primary animate-pulse flex-shrink-0">shield_locked</span>
                                     <div>
                                         <p className="font-black text-sm uppercase tracking-tight mb-2">Security Doctrine</p>
                                         <p className="text-[10px] font-bold text-slate-400 mt-2 leading-relaxed uppercase tracking-[0.15em]">Ensure 'Zero-Trust' propagation across all administrative mesh clusters.</p>

@@ -68,7 +68,7 @@ const FinancialReports = () => {
             headerSubtitle="Comprehensive revenue & transaction node analysis"
             headerActions={
                 <div className="flex gap-4">
-                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-card-dark/5 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">
                         <span className="material-symbols-outlined text-sm">receipt_long</span>
                         Tax Summary
                     </button>
@@ -110,7 +110,7 @@ const FinancialReports = () => {
                             <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-[0.3em]">Temporal performance mesh across fiscal zones</p>
                         </div>
                         <div className="flex gap-4">
-                            <select className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest px-6 py-3 outline-none focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer dark:text-white">
+                            <select className="bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest px-6 py-3 outline-none focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer dark:text-white">
                                 <option>12 Month Cycle</option>
                                 <option>6 Month Cycle</option>
                                 <option>Current Node</option>
@@ -141,11 +141,11 @@ const FinancialReports = () => {
                     <div className="p-12 border-b border-slate-200 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-8 bg-white/50 dark:bg-black/20">
                         <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight">Ledger Operations</h3>
                         <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-3 px-6 py-3 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all group/btn">
+                            <button className="flex items-center gap-3 px-6 py-3 bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all group/btn">
                                 <span className="material-symbols-outlined text-sm group-hover/btn:rotate-180 transition-transform">tune</span>
                                 Filter Node
                             </button>
-                            <button className="flex items-center gap-3 px-6 py-3 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
+                            <button className="flex items-center gap-3 px-6 py-3 bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">
                                 <span className="material-symbols-outlined text-sm">event_repeat</span>
                                 Calendar Sync
                             </button>
@@ -154,7 +154,7 @@ const FinancialReports = () => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-slate-50 dark:bg-white/2 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 border-b border-slate-100 dark:border-white/5">
+                                <tr className="bg-slate-50 dark:bg-card-dark/2 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 border-b border-slate-100 dark:border-white/5">
                                     <th className="px-12 py-8">Temporal Node</th>
                                     <th className="px-12 py-8">Entity Cluster</th>
                                     <th className="px-12 py-8">Transaction ID</th>
@@ -171,7 +171,7 @@ const FinancialReports = () => {
                                     { date: 'May 10, 2024', user: 'Rahul Deshmukh', role: 'Artist', initial: 'RD', txn: 'TXN-SH-76512', amount: '₹24,000', type: 'Commission', status: 'Buffer' },
                                     { date: 'May 09, 2024', user: 'Vikram Jaiswal', role: 'Director', initial: 'VJ', txn: 'TXN-SH-65109', amount: '₹15,000', type: 'Subscription', status: 'Verified' }
                                 ].map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/2 transition-colors group">
+                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-card-dark/2 dark:bg-card-dark/2 transition-colors group">
                                         <td className="px-12 py-10 text-xs font-black dark:text-white uppercase tracking-tight">{row.date}</td>
                                         <td className="px-12 py-10">
                                             <div className="flex items-center gap-5">
@@ -195,7 +195,7 @@ const FinancialReports = () => {
                                             </div>
                                         </td>
                                         <td className="px-12 py-10 text-right">
-                                            <button className="size-10 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95">
+                                            <button className="size-10 rounded-2xl bg-slate-100 dark:bg-card-dark/5 flex items-center justify-center text-slate-400 hover:text-primary transition-all active:scale-95">
                                                 <span className="material-symbols-outlined text-xl">segment</span>
                                             </button>
                                         </td>
@@ -207,8 +207,8 @@ const FinancialReports = () => {
                     <div className="p-10 border-t border-slate-200 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-black/20">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] opacity-60">Displaying Temporal Fragments • Page 1 of 32</span>
                         <div className="flex gap-4">
-                            <button className="px-6 py-3 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white dark:hover:bg-white/5 transition-all disabled:opacity-30 active:scale-95" disabled>Back</button>
-                            <button className="px-6 py-3 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white dark:hover:bg-white/5 transition-all shadow-sm active:scale-95">Forward</button>
+                            <button className="px-6 py-3 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white dark:bg-card-dark dark:hover:bg-white/5 transition-all disabled:opacity-30 active:scale-95" disabled>Back</button>
+                            <button className="px-6 py-3 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white dark:bg-card-dark dark:hover:bg-white/5 transition-all shadow-sm active:scale-95">Forward</button>
                         </div>
                     </div>
                 </div>

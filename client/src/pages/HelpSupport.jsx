@@ -212,8 +212,8 @@ const HelpSupport = () => {
                         <div>
                             <h5 className="font-bold mb-6">Legal</h5>
                             <ul className="space-y-4 text-sm text-slate-500 dark:text-slate-400">
-                                <li><a className="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
-                                <li><a className="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+                                <li><a className="hover:text-primary transition-colors" href="/privacy-policy">Privacy Policy</a></li>
+                                <li><a className="hover:text-primary transition-colors" href="/terms-and-conditions">Terms of Service</a></li>
                                 <li><a className="hover:text-primary transition-colors" href="#">Cookie Policy</a></li>
                                 <li><a className="hover:text-primary transition-colors" href="#">Safety Tips</a></li>
                             </ul>

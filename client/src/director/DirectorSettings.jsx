@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { getMyProfile } from '../services/profileService';
+import { getMyProfile, uploadMedia } from '../services/profileService';
 import { DIRECTOR_MENU } from '../constants/navigation';
 
 const DirectorSettings = () => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
+    const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+    const [portfolioFile, setPortfolioFile] = useState(null);
+    const [portfolioTitle, setPortfolioTitle] = useState('');
+    const [portfolioDescription, setPortfolioDescription] = useState('');
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -21,6 +26,45 @@ const DirectorSettings = () => {
         };
         fetchProfile();
     }, []);
+
+    const handleProfilePictureUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setUploadingProfilePic(true);
+        try {
+            const response = await uploadMedia(file, 'profilePicture');
+            setProfile(response.data);
+            alert('Profile picture updated.');
+        } catch (err) {
+            console.error('Profile picture upload failed:', err);
+            alert('Failed to upload profile picture.');
+        } finally {
+            setUploadingProfilePic(false);
+        }
+    };
+
+    const handlePortfolioUpload = async () => {
+        if (!portfolioFile) {
+            alert('Please select a file to upload.');
+            return;
+        }
+
+        setUploadingPortfolio(true);
+        try {
+            const response = await uploadMedia(portfolioFile, 'portfolio', { title: portfolioTitle, description: portfolioDescription });
+            setProfile(response.data);
+            setPortfolioFile(null);
+            setPortfolioTitle('');
+            setPortfolioDescription('');
+            alert('Portfolio item uploaded.');
+        } catch (err) {
+            console.error('Portfolio upload failed:', err);
+            alert('Failed to upload portfolio item.');
+        } finally {
+            setUploadingPortfolio(false);
+        }
+    };
 
     const userData = {
         name: profile?.fullName || 'Rohan Mehra',
@@ -49,27 +93,27 @@ const DirectorSettings = () => {
                     <div className="max-w-4xl mx-auto py-8 space-y-12 pb-24">
                         {/* Project Visibility & Privacy */}
                         <section>
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">visibility</span>
-                                <h2 className="text-lg font-bold">Project Visibility & Privacy</h2>
+                            <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
+                                <span className="material-symbols-outlined text-lg md:text-xl">visibility</span>
+                                <h2 className="text-base md:text-lg font-bold">Project Visibility & Privacy</h2>
                             </div>
                             <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
-                                <div className="p-5 flex items-center justify-between">
-                                    <div className="flex flex-col gap-1">
-                                        <p className="font-bold">Public Project Listings</p>
+                                <div className="p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                        <p className="font-bold text-slate-900 dark:text-white">Public Project Listings</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">Allow artists to find your projects in global searches.</p>
                                     </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
+                                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                         <input defaultChecked className="sr-only peer" type="checkbox" />
                                         <div className="w-11 h-6 bg-slate-200 dark:bg-background-dark peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
-                                <div className="p-5 flex items-center justify-between">
-                                    <div className="flex flex-col gap-1">
-                                        <p className="font-bold">Show Studio Details</p>
+                                <div className="p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                                        <p className="font-bold text-slate-900 dark:text-white">Show Studio Details</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">Only verified artists can see your studio's official contact information.</p>
                                     </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
+                                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                         <input defaultChecked className="sr-only peer" type="checkbox" />
                                         <div className="w-11 h-6 bg-slate-200 dark:bg-background-dark peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
@@ -77,124 +121,212 @@ const DirectorSettings = () => {
                             </div>
                         </section>
 
-                        {/* Account Security */}
+                        {/* Profile Media */}
                         <section>
                             <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">security</span>
-                                <h2 className="text-lg font-bold">Account Security</h2>
+                                <span className="material-symbols-outlined">photo_camera</span>
+                                <h2 className="text-lg font-bold">Profile Photo & Portfolio</h2>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <button className="flex items-center justify-between p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
-                                    <div className="flex items-center gap-4">
-                                        <div className="size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">
-                                            <span className="material-symbols-outlined text-xl">lock_reset</span>
+
+                            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 p-6 space-y-4">
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold">Current Profile Picture</p>
+                                        <img src={profile?.profilePicture || 'https://ui-avatars.com/api/?name=No+Photo'}
+                                            alt="Profile" className="w-32 h-32 rounded-full object-cover border border-slate-300 dark:border-zinc-700 mt-2" />
+                                        <input type="file" accept="image/*" onChange={handleProfilePictureUpload} className="mt-3" />
+                                        {uploadingProfilePic && <p className="text-xs text-slate-500">Uploading profile picture...</p>}
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold">Add Portfolio Item</p>
+                                        <input type="file" accept="image/*,video/*" onChange={(e) => setPortfolioFile(e.target.files[0])} className="mt-2" />
+                                        <input type="text" placeholder="Title" value={portfolioTitle} onChange={(e) => setPortfolioTitle(e.target.value)} className="mt-2 w-full p-2 rounded border border-slate-300 dark:border-zinc-700" />
+                                        <textarea placeholder="Description" value={portfolioDescription} onChange={(e) => setPortfolioDescription(e.target.value)} className="mt-2 w-full p-2 rounded border border-slate-300 dark:border-zinc-700" rows={3} />
+                                        <button onClick={handlePortfolioUpload} disabled={uploadingPortfolio}
+                                            className="mt-3 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition">
+                                            {uploadingPortfolio ? 'Uploading...' : 'Upload Portfolio Item'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {profile?.portfolio?.length > 0 && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {profile.portfolio.map((item, index) => (
+                                            <div key={index} className="border border-slate-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+                                                {item.type === 'video' ? (
+                                                    <video src={item.url} controls className="w-full h-24 object-cover" />
+                                                ) : (
+                                                    <img src={item.url} alt={item.title || 'Portfolio Item'} className="w-full h-24 object-cover" />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
+                        {/* Account Security */}
+                        <section>
+                            <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
+                                <span className="material-symbols-outlined text-lg md:text-xl">security</span>
+                                <h2 className="text-base md:text-lg font-bold">Account Security</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                                <button className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
+                                    <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                                        <div className="size-8 md:size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors flex-shrink-0">
+                                            <span className="material-symbols-outlined text-lg md:text-xl">lock_reset</span>
                                         </div>
-                                        <div className="text-left">
-                                            <p className="font-bold">Change Password</p>
+                                        <div className="text-left min-w-0 flex-1">
+                                            <p className="font-bold text-slate-900 dark:text-white truncate">Change Password</p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400">Last changed 2 months ago</p>
                                         </div>
                                     </div>
-                                    <span className="material-symbols-outlined text-slate-400">chevron_right</span>
+                                    <span className="material-symbols-outlined text-slate-400 flex-shrink-0">chevron_right</span>
                                 </button>
-                                <button className="flex items-center justify-between p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
-                                    <div className="flex items-center gap-4">
-                                        <div className="size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">
-                                            <span className="material-symbols-outlined text-xl">verified_user</span>
+                                <button className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
+                                    <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+                                        <div className="size-8 md:size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors flex-shrink-0">
+                                            <span className="material-symbols-outlined text-lg md:text-xl">verified_user</span>
                                         </div>
-                                        <div className="text-left">
-                                            <p className="font-bold">Two-Factor Auth</p>
+                                        <div className="text-left min-w-0 flex-1">
+                                            <p className="font-bold text-slate-900 dark:text-white truncate">Two-Factor Auth</p>
                                             <p className="text-xs text-emerald-500 font-medium">Currently Enabled</p>
                                         </div>
                                     </div>
-                                    <span className="material-symbols-outlined text-slate-400">chevron_right</span>
+                                    <span className="material-symbols-outlined text-slate-400 flex-shrink-0">chevron_right</span>
                                 </button>
                             </div>
                         </section>
 
                         {/* Notification Preferences */}
                         <section>
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">notifications_active</span>
-                                <h2 className="text-lg font-bold">Notification Preferences</h2>
+                            <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
+                                <span className="material-symbols-outlined text-lg md:text-xl">notifications_active</span>
+                                <h2 className="text-base md:text-lg font-bold">Notification Preferences</h2>
                             </div>
-                            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm">
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-slate-50 dark:bg-background-dark border-b border-slate-200 dark:border-white/5">
                                         <tr>
-                                            <th className="p-5 font-bold uppercase tracking-wider text-xs">Category</th>
-                                            <th className="p-5 font-bold uppercase tracking-wider text-xs text-center">Email</th>
-                                            <th className="p-5 font-bold uppercase tracking-wider text-xs text-center">App Push</th>
+                                            <th className="p-4 md:p-5 font-bold uppercase tracking-wider text-xs text-slate-900 dark:text-white">Category</th>
+                                            <th className="p-4 md:p-5 font-bold uppercase tracking-wider text-xs text-center text-slate-900 dark:text-white">Email</th>
+                                            <th className="p-4 md:p-5 font-bold uppercase tracking-wider text-xs text-center text-slate-900 dark:text-white">App Push</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-600 dark:text-slate-300">
                                         <tr>
-                                            <td className="p-5 font-medium">New Artist Applications</td>
-                                            <td className="p-5 text-center">
+                                            <td className="p-4 md:p-5 font-medium text-slate-900 dark:text-white">New Artist Applications</td>
+                                            <td className="p-4 md:p-5 text-center">
                                                 <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
                                             </td>
-                                            <td className="p-5 text-center">
-                                                <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td className="p-5 font-medium">Audition Confirmations</td>
-                                            <td className="p-5 text-center">
-                                                <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
-                                            </td>
-                                            <td className="p-5 text-center">
+                                            <td className="p-4 md:p-5 text-center">
                                                 <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td className="p-5 font-medium">Direct Messages</td>
-                                            <td className="p-5 text-center">
+                                            <td className="p-4 md:p-5 font-medium text-slate-900 dark:text-white">Audition Confirmations</td>
+                                            <td className="p-4 md:p-5 text-center">
                                                 <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
                                             </td>
-                                            <td className="p-5 text-center">
+                                            <td className="p-4 md:p-5 text-center">
+                                                <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td className="p-4 md:p-5 font-medium text-slate-900 dark:text-white">Direct Messages</td>
+                                            <td className="p-4 md:p-5 text-center">
+                                                <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                            </td>
+                                            <td className="p-4 md:p-5 text-center">
                                                 <input className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
+                            {/* Mobile Card View */}
+                            <div className="md:hidden space-y-3">
+                                <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 p-4 shadow-sm">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-bold text-slate-900 dark:text-white">New Artist Applications</h4>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">Email</span>
+                                        <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">App Push</span>
+                                        <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 p-4 shadow-sm">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-bold text-slate-900 dark:text-white">Audition Confirmations</h4>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">Email</span>
+                                        <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">App Push</span>
+                                        <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 p-4 shadow-sm">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-bold text-slate-900 dark:text-white">Direct Messages</h4>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">Email</span>
+                                        <input defaultChecked className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <span className="text-sm text-slate-500 dark:text-slate-400">App Push</span>
+                                        <input className="w-5 h-5 rounded border-slate-300 dark:border-white/10 text-primary focus:ring-primary bg-transparent" type="checkbox" />
+                                    </div>
+                                </div>
+                            </div>
                         </section>
 
                         {/* Subscription Management */}
                         <section>
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">stars</span>
-                                <h2 className="text-lg font-bold">Studio Subscription</h2>
+                            <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
+                                <span className="material-symbols-outlined text-lg md:text-xl">stars</span>
+                                <h2 className="text-base md:text-lg font-bold">Studio Subscription</h2>
                             </div>
-                            <div className="bg-gradient-to-r from-slate-900 to-black border border-primary/30 rounded-xl p-6 relative overflow-hidden shadow-lg">
-                                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="space-y-2">
+                            <div className="bg-gradient-to-r from-slate-900 to-black border border-primary/30 rounded-xl p-4 md:p-6 relative overflow-hidden shadow-lg">
+                                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6">
+                                    <div className="space-y-2 min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
                                             <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">Active</span>
-                                            <h3 className="text-2xl font-black italic text-white">STUDIO PREMIUM</h3>
+                                            <h3 className="text-lg md:text-2xl font-black italic text-white">STUDIO PREMIUM</h3>
                                         </div>
                                         <p className="text-slate-400 text-sm max-w-md">Your plan includes advanced talent filters, unlimited projects, and featured studio badges. Next billing: Nov 12, 2026.</p>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <button className="bg-white/5 border border-white/10 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-white/10 transition-colors">View Invoices</button>
-                                        <button className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all">Manage Subscription</button>
+                                    <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                                        <button className="bg-white/5 border border-white/10 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-lg text-sm font-bold hover:bg-white/10 transition-colors">View Invoices</button>
+                                        <button className="bg-primary text-white px-4 md:px-5 py-2 md:py-2.5 rounded-lg text-sm font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all">Manage Subscription</button>
                                     </div>
                                 </div>
                                 {/* Decorative background element */}
-                                <div className="absolute -right-10 -bottom-10 opacity-10">
-                                    <span className="material-symbols-outlined text-[180px] text-primary">business_center</span>
+                                <div className="absolute -right-6 md:-right-10 -bottom-6 md:-bottom-10 opacity-10">
+                                    <span className="material-symbols-outlined text-[120px] md:text-[180px] text-primary">business_center</span>
                                 </div>
                             </div>
                         </section>
 
                         {/* Danger Zone / Delete Account */}
-                        <section className="pt-8 border-t border-slate-200 dark:border-white/5">
-                            <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-6 shadow-sm">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-rose-500">Deactivate or Delete Studio Account</h3>
+                        <section className="pt-6 md:pt-8 border-t border-slate-200 dark:border-white/5">
+                            <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-4 md:p-6 shadow-sm">
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6">
+                                    <div className="space-y-1 min-w-0 flex-1">
+                                        <h3 className="font-bold text-rose-500 text-base md:text-lg">Deactivate or Delete Studio Account</h3>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">Permanently delete your studio profile and all project history. This action cannot be undone.</p>
                                     </div>
-                                    <button className="text-rose-500 text-sm font-bold border border-rose-500/30 px-5 py-2.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all">
+                                    <button className="text-rose-500 text-sm font-bold border border-rose-500/30 px-4 md:px-5 py-2 md:py-2.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all flex-shrink-0">
                                         Delete Account
                                     </button>
                                 </div>

@@ -78,12 +78,12 @@ const CommunicationCenter = () => {
         >
             <div className="max-w-7xl mx-auto py-8 lg:px-4 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-24">
                 {/* Tabs */}
-                <div className="flex bg-slate-100 dark:bg-white/5 p-2 rounded-[2.5rem] gap-4 self-start overflow-x-auto scrollbar-hide mb-4">
+                <div className="flex bg-slate-100 dark:bg-white dark:bg-card-dark/5 p-2 rounded-[2.5rem] gap-4 self-start overflow-x-auto scrollbar-hide mb-4">
                     {['Announcements', 'System Alerts', 'Mail Shards', 'SMS Nodes'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-10 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-3xl whitespace-nowrap ${activeTab === tab ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
+                            className={`px-10 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-3xl whitespace-nowrap ${activeTab === tab ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-white'}`}
                         >
                             {tab}
                         </button>
@@ -105,27 +105,27 @@ const CommunicationCenter = () => {
                             <div className="space-y-8">
                                 <div>
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 ml-2">Signal Header</label>
-                                    <input className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[2rem] focus:ring-4 focus:ring-primary/10 transition-all text-sm font-black p-6 outline-none dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600 uppercase tracking-tight" placeholder="ANNOUNCEMENT_TITLE_ALPHA..." type="text" />
+                                    <input className="w-full bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-[2rem] focus:ring-4 focus:ring-primary/10 transition-all text-sm font-black p-6 outline-none dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-600 dark:text-slate-400 uppercase tracking-tight" placeholder="ANNOUNCEMENT_TITLE_ALPHA..." type="text" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 ml-2">Signal Payload</label>
-                                    <div className="bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[2.5rem] overflow-hidden group/editor focus-within:ring-4 focus-within:ring-primary/10 transition-all">
-                                        <div className="flex items-center gap-4 border-b border-slate-100 dark:border-white/10 px-8 py-4 bg-slate-100/50 dark:bg-white/5">
+                                    <div className="bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-[2.5rem] overflow-hidden group/editor focus-within:ring-4 focus-within:ring-primary/10 transition-all">
+                                        <div className="flex items-center gap-4 border-b border-slate-100 dark:border-white/10 px-8 py-4 bg-slate-100/50 dark:bg-card-dark/5">
                                             {['format_bold', 'format_italic', 'format_list_bulleted', 'link', 'image'].map((icon, idx) => (
                                                 <button key={idx} className="size-10 flex items-center justify-center hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all">
                                                     <span className="material-symbols-outlined text-xl">{icon}</span>
                                                 </button>
                                             ))}
-                                            <div className="w-px h-8 bg-slate-200 dark:bg-white/10 mx-2"></div>
+                                            <div className="w-px h-8 bg-slate-200 dark:bg-white dark:bg-card-dark/10 mx-2"></div>
                                             <button className="px-6 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary transition-colors">PREVIEW_RAW</button>
                                         </div>
-                                        <textarea className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold p-10 resize-none dark:text-slate-300 min-h-[240px] placeholder:text-slate-300 dark:placeholder:text-slate-700" placeholder="System log: Input signal content for platform propagation..." rows="6"></textarea>
+                                        <textarea className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold p-10 resize-none dark:text-slate-300 min-h-[240px] placeholder:text-slate-300 dark:placeholder:text-slate-700 dark:text-slate-300" placeholder="System log: Input signal content for platform propagation..." rows="6"></textarea>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
                                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 ml-2">Propagation Vector</label>
-                                        <select className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl p-5 text-xs font-black uppercase tracking-[0.2em] outline-none cursor-pointer dark:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all appearance-none">
+                                        <select className="w-full bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-2xl p-5 text-xs font-black uppercase tracking-[0.2em] outline-none cursor-pointer dark:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all appearance-none">
                                             <option>Sticky Global Overlay</option>
                                             <option>Interrupt Modal Node</option>
                                             <option>Soft Toast Fragment</option>
@@ -133,7 +133,7 @@ const CommunicationCenter = () => {
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 ml-2">Styling Shard</label>
-                                        <select className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl p-5 text-xs font-black uppercase tracking-[0.2em] outline-none cursor-pointer dark:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all appearance-none">
+                                        <select className="w-full bg-slate-50 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 rounded-2xl p-5 text-xs font-black uppercase tracking-[0.2em] outline-none cursor-pointer dark:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all appearance-none">
                                             <option>Core Primary (Red)</option>
                                             <option>Urgent Alert (Bright)</option>
                                             <option>Operational (Muted)</option>
@@ -147,7 +147,7 @@ const CommunicationCenter = () => {
                         <section className="bg-white dark:bg-card-dark rounded-[3.5rem] border border-slate-200 dark:border-border-dark shadow-sm overflow-hidden group">
                             <div className="p-12 pb-8 flex items-center justify-between">
                                 <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight flex items-center gap-6">
-                                    <div className="size-14 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                                    <div className="size-14 bg-slate-100 dark:bg-card-dark/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
                                         <span className="material-symbols-outlined text-2xl">history_edu</span>
                                     </div>
                                     Signal History
@@ -159,7 +159,7 @@ const CommunicationCenter = () => {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
-                                        <tr className="bg-slate-50 dark:bg-white/2 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 border-b border-slate-100 dark:border-white/5">
+                                        <tr className="bg-slate-50 dark:bg-card-dark/2 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 border-b border-slate-100 dark:border-white/5">
                                             <th className="px-12 py-8">Signal Node</th>
                                             <th className="px-12 py-8 text-center">Protocol Status</th>
                                             <th className="px-12 py-8">Audience Shell</th>
@@ -172,7 +172,7 @@ const CommunicationCenter = () => {
                                             { title: 'Mumbai Casting Call', status: 'Scheduled', target: 'Artist Nodes', views: '0.0%', clicks: '0.0%' },
                                             { title: 'Portfolio Guidelines 2026', status: 'Local Buffer', target: 'Verified Cluster', views: '0.0%', clicks: '0.0%' },
                                         ].map((row, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/2 transition-colors group/row">
+                                            <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white dark:bg-card-dark/2 transition-colors group/row">
                                                 <td className="px-12 py-10">
                                                     <p className="text-sm font-black dark:text-white uppercase tracking-tight group-hover/row:text-primary transition-colors cursor-pointer">{row.title}</p>
                                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 opacity-60">SHARD_ID: COMM_{idx}923</p>
@@ -220,9 +220,9 @@ const CommunicationCenter = () => {
                                     { label: 'Director Oversight Nodes', count: '2.1k', icon: 'theater_comedy' },
                                     { label: 'Verified Integrity Tier', count: '8.4k', icon: 'verified' }
                                 ].map((target, idx) => (
-                                    <label key={idx} className="flex items-center gap-5 p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/2 cursor-pointer transition-all hover:bg-white dark:hover:bg-white/5 hover:border-primary/30 group relative overflow-hidden">
+                                    <label key={idx} className="flex items-center gap-5 p-6 rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-card-dark/2 cursor-pointer transition-all hover:bg-white dark:hover:bg-white/5 hover:border-primary/30 group relative overflow-hidden">
                                         <input type="radio" name="audience" className="sr-only peer" defaultChecked={idx === 0} />
-                                        <div className="size-12 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
+                                        <div className="size-12 rounded-2xl bg-white dark:bg-card-dark/5 flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
                                             <span className="material-symbols-outlined">{target.icon}</span>
                                         </div>
                                         <div className="flex-1">
@@ -243,10 +243,10 @@ const CommunicationCenter = () => {
                                     INITIATE_BROADCAST
                                 </button>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <button className="bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 font-black uppercase tracking-[0.2em] text-[9px] py-4 rounded-2xl transition-all border border-slate-100 dark:border-white/5">
+                                    <button className="bg-slate-100 dark:bg-white dark:bg-card-dark/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 font-black uppercase tracking-[0.2em] text-[9px] py-4 rounded-2xl transition-all border border-slate-100 dark:border-white/5">
                                         SAVE_BUFFER
                                     </button>
-                                    <button className="bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 font-black uppercase tracking-[0.2em] text-[9px] py-4 rounded-2xl transition-all border border-slate-100 dark:border-white/5">
+                                    <button className="bg-slate-100 dark:bg-white dark:bg-card-dark/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 font-black uppercase tracking-[0.2em] text-[9px] py-4 rounded-2xl transition-all border border-slate-100 dark:border-white/5">
                                         SIMULATE
                                     </button>
                                 </div>

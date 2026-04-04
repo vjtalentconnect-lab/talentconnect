@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login, loginAdmin, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin } from '../services/authService';
+import { login, loginAdmin, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin, requestPasswordReset, resendEmailVerification } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
 
 const Login = () => {
@@ -12,6 +12,7 @@ const Login = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const navigate = useNavigate();
 
   const navigateAfterSocial = async (role) => {
@@ -25,6 +26,20 @@ const Login = () => {
       const missing = required.filter((field) => !profile?.[field]);
       if (missing.length) {
         navigate('/onboarding/complete-profile', { state: { role, missing } });
+      } else if (role === 'talent') {
+        let user = {};
+        try {
+          user = JSON.parse(localStorage.getItem('user') || '{}');
+        } catch (e) {
+          user = {};
+        }
+        const vStatus = user.verificationStatus || 'none';
+        
+        if (vStatus === 'none') {
+          navigate('/talent/verify');
+        } else {
+          navigate('/dashboard/talent');
+        }
       } else {
         navigate(role === 'director' ? '/dashboard/director' : '/dashboard/talent');
       }
@@ -36,6 +51,7 @@ const Login = () => {
   const handleLinkedInAuto = async () => {
     setLoading(true);
     setError('');
+    setInfo('');
     try {
       const role = userType === 'director' ? 'director' : 'talent';
       await autoLinkedInLogin(role);
@@ -68,6 +84,42 @@ const Login = () => {
       else if (role === 'admin') navigate('/dashboard/admin');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Enter your email to receive a reset link.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setInfo('');
+    try {
+      await requestPasswordReset(email);
+      setInfo('Password reset link sent. Check your inbox.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not send reset email.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Enter your email to resend verification.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setInfo('');
+    try {
+      await resendEmailVerification(email);
+      setInfo('Verification email resent. Please check your inbox.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to resend verification email.');
     } finally {
       setLoading(false);
     }
@@ -195,12 +247,13 @@ const Login = () => {
                   <label className="text-sm font-medium text-slate-200">
                     Password
                   </label>
-                  <Link
-                    to="#"
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
                     className="text-xs text-primary hover:text-primary/80 font-semibold uppercase tracking-wider"
                   >
                     Forgot Password?
-                  </Link>
+                  </button>
                 </div>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl">
@@ -238,6 +291,11 @@ const Login = () => {
               {error && (
                 <div className="bg-red-100 dark:bg-red-500/20 border border-red-500/50 text-red-600 dark:text-red-200 p-3 rounded-lg text-sm mb-4">
                   {error}
+                </div>
+              )}
+              {info && (
+                <div className="bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-500/50 text-emerald-700 dark:text-emerald-200 p-3 rounded-lg text-sm mb-4">
+                  {info}
                 </div>
               )}
 
@@ -303,6 +361,12 @@ const Login = () => {
                 >
                   Sign up for free
                 </Link>
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                Already signed up but not verified?{' '}
+                <button onClick={handleResendVerification} type="button" className="text-primary font-semibold hover:underline">
+                  Resend verification email
+                </button>
               </p>
             </div>
           </div>

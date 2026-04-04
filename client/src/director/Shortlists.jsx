@@ -151,7 +151,7 @@ const Shortlists = () => {
                                                             <button onClick={() => handleStatusUpdate(app._id, 'rejected')} className="w-full py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all">Reject</button>
                                                         </>
                                                     )}
-                                                    <Link to={`/talent/${app.talent?._id}`} className="w-full py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold col-span-2 transition-all flex items-center justify-center">View Full Profile</Link>
+                                                    <Link to={`/talent/${app.talent?.profile?.id || app.talent?.id}`} className="w-full py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold col-span-2 transition-all flex items-center justify-center">View Full Profile</Link>
                                                 </div>
                                             </div>
                                         </div>

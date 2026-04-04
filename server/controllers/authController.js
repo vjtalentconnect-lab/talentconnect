@@ -126,9 +126,9 @@ const ensureUserAndProfile = async ({
             fullName,
             location,
             mobile,
-            talentCategory: role === 'talent' ? (talentCategory || 'Actor') : null,
-            companyName: role === 'director' ? companyName : undefined,
-            industryType: role === 'director' ? industryType : undefined,
+            talentCategory: (role === 'talent' || !['director', 'admin'].includes(role)) ? (talentCategory || 'Actor') : null,
+            companyName: role === 'director' ? (companyName || '') : null,
+            industryType: role === 'director' ? (industryType || '') : null,
             profilePicture: profilePicture || 'no-photo.jpg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -161,9 +161,9 @@ const ensureUserAndProfile = async ({
                 fullName,
                 location,
                 mobile,
-                talentCategory: (role || data.role) === 'talent' ? (talentCategory || 'Actor') : null,
-                companyName: role === 'director' ? companyName : undefined,
-                industryType: role === 'director' ? industryType : undefined,
+                talentCategory: ((role || data.role) === 'talent' || !['director', 'admin'].includes(role || data.role)) ? (talentCategory || 'Actor') : null,
+                companyName: (role || data.role) === 'director' ? (companyName || '') : null,
+                industryType: (role || data.role) === 'director' ? (industryType || '') : null,
                 profilePicture: profilePicture || 'no-photo.jpg',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -255,9 +255,9 @@ export const register = async (req, res) => {
             fullName,
             location: location || '',
             mobile: mobile || '',
-            talentCategory: role === 'talent' ? talentCategory : null,
-            companyName: role === 'director' ? companyName || '' : undefined,
-            industryType: role === 'director' ? industryType || '' : undefined,
+            talentCategory: (role === 'talent' || !['director', 'admin'].includes(role)) ? (talentCategory || role || 'Actor') : null,
+            companyName: role === 'director' ? (companyName || '') : null,
+            industryType: role === 'director' ? (industryType || '') : null,
             profilePicture: 'no-photo.jpg',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -294,7 +294,10 @@ export const register = async (req, res) => {
 
         // Fire off verification email (best-effort)
         try {
-            await sendVerificationEmailForUser({ userId: uid, email });
+            const verificationToken = await sendVerificationEmailForUser({ userId: uid, email });
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(`[DEV] Verification token for ${email}: ${verificationToken}`);
+            }
         } catch (emailErr) {
             console.error('Verification email send failed:', emailErr?.message || emailErr);
         }
@@ -352,7 +355,7 @@ export const googleLogin = async (req, res) => {
         res.status(200).cookie('token', idToken, options).json({
             success: true,
             token: idToken,
-            user: { id: uid, email, role: userData.role },
+            user: { id: uid, email, role: userData.role, verificationStatus: userData.verificationStatus },
         });
     } catch (err) {
         console.error('Google login error:', err);
@@ -394,25 +397,53 @@ export const linkedinLogin = async (req, res) => {
             }
         );
         const accessToken = tokenResp.data.access_token;
-        console.log('✅ LinkedIn - Access token obtained');
+        console.log('✅ LinkedIn - Access token obtained:', accessToken.substring(0, 20) + '...');
 
-        // Fetch basic profile
-        const profileResp = await axios.get(
-            'https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))',
-            {
+        let linkedinId;
+        let fullName;
+        let email;
+        let profilePicture;
+
+        // Prefer OpenID Connect userinfo (recommended for Sign In with LinkedIn using OpenID Connect)
+        try {
+            const userinfoResp = await axios.get('https://api.linkedin.com/v2/userinfo', {
                 headers: { Authorization: `Bearer ${accessToken}` },
-            }
-        );
-        const emailResp = await axios.get('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        });
+            });
 
-        const linkedinId = profileResp.data.id;
-        const fullName = `${profileResp.data.localizedFirstName || ''} ${profileResp.data.localizedLastName || ''}`.trim();
-        const email = emailResp.data.elements?.[0]?.['handle~']?.emailAddress;
-        const photoCandidates = profileResp.data?.profilePicture?.['displayImage~']?.elements || [];
-        const bestPhoto = photoCandidates[photoCandidates.length - 1];
-        const profilePicture = bestPhoto?.identifiers?.[0]?.identifier || '';
+            const data = userinfoResp.data;
+            linkedinId = data.sub;
+            fullName = data.name || `${data.given_name || ''} ${data.family_name || ''}`.trim();
+            email = data.email;
+            
+            // Handle profile picture - can be string URL or nested object { url: '...' }
+            if (data.picture && typeof data.picture === 'object' && data.picture.url) {
+                profilePicture = data.picture.url;
+            } else {
+                profilePicture = data.picture || '';
+            }
+
+            console.log('✅ LinkedIn - Got userinfo from OIDC endpoint');
+        } catch (userinfoErr) {
+            console.log('⚠️ LinkedIn userinfo endpoint failed, falling back to v2/me + emailAddress path', userinfoErr?.response?.data || userinfoErr?.message);
+
+            // Legacy API flow (for r_liteprofile / r_emailaddress integration)
+            const profileResp = await axios.get(
+                'https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))',
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                }
+            );
+            const emailResp = await axios.get('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+
+            linkedinId = profileResp.data.id;
+            fullName = `${profileResp.data.localizedFirstName || ''} ${profileResp.data.localizedLastName || ''}`.trim();
+            email = emailResp.data.elements?.[0]?.['handle~']?.emailAddress;
+            const photoCandidates = profileResp.data?.profilePicture?.['displayImage~']?.elements || [];
+            const bestPhoto = photoCandidates[photoCandidates.length - 1];
+            profilePicture = bestPhoto?.identifiers?.[0]?.identifier || '';
+        }
 
         if (!email) {
             return res.status(400).json({ message: 'Unable to fetch LinkedIn email' });
@@ -448,15 +479,27 @@ export const linkedinLogin = async (req, res) => {
         res.status(200).cookie('token', token, options).json({
             success: true,
             token,
-            user: { id: uid, email, role: userData.role },
+            user: { id: uid, email, role: userData.role, verificationStatus: userData.verificationStatus },
         });
     } catch (err) {
-        console.error('❌ LinkedIn login error:');
-        console.error('  Status:', err?.response?.status);
-        console.error('  Error:', err?.response?.data || err.message);
-        res.status(err?.response?.status || 401).json({ 
-            message: err?.response?.data?.error_description || err?.response?.data?.error || 'LinkedIn login failed',
-            details: process.env.NODE_ENV === 'development' ? err?.response?.data : undefined
+        const status = err?.response?.status || 500;
+        const errorData = err?.response?.data || {};
+        
+        console.error('❌ LinkedIn OAuth Error details:');
+        console.error('  URL:', err?.config?.url);
+        console.error('  Status:', status);
+        console.error('  Error:', errorData.error || 'N/A');
+        console.error('  Description:', errorData.error_description || err.message);
+        
+        if (status === 401) {
+            console.warn('  💡 Hint: Check your LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in .env.');
+        }
+
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        res.status(status).json({ 
+            message: errorData.error_description || errorData.error || err?.message || 'LinkedIn login failed',
+            ...(isProduction ? {} : { details: { status, error: errorData.error, error_description: errorData.error_description } })
         });
     }
 };
@@ -502,6 +545,7 @@ export const login = async (req, res) => {
                 id: user.uid,
                 email: user.email,
                 role: userData.role,
+                verificationStatus: userData.verificationStatus,
             },
         });
     } catch (err) {

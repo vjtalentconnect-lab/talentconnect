@@ -85,7 +85,7 @@ const AdminSettings = () => {
         >
             <div className="max-w-7xl mx-auto py-8 lg:px-4 space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-24">
                 {/* Section: Advanced Tabs */}
-                <div className="flex p-2 bg-slate-100 dark:bg-white/5 rounded-[2rem] gap-2 overflow-x-auto scrollbar-hide">
+                <div className="flex p-2 bg-slate-100 dark:bg-card-dark/5 rounded-[2rem] gap-2 overflow-x-auto scrollbar-hide">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
@@ -122,7 +122,7 @@ const AdminSettings = () => {
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input className="sr-only peer" type="checkbox" />
-                                        <div className="w-16 h-8 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[6px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                                        <div className="w-16 h-8 bg-slate-200 dark:bg-card-dark/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[6px] after:left-[6px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
                                     </label>
                                 </div>
 
@@ -144,7 +144,7 @@ const AdminSettings = () => {
                                                 </div>
                                                 <label className="relative inline-flex items-center cursor-pointer scale-90">
                                                     <input defaultChecked={flag.checked} className="sr-only peer" type="checkbox" />
-                                                    <div className="w-14 h-7 bg-slate-200 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[5px] after:left-[5px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                                    <div className="w-14 h-7 bg-slate-200 dark:bg-card-dark/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[5px] after:left-[5px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                                                 </label>
                                             </div>
                                         ))}
@@ -175,15 +175,15 @@ const AdminSettings = () => {
                                             { key: 'sk_mesh_live_9x8z7y...6a5b', type: 'Production' },
                                             { key: 'sk_mesh_test_4p3o2i...1m0n', type: 'Sandbox' }
                                         ].map((item, idx) => (
-                                            <div key={idx} className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-white/2 rounded-3xl border border-slate-100 dark:border-white/5 group/key hover:border-primary/30 transition-all">
-                                                <div className="size-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-slate-400 group-hover/key:text-primary transition-colors shadow-sm">
+                                            <div key={idx} className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-card-dark/2 rounded-3xl border border-slate-100 dark:border-white/5 group/key hover:border-primary/30 transition-all">
+                                                <div className="size-10 rounded-xl bg-white dark:bg-card-dark/5 flex items-center justify-center text-slate-400 group-hover/key:text-primary transition-colors shadow-sm">
                                                     <span className="material-symbols-outlined text-xl">vpn_key</span>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{item.type} NODE</div>
                                                     <input className="bg-transparent border-none p-0 text-[11px] w-full focus:ring-0 font-black dark:text-white font-mono tracking-tighter" readOnly type="text" value={item.key} />
                                                 </div>
-                                                <button className="size-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-all shadow-sm">
+                                                <button className="size-10 rounded-xl bg-white dark:bg-card-dark/5 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-all shadow-sm">
                                                     <span className="material-symbols-outlined text-lg">content_copy</span>
                                                 </button>
                                             </div>
@@ -196,7 +196,7 @@ const AdminSettings = () => {
                 )}
 
                 <div className="flex justify-end gap-6 pt-12 border-t border-slate-200 dark:border-white/5 animate-pulse-slow">
-                    <button className="px-10 py-5 rounded-[2rem] text-slate-400 dark:text-slate-500 font-extrabold text-[11px] uppercase tracking-[0.3em] hover:bg-slate-100 dark:hover:bg-white/5 transition-all">Discard Buffer</button>
+                    <button className="px-10 py-5 rounded-[2rem] text-slate-400 dark:text-slate-500 font-extrabold text-[11px] uppercase tracking-[0.3em] hover:bg-slate-100 dark:hover:bg-card-dark/5 transition-all">Discard Buffer</button>
                     <button className="px-14 py-5 rounded-[2rem] bg-primary text-white font-black text-[11px] uppercase tracking-[0.4em] shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all active:scale-[0.98] leading-none">Force Nexus Update</button>
                 </div>
             </div>

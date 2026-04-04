@@ -101,7 +101,7 @@ const SystemHealth = () => {
             headerSubtitle="Real-time telemetry for TalentConnect infrastructure"
             headerActions={
                 <div className="flex gap-4">
-                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-100 dark:bg-card-dark/5 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
                         <span className="material-symbols-outlined text-sm">terminal</span>
                         Live Console
                     </button>
@@ -133,7 +133,7 @@ const SystemHealth = () => {
                                         {metric.trend}
                                     </span>
                                 ) : (
-                                    <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-xl uppercase tracking-widest">
+                                    <span className="text-[10px] font-black text-slate-400 bg-slate-100 dark:bg-white dark:bg-card-dark/5 px-4 py-2 rounded-xl uppercase tracking-widest">
                                         {metric.status}
                                     </span>
                                 )}
@@ -156,7 +156,7 @@ const SystemHealth = () => {
                                 <h3 className="text-2xl font-black dark:text-white uppercase tracking-tight">Cluster Propagation</h3>
                                 <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-[0.2em]">Live resource allocation across distributed nodes</p>
                             </div>
-                            <div className="px-6 py-3 bg-slate-50 dark:bg-white/5 rounded-2xl text-[10px] font-black dark:text-white uppercase tracking-widest border border-slate-100 dark:border-white/5">
+                            <div className="px-6 py-3 bg-slate-50 dark:bg-white dark:bg-card-dark/5 rounded-2xl text-[10px] font-black dark:text-white uppercase tracking-widest border border-slate-100 dark:border-white/5">
                                 Last Sync: {lastSync.split(',')[1]}
                             </div>
                         </div>
@@ -198,7 +198,7 @@ const SystemHealth = () => {
                             <div className="space-y-8">
                                 {regions.map((region, idx) => (
                                     <div key={idx} className="flex items-center justify-between group/item">
-                                        <span className="text-xs font-black text-slate-500 group-hover/item:text-slate-900 dark:group-hover/item:text-white uppercase tracking-widest transition-colors">{region.name}</span>
+                                        <span className="text-xs font-black text-slate-500 group-hover/item:text-slate-900 dark:text-white dark:group-hover/item:text-white uppercase tracking-widest transition-colors">{region.name}</span>
                                         <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 ${region.color === 'emerald' ? 'text-emerald-500 bg-emerald-500/10' : 'text-amber-500 bg-amber-500/10'}`}>
                                             <div className={`size-2 rounded-full bg-current ${region.status.includes('Elevated') ? 'animate-pulse' : ''}`}></div>
                                             {region.status}
@@ -235,7 +235,7 @@ const SystemHealth = () => {
 
                 <div className="bg-slate-900 rounded-[3rem] overflow-hidden border border-white/5 shadow-2xl relative">
                     <div className="absolute top-0 right-0 size-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-                    <div className="px-12 py-10 border-b border-white/5 flex items-center justify-between bg-white/[0.01] relative z-10">
+                    <div className="px-12 py-10 border-b border-white/5 flex items-center justify-between bg-white dark:bg-card-dark/[0.01] relative z-10">
                         <div>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight">Active Incident Log</h3>
                             <p className="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-[0.3em]">Hardware & Software integrity reporting cluster</p>
@@ -247,7 +247,7 @@ const SystemHealth = () => {
                     <div className="overflow-x-auto relative z-10">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-[0.4em]">
+                                <tr className="bg-white dark:bg-card-dark/5 text-slate-400 text-[10px] font-black uppercase tracking-[0.4em]">
                                     <th className="px-12 py-8">Timestamp</th>
                                     <th className="px-12 py-8">Node Path</th>
                                     <th className="px-12 py-8">Event Detail</th>
@@ -257,7 +257,7 @@ const SystemHealth = () => {
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {incidents.map((incident, idx) => (
-                                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
+                                    <tr key={idx} className="hover:bg-white dark:bg-card-dark/[0.02] transition-colors group">
                                         <td className="px-12 py-8 text-[11px] font-black text-slate-500 tracking-widest">{incident.time}</td>
                                         <td className="px-12 py-8 text-sm font-black text-white uppercase tracking-tight">{incident.component}</td>
                                         <td className="px-12 py-8 text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-loose max-w-sm">{incident.event}</td>
@@ -270,7 +270,7 @@ const SystemHealth = () => {
                                             </span>
                                         </td>
                                         <td className="px-12 py-8 text-right">
-                                            <button className="bg-white/5 text-slate-400 hover:text-white text-[9px] font-black uppercase tracking-[0.3em] px-6 py-3 rounded-xl hover:bg-primary transition-all group-hover:translate-x-[-8px]">
+                                            <button className="bg-white dark:bg-card-dark/5 text-slate-400 hover:text-white text-[9px] font-black uppercase tracking-[0.3em] px-6 py-3 rounded-xl hover:bg-primary transition-all group-hover:translate-x-[-8px]">
                                                 Inspect Node
                                             </button>
                                         </td>

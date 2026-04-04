@@ -35,6 +35,7 @@ let db, storage, auth;
 
 if (admin.apps.length > 0) {
     db = admin.firestore();
+    db.settings({ ignoreUndefinedProperties: true });
     storage = admin.storage();
     auth = admin.auth();
 }

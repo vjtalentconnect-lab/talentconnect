@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 
-const ProtectedRoute = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRole, allowedRoles }) => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
 
@@ -9,9 +9,20 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         return <Navigate to={requiredRole === 'admin' ? '/admin/login' : '/login'} replace />;
     }
 
-    const user = JSON.parse(userStr);
+    let user = null;
+    try {
+        user = JSON.parse(userStr);
+    } catch (e) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        return <Navigate to={requiredRole === 'admin' ? '/admin/login' : '/login'} replace />;
+    }
 
-    if (requiredRole && user.role !== requiredRole) {
+    if (allowedRoles && Array.isArray(allowedRoles)) {
+        if (!allowedRoles.includes(user.role)) {
+            return <Navigate to={user.role === 'admin' ? '/admin/login' : '/login'} replace />;
+        }
+    } else if (requiredRole && user.role !== requiredRole) {
         return <Navigate to={requiredRole === 'admin' ? '/admin/login' : '/login'} replace />;
     }
 

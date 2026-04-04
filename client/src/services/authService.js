@@ -44,14 +44,19 @@ export const loginWithGoogle = async (role = 'talent') => {
 
 // Get consistent redirect URI for both auth URL and token exchange
 const getLinkedInRedirectUri = () => {
+    // If we're on localhost, always try to use localhost for redirect to avoid prod redirection
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return `${window.location.origin}/auth/linkedin/callback`;
+    }
     return import.meta.env.VITE_LINKEDIN_REDIRECT_URI || `${window.location.origin}/auth/linkedin/callback`;
 };
 
 export const getLinkedInAuthUrl = () => {
     const clientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
     const redirectUri = getLinkedInRedirectUri();
-    // r_liteprofile ensures we can fetch a profile photo for auto-profiling
-    const scope = encodeURIComponent('openid profile email r_liteprofile');
+    // Use OpenID Connect scopes supported by Sign In with LinkedIn using OpenID Connect.
+    // If your app has legacy r_liteprofile/r_emailaddress permissions, you can include those too.
+    const scope = encodeURIComponent('openid profile email');
     const state = Math.random().toString(36).substring(2, 15); // simple CSRF token
 
     if (!clientId) {
@@ -64,10 +69,17 @@ export const getLinkedInAuthUrl = () => {
 
 export const completeLinkedInLogin = async (code, state, role = 'talent') => {
     const storedState = localStorage.getItem('linkedin_oauth_state');
+    
+    // CSRF protection: Abort login if state doesn't match
     if (storedState && state && storedState !== state) {
-        throw new Error('State mismatch. Please try again.');
+        throw new Error('CSRF state mismatch detected. Please try again.');
     }
+    
+    // Clean up state after validation
+    localStorage.removeItem('linkedin_oauth_state');
+    
     const redirectUri = getLinkedInRedirectUri();
+    
     const response = await api.post('/auth/login/linkedin', { code, redirectUri, role });
     if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -78,9 +90,6 @@ export const completeLinkedInLogin = async (code, state, role = 'talent') => {
 
 export const autoLinkedInLogin = async (role = 'talent') => {
     const redirectUri = getLinkedInRedirectUri();
-    console.log('🔵 LinkedIn - Starting login flow');
-    console.log('🔵 LinkedIn - Redirect URI:', redirectUri);
-    console.log('🔵 LinkedIn - Client ID:', import.meta.env.VITE_LINKEDIN_CLIENT_ID);
     
     const authUrl = getLinkedInAuthUrl();
     localStorage.setItem('linkedin_oauth_role', role);
@@ -88,9 +97,14 @@ export const autoLinkedInLogin = async (role = 'talent') => {
 };
 
 export const logout = async () => {
-    await api.get('/auth/logout');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    try {
+        await api.get('/auth/logout');
+    } catch (e) {
+        console.warn('Backend logout failed');
+    } finally {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    }
 };
 
 export const getMe = async () => {
@@ -100,6 +114,16 @@ export const getMe = async () => {
 
 export const changePassword = async (data) => {
     const response = await api.put('/auth/change-password', data);
+    return response.data;
+};
+
+export const requestPasswordReset = async (email) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+};
+
+export const resendEmailVerification = async (email) => {
+    const response = await api.post('/auth/resend-verification', { email });
     return response.data;
 };
 

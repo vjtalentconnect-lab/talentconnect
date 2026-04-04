@@ -137,7 +137,7 @@ const GlobalSearch = () => {
                                 type="text"
                             />
                             <div className="absolute inset-y-0 right-10 flex items-center gap-6">
-                                <kbd className="hidden sm:inline-flex px-4 py-2 text-[10px] font-black text-slate-400 bg-slate-50 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-2xl uppercase tracking-[0.3em]">⌘ SEARCH</kbd>
+                                <kbd className="hidden sm:inline-flex px-4 py-2 text-[10px] font-black text-slate-400 bg-slate-50 dark:bg-card-dark/10 border border-slate-200 dark:border-white/10 rounded-2xl uppercase tracking-[0.3em]">⌘ SEARCH</kbd>
                                 <button className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all active:scale-95 leading-none">
                                     <span className="material-symbols-outlined text-lg">explore</span>
                                     DISCOVER
@@ -161,7 +161,7 @@ const GlobalSearch = () => {
                         </div>
 
                         {/* Advanced Filters */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-8 bg-slate-100/50 dark:bg-white/2 backdrop-blur-md border border-slate-200 dark:border-white/5 rounded-[3rem] shadow-sm">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-8 bg-slate-100/50 dark:bg-card-dark/2 backdrop-blur-md border border-slate-200 dark:border-white/5 rounded-[3rem] shadow-sm">
                             {[
                                 { label: 'Verification', options: ['All Status', 'Verified', 'Pending'] },
                                 { label: 'Auth Tier', options: ['All Plans', 'Basic', 'Pro', 'Studio'] },
@@ -172,7 +172,7 @@ const GlobalSearch = () => {
                             ].map((group) => (
                                 <div key={group.label} className="flex flex-col gap-3">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">{group.label}</label>
-                                    <select className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black text-slate-600 dark:text-slate-300 focus:ring-primary focus:border-primary py-4 px-6 cursor-pointer appearance-none transition-all uppercase tracking-widest">
+                                    <select className="bg-white dark:bg-card-dark/5 border border-slate-200 dark:border-white/10 rounded-2xl text-[10px] font-black text-slate-600 dark:text-slate-300 focus:ring-primary focus:border-primary py-4 px-6 cursor-pointer appearance-none transition-all uppercase tracking-widest">
                                         {group.options.map(opt => <option key={opt}>{opt}</option>)}
                                     </select>
                                 </div>
@@ -196,14 +196,14 @@ const GlobalSearch = () => {
                             </div>
                             <div className="space-y-4">
                                 {searchResults.users.length === 0 ? (
-                                    <div className="p-12 text-center bg-slate-50 dark:bg-white/2 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/10">
+                                    <div className="p-12 text-center bg-slate-50 dark:bg-card-dark/2 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/10">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{searchQuery ? 'Target entity not found in current sector.' : 'Enter query to initialize matrix scan.'}</p>
                                     </div>
                                 ) : (
                                     searchResults.users.map((user, idx) => (
                                         <div key={user._id || idx} className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between hover:border-primary/40 transition-all group/card shadow-sm hover:shadow-2xl hover:shadow-primary/5">
                                             <div className="flex items-center gap-8">
-                                                <div className="size-20 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden ring-8 ring-primary/5 group-hover/card:ring-primary/10 transition-all p-1">
+                                                <div className="size-20 rounded-full bg-slate-100 dark:bg-card-dark/5 overflow-hidden ring-8 ring-primary/5 group-hover/card:ring-primary/10 transition-all p-1">
                                                     <img className="w-full h-full object-cover rounded-full" src={user.profile?.profilePicture && user.profile?.profilePicture !== 'no-photo.jpg' ? user.profile?.profilePicture : `https://ui-avatars.com/api/?name=${user.profile?.fullName || user.email || 'User'}&background=ee2b3b&color=fff`} alt={user.profile?.fullName || 'User'} />
                                                 </div>
                                                 <div>
@@ -213,13 +213,13 @@ const GlobalSearch = () => {
                                                     </div>
                                                     <div className="flex items-center gap-4">
                                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{user.role} • {user.profile?.location || 'Unknown Sector'}</p>
-                                                        <div className="size-1 bg-slate-200 dark:bg-white/10 rounded-full"></div>
+                                                        <div className="size-1 bg-slate-200 dark:bg-card-dark/10 rounded-full"></div>
                                                         <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">#{(user._id || user.id || '').slice(-6).toUpperCase()}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
-                                                <Link to={`/admin/users/${user._id || user.id}`} className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-95 leading-none">Access Dossier</Link>
+                                                <Link to={`/admin/users/${user._id || user.id}`} className="px-8 py-4 bg-slate-900 dark:bg-card-dark text-white dark:text-white text-[10px] font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all shadow-xl active:scale-95 leading-none">Access Dossier</Link>
                                             </div>
                                         </div>
                                     ))
@@ -240,7 +240,7 @@ const GlobalSearch = () => {
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {searchResults.projects.length === 0 ? (
-                                    <div className="md:col-span-2 p-12 text-center bg-slate-50 dark:bg-white/2 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/10 font-black text-[10px] text-slate-400 uppercase tracking-widest italic">
+                                    <div className="md:col-span-2 p-12 text-center bg-slate-50 dark:bg-card-dark/2 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-white/10 font-black text-[10px] text-slate-400 uppercase tracking-widest italic">
                                         No project shards detected in query range.
                                     </div>
                                 ) : (
@@ -258,7 +258,7 @@ const GlobalSearch = () => {
                                             <div className="p-10">
                                                 <h4 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tighter mb-2">{project.title}</h4>
                                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">{project.category} • {project.location}</p>
-                                                <Link to={`/admin/projects`} className="block w-full text-center py-5 bg-slate-900 dark:bg-white/10 text-white text-[10px] font-black rounded-2xl uppercase tracking-[0.3em] hover:bg-primary transition-all leading-none">ANALYZE_PROJECT</Link>
+                                                <Link to={`/admin/projects`} className="block w-full text-center py-5 bg-slate-900 dark:bg-card-dark/10 text-white text-[10px] font-black rounded-2xl uppercase tracking-[0.3em] hover:bg-primary transition-all leading-none">ANALYZE_PROJECT</Link>
                                             </div>
                                         </div>
                                     ))
@@ -273,7 +273,7 @@ const GlobalSearch = () => {
                         <section className="bg-white dark:bg-card-dark border border-slate-200 dark:border-white/5 rounded-[3.5rem] p-12 shadow-sm relative overflow-hidden group">
                            <div className="absolute top-0 right-0 size-32 bg-primary/2 rounded-full blur-[60px] -mr-16 -mt-16 group-hover:bg-primary/5 transition-colors"></div>
                             <h3 className="text-xl font-black dark:text-white text-slate-900 uppercase tracking-tight mb-10 flex items-center gap-6">
-                                <div className="size-12 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                                <div className="size-12 bg-slate-100 dark:bg-card-dark/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
                                     <span className="material-symbols-outlined text-2xl animate-spin-slow">history</span>
                                 </div>
                                 Recent Queries
@@ -288,7 +288,7 @@ const GlobalSearch = () => {
                                         <div className="flex items-center gap-5">
                                             <span className="material-symbols-outlined text-slate-300 group-hover/q:text-primary transition-colors text-xl">search_check</span>
                                             <div>
-                                                <span className="block text-[11px] font-black text-slate-500 group-hover/q:text-slate-900 dark:group-hover/q:text-white transition-colors uppercase tracking-widest">{item.term}</span>
+                                                <span className="block text-[11px] font-black text-slate-500 group-hover/q:text-slate-900 dark:text-white dark:group-hover/q:text-white transition-colors uppercase tracking-widest">{item.term}</span>
                                                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{item.time}</span>
                                             </div>
                                         </div>
@@ -298,7 +298,7 @@ const GlobalSearch = () => {
                                     </div>
                                 ))}
                             </div>
-                            <button className="w-full mt-12 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all">PURGE_HISTORY</button>
+                            <button className="w-full mt-12 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-slate-50 dark:hover:bg-white dark:bg-card-dark/5 transition-all">PURGE_HISTORY</button>
                         </section>
 
                         {/* Tags */}
@@ -318,7 +318,7 @@ const GlobalSearch = () => {
                                     'Urgent Casting',
                                     'Audit Needed'
                                 ].map((tag) => (
-                                    <span key={tag} className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-100 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:border-primary/50 hover:bg-primary/5 hover:text-primary cursor-pointer transition-all">
+                                    <span key={tag} className="px-6 py-3 rounded-2xl bg-slate-100 dark:bg-card-dark/5 border border-slate-100 dark:border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:border-primary/50 hover:bg-primary/5 hover:text-primary cursor-pointer transition-all">
                                         {tag}
                                     </span>
                                 ))}
@@ -332,7 +332,7 @@ const GlobalSearch = () => {
                             <div className="relative">
                                 <h4 className="text-2xl font-black uppercase tracking-tighter mb-4">Nexus Intelligence</h4>
                                 <p className="text-[11px] font-bold text-white/70 mb-10 leading-relaxed uppercase tracking-widest">Deploy advanced neural search patterns to identify platform-wide trends and actor demand surges.</p>
-                                <button className="w-full py-5 bg-white text-primary text-[10px] font-black rounded-2xl uppercase tracking-[0.4em] shadow-2xl hover:bg-slate-50 transition-all active:scale-95 leading-none">INITIALIZE_AI</button>
+                                <button className="w-full py-5 bg-white dark:bg-card-dark text-primary text-[10px] font-black rounded-2xl uppercase tracking-[0.4em] shadow-2xl hover:bg-slate-50 transition-all active:scale-95 leading-none">INITIALIZE_AI</button>
                             </div>
                         </section>
                     </aside>

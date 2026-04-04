@@ -52,7 +52,7 @@ export const scheduleAudition = async (appId, auditionData) => {
     return response.data;
 };
 
-export const submitAuditionVideo = async (appId, videoUrl) => {
-    const response = await api.put(`/projects/applications/${appId}/submit-video`, { videoUrl });
+export const updateProject = async (projectId, projectData) => {
+    const response = await api.put(`/projects/${projectId}`, projectData);
     return response.data;
 };

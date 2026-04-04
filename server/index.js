@@ -50,16 +50,18 @@ app.use(
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
 
-            const envOrigin = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : 'http://localhost:5173';
-
             const allowedOrigins = [
-                envOrigin,
                 'http://localhost:5173',
                 'http://localhost:3000', 
-                'https://talentconnect-6e347.web.app', // Explicitly allow Firebase Hosting
-                'https://talentconnect-6e347.firebaseapp.com', // Firebase hosting alt domain
+                'https://talentconnect-6e347.web.app',
+                'https://talentconnect-6e347.firebaseapp.com',
                 'https://talentconnect-api.onrender.com'
             ];
+
+            const envOrigin = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
+            if (envOrigin && !allowedOrigins.includes(envOrigin)) {
+                allowedOrigins.push(envOrigin);
+            }
 
             if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
@@ -86,7 +88,7 @@ app.use(helmet({
                 "https://api.stripe.com",
                 "ws:",
                 "wss:",
-                process.env.FRONTEND_URL || "http://localhost:5173",
+                "http://localhost:5173",
                 "https://talentconnect-6e347.web.app",
                 "https://talentconnect-6e347.firebaseapp.com",
                 "https://talentconnect-api.onrender.com"
@@ -109,7 +111,7 @@ const limiter = rateLimit({
 // Stricter rate limiting for auth routes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 auth attempts per windowMs
+    max: 100, // Relaxed for development
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,

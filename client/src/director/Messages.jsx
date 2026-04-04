@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getConversations, getMessages, sendMessage } from '../services/messageService';
-import { getMyProfile } from '../services/profileService';
+import { getMyProfile, getProfileById } from '../services/profileService';
 import socket from '../services/socket';
 import { DIRECTOR_MENU } from '../constants/navigation';
 
 const Messages = () => {
+    const { userId } = useParams();
     const [conversations, setConversations] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -32,7 +33,35 @@ const Messages = () => {
 
                 const convRes = await getConversations();
                 setConversations(convRes.data);
-                if (convRes.data.length > 0) {
+                
+                // If userId is provided in URL, find and select that conversation
+                if (userId) {
+                    const targetConversation = convRes.data.find(conv => conv.otherUser._id === userId);
+                    if (targetConversation) {
+                        handleSelectUser(targetConversation.otherUser);
+                    } else {
+                        // If conversation doesn't exist, create a temporary user object
+                        // This will allow messaging to start a new conversation
+                        try {
+                            const userProfileRes = await getProfileById(userId);
+                            const tempUser = {
+                                _id: userId,
+                                email: userProfileRes.data?.user?.email || 'Unknown',
+                                profile: userProfileRes.data
+                            };
+                            setSelectedUser(tempUser);
+                            // Try to get messages, though there might not be any
+                            const msgRes = await getMessages(userId);
+                            setMessages(msgRes.data);
+                        } catch (err) {
+                            console.error('Error fetching user for messaging:', err);
+                            // Fallback to first conversation
+                            if (convRes.data.length > 0) {
+                                handleSelectUser(convRes.data[0].otherUser);
+                            }
+                        }
+                    }
+                } else if (convRes.data.length > 0) {
                     handleSelectUser(convRes.data[0].otherUser);
                 }
             } catch (err) {

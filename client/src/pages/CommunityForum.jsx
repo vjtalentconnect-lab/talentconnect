@@ -275,7 +275,7 @@ const CommunityForum = () => {
                         <h4 className="font-bold text-lg mb-4">Quick Links</h4>
                         <ul className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
                             <li><a className="hover:text-primary transition-colors" href="#">Safety & Scams Awareness</a></li>
-                            <li><a className="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+                            <li><a className="hover:text-primary transition-colors" href="/terms-and-conditions">Terms of Service</a></li>
                             <li><a className="hover:text-primary transition-colors" href="#">Moderator Application</a></li>
                         </ul>
                     </div>

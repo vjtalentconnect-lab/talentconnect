@@ -20,8 +20,32 @@ export const getProfiles = async (filters) => {
     return response.data;
 };
 
-export const uploadMedia = async (formData) => {
-  const response = await api.post('/profile/upload', formData, {
+export const uploadMedia = async (mediaFile, type, metadata = {}) => {
+  // type: 'profilePicture' or 'portfolio'
+  // mediaFile can be a File object or a FormData object
+  // metadata: { title, description } - used for portfolio items
+  const data = new FormData();
+  
+  if (mediaFile instanceof FormData) {
+    // If already FormData, get the file and append it properly
+    const file = mediaFile.get('media');
+    if (file) {
+      data.append('media', file);
+    }
+  } else {
+    data.append('media', mediaFile);
+  }
+  data.append('type', type);
+  
+  // Add metadata for portfolio items
+  if (metadata.title) {
+    data.append('title', metadata.title);
+  }
+  if (metadata.description) {
+    data.append('description', metadata.description);
+  }
+
+  const response = await api.post('/profile/upload', data, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

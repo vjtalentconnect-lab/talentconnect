@@ -309,9 +309,9 @@ const AboutUs = () => {
             <div>
               <h4 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Legal &amp; Support</h4>
               <ul className="space-y-3 text-sm">
-                <li><a className="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
-                <li><a className="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
-                <li><a className="hover:text-primary transition-colors" href="#">Contact Support</a></li>
+                <li><a className="hover:text-primary transition-colors" href="/terms-and-conditions">Terms of Service</a></li>
+                <li><a className="hover:text-primary transition-colors" href="/privacy-policy">Privacy Policy</a></li>
+                <li><a className="hover:text-primary transition-colors" href="/help-support">Contact Support</a></li>
               </ul>
             </div>
           </div>

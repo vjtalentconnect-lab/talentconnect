@@ -5,7 +5,7 @@ let io;
 export const init = (httpServer) => {
     io = new Server(httpServer, {
         cors: {
-            origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+            origin: [process.env.FRONTEND_URL || 'https://talentconnect-6e347.web.app', 'http://localhost:5173'],
             methods: ['GET', 'POST'],
             credentials: true,
         },
