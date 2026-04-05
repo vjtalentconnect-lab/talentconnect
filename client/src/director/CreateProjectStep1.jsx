@@ -10,16 +10,106 @@ const CreateProjectStep1 = () => {
         budget: '',
         location: '',
         deadline: '',
-        description: ''
+        description: '',
+        projectImage: ''
     });
+    const [imagePreview, setImagePreview] = React.useState('');
+    const [uploadedImageData, setUploadedImageData] = React.useState(null);
+    const [imageSource, setImageSource] = React.useState('url');
+    const [imageError, setImageError] = React.useState('');
+
+    React.useEffect(() => {
+        return () => {
+            if (imagePreview?.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+const handleSubmit = (e) => {
         e.preventDefault();
-        navigate('/director/create-project/step2', { state: { projectData: formData } });
+        const projectImage =
+            imageSource === 'upload' && uploadedImageData
+                ? uploadedImageData
+                : formData.projectImage;
+        
+        if (imageSource === 'upload' && uploadedImageData) {
+            try {
+                sessionStorage.setItem('projectImageData', uploadedImageData);
+                sessionStorage.setItem('projectImageSource', imageSource);
+            } catch (e) {
+                console.warn('Failed to store image data in sessionStorage:', e);
+            }
+        }
+        
+        navigate('/director/create-project/step2', {
+            state: {
+                projectData: { ...formData, projectImage },
+                imageSource
+            }
+        });
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImageError('');
+
+        const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+        if (file.size > MAX_IMAGE_BYTES) {
+            setImageError('Image must be 5MB or smaller.');
+            setUploadedImageData(null);
+            setImagePreview('');
+            setFormData(prev => ({ ...prev, projectImage: '' }));
+            setImageSource('url');
+            return;
+        }
+if (!file.type?.startsWith('image/')) {
+            setImageError('Only image files are allowed.');
+            setUploadedImageData(null);
+            setImagePreview('');
+            setFormData(prev => ({ ...prev, projectImage: '' }));
+            setImageSource('url');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result?.toString() || '';
+            if (!result) {
+                setImageError('Could not read image file. Please try again.');
+                return;
+            }
+            const previewUrl = URL.createObjectURL(file);
+            setImagePreview(prev => {
+                if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+                return previewUrl;
+            });
+            setUploadedImageData(result);
+            setImageSource('upload');
+            setFormData(prev => ({ ...prev, projectImage: '' }));
+            setImageError('');
+        };
+        reader.onerror = () => {
+            setImageError('Failed to read image file. Please choose another.');
+            setUploadedImageData(null);
+            setImagePreview('');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleImageUrlChange = (e) => {
+        const url = e.target.value;
+        setFormData(prev => ({ ...prev, projectImage: url }));
+        setImageError('');
+        if (!uploadedImageData) {
+            setImagePreview(url);
+            setImageSource(url ? 'url' : imageSource);
+        }
     };
 
     const handleClose = () => {
@@ -152,19 +242,62 @@ const CreateProjectStep1 = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="description">Project Description</label>
-                                    <textarea
-                                        className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white resize-none outline-none"
-                                        id="description"
-                                        name="description"
-                                        required
-                                        value={formData.description}
-                                        onChange={handleChange}
-                                        placeholder="Share a brief overview of the plot, vision, and scale of the project..."
-                                        rows="5"
-                                    ></textarea>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" htmlFor="description">Project Description</label>
+                                <textarea
+                                    className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-4 text-base focus:border-primary focus:ring-1 focus:ring-primary dark:text-white resize-none outline-none"
+                                    id="description"
+                                    name="description"
+                                    required
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    placeholder="Share a brief overview of the plot, vision, and scale of the project..."
+                                    rows="5"
+                                ></textarea>
+                            </div>
+
+                            <div className="flex flex-col gap-3">
+                                <label className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    Project Cover Image
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <div className="border border-dashed border-slate-300 dark:border-primary/30 rounded-xl p-4 bg-white dark:bg-background-dark/50">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                id="project-image-upload"
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                            />
+                                            <label htmlFor="project-image-upload" className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary/10 text-primary font-bold uppercase tracking-widest cursor-pointer hover:bg-primary/20 transition-colors text-xs">
+                                                <span className="material-symbols-outlined text-base">upload</span>
+                                                Upload Image
+                                            </label>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">JPG, PNG up to 5MB. A strong visual boosts talent engagement.</p>
+                                            {imageError && <p className="text-[11px] text-red-500 font-semibold mt-1">{imageError}</p>}
+                                        </div>
+                                        <input
+                                            type="url"
+                                            name="projectImage"
+                                            value={formData.projectImage}
+                                            onChange={handleImageUrlChange}
+                                            placeholder="or paste an image URL"
+                                            className="w-full rounded-xl border border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50 p-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:text-white outline-none"
+                                        />
+                                    </div>
+                                    <div className="relative rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 h-48 border border-slate-200 dark:border-primary/20">
+                                        <img
+                                            src={imagePreview || formData.projectImage || "https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80"}
+                                            alt="Project preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                                            <p className="text-white text-xs font-semibold">Preview</p>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
 
                                 <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-primary/10">
                                     <button

@@ -51,9 +51,20 @@ export const getProject = async (req, res) => {
         }
         const projectData = projectDoc.data();
 
-        // Populate director
+        // Populate director and attach profile id for deep links
         const directorDoc = await db.collection('users').doc(projectData.director).get();
-        const director = directorDoc.exists ? { id: directorDoc.id, email: directorDoc.data().email } : projectData.director;
+        let director = projectData.director;
+        if (directorDoc.exists) {
+            const directorData = directorDoc.data();
+            let directorProfileId = directorData.profile || null;
+            if (!directorProfileId) {
+                const profileSnap = await db.collection('profiles').where('user', '==', directorDoc.id).limit(1).get();
+                if (!profileSnap.empty) {
+                    directorProfileId = profileSnap.docs[0].id;
+                }
+            }
+            director = { id: directorDoc.id, email: directorData.email, profileId: directorProfileId };
+        }
 
         res.status(200).json({ success: true, data: { id: projectDoc.id, ...projectData, director } });
     } catch (err) {

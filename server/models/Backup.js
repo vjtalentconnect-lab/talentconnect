@@ -1,3 +1,6 @@
+/* SCHEMA REFERENCE ONLY — Not used for production queries.
+   Production data lives in Firestore. See server/ARCHITECTURE.md.
+   These models exist as documentation and for potential future use. */
 import mongoose from 'mongoose';
 
 const backupSchema = new mongoose.Schema(

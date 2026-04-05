@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createProject } from '../services/projectService';
 
 const CreateProjectStep2 = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { projectData } = location.state || {};
+    const { projectData, imageSource: imageSourceFromState } = location.state || {};
+    
+    const [uploadedImageData, setUploadedImageData] = useState(null);
+    const [imageSource, setImageSource] = useState(imageSourceFromState || 'url');
+    
+    useEffect(() => {
+        if (imageSourceFromState === 'upload') {
+            try {
+                const stored = sessionStorage.getItem('projectImageData');
+                if (stored) setUploadedImageData(stored);
+            } catch (e) {
+                console.warn('Failed to read image data from sessionStorage:', e);
+            }
+        }
+    }, [imageSourceFromState]);
 
     const [roles, setRoles] = useState([
         {
@@ -56,11 +70,21 @@ const CreateProjectStep2 = () => {
         }
     };
 
-    const handlePublish = async (e) => {
+const handlePublish = async (e) => {
         e.preventDefault();
         
         if (!projectData) {
             alert('Missing project details. Please go back to Step 1.');
+            return;
+        }
+
+        const projectImage =
+            imageSource === 'upload' && uploadedImageData
+                ? uploadedImageData
+                : projectData?.projectImage;
+
+        if (!projectImage) {
+            alert('Project image is missing. Please go back to Step 1 and upload an image.');
             return;
         }
 
@@ -78,6 +102,7 @@ const CreateProjectStep2 = () => {
 
         const finalData = {
             ...projectData,
+            projectImage,
             requirements: formattedRequirements
         };
 
@@ -214,13 +239,13 @@ const CreateProjectStep2 = () => {
                                 </div>
                             ))}
                             
-                            <div onClick={addRole} className="bg-white/50 dark:bg-slate-900/20 border-2 border-dashed border-slate-300 dark:border-primary/20 rounded-xl p-6 md:p-8 group hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center py-12">
+                            <button type="button" onClick={addRole} className="bg-white/50 dark:bg-slate-900/20 border-2 border-dashed border-slate-300 dark:border-primary/20 rounded-xl p-6 md:p-8 group hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center py-12 w-full" aria-label="Add another role">
                                 <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3 group-hover:scale-110 transition-transform">
                                     <span className="material-symbols-outlined text-3xl">person_add</span>
                                 </div>
                                 <h3 className="text-slate-900 dark:text-white font-bold text-lg">Add Another Role</h3>
                                 <p className="text-slate-500 text-sm">Create specific requirements for secondary or supporting talent.</p>
-                            </div>
+                            </button>
                         </div>
 
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-12 pb-20 border-t border-slate-200 dark:border-primary/20 pt-8">

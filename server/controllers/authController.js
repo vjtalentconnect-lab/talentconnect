@@ -3,6 +3,7 @@ import { auth as clientAuth } from '../lib/firebase.js';
 import { addWithBackup, setWithBackup, updateWithBackup } from '../lib/textBackup.js';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../lib/jwtSecret.js';
 import axios from 'axios';
 import crypto from 'crypto';
 import { sendEmail } from '../lib/email.js';
@@ -15,6 +16,7 @@ const storeToken = async (collection, token, data) => {
     await db.collection(collection).doc(token).set({
         ...data,
         createdAt: new Date().toISOString(),
+        expiresAtMs: data.expiresAt ? new Date(data.expiresAt).getTime() : undefined,
     });
 };
 
@@ -255,7 +257,7 @@ export const register = async (req, res) => {
             fullName,
             location: location || '',
             mobile: mobile || '',
-            talentCategory: (role === 'talent' || !['director', 'admin'].includes(role)) ? (talentCategory || role || 'Actor') : null,
+            talentCategory: (role === 'talent' || !['director', 'admin'].includes(role)) ? (talentCategory || 'Actor') : null,
             companyName: role === 'director' ? (companyName || '') : null,
             industryType: role === 'director' ? (industryType || '') : null,
             profilePicture: 'no-photo.jpg',
@@ -466,7 +468,7 @@ export const linkedinLogin = async (req, res) => {
                 role: userData.role,
                 provider: 'linkedin',
             },
-            process.env.JWT_SECRET || 'change_this_secret',
+            JWT_SECRET,
             { expiresIn: '7d' }
         );
 
@@ -604,6 +606,7 @@ export const verifyEmail = async (req, res) => {
             used: true,
             usedAt: new Date().toISOString(),
         });
+        await db.collection('emailVerifications').doc(token).delete();
 
         res.status(200).json({ success: true, message: 'Email verified successfully' });
     } catch (err) {
@@ -657,6 +660,7 @@ export const resetPassword = async (req, res) => {
             used: true,
             usedAt: new Date().toISOString(),
         });
+        await db.collection('passwordResets').doc(token).delete();
 
         res.status(200).json({ success: true, message: 'Password reset successful' });
     } catch (err) {
@@ -672,12 +676,32 @@ export const adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
         return res.status(500).json({ message: 'Admin credentials not configured' });
     }
 
-    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
+    const hashedEmail = crypto.createHash('sha256').update(email || '').digest();
+    const envEmailHash = crypto.createHash('sha256').update(process.env.ADMIN_EMAIL).digest();
+    const hashedPassword = crypto.createHash('sha256').update(password || '').digest();
+    const envPasswordHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
+
+    let emailMatch = false;
+    let passwordMatch = false;
+    try {
+        emailMatch = crypto.timingSafeEqual(hashedEmail, envEmailHash);
+        passwordMatch = crypto.timingSafeEqual(hashedPassword, envPasswordHash);
+    } catch (e) {
+        emailMatch = false;
+        passwordMatch = false;
+    }
+
+    if (!emailMatch || !passwordMatch) {
+        console.warn('[SECURITY] Failed admin login attempt from IP:', req.ip, 'at', new Date().toISOString());
+        await new Promise((resolve) => setTimeout(resolve, 200));
         return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    console.info('[SECURITY] Successful admin login from IP:', req.ip);
 
     const token = jwt.sign(
         {
@@ -686,10 +710,11 @@ export const adminLogin = async (req, res) => {
             role: 'admin',
             isEnvAdmin: true,
         },
-        process.env.JWT_SECRET || 'change_this_secret',
-        { expiresIn: '1d' }
+        JWT_SECRET,
+        { expiresIn: '8h' }
     );
 
+    await new Promise((resolve) => setTimeout(resolve, 200));
     res.status(200).json({ success: true, token });
 };
 

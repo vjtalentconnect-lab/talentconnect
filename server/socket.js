@@ -1,3 +1,5 @@
+// Security model: All room memberships are derived server-side from the verified token.
+// Clients cannot request to join arbitrary rooms; joins are automatic after auth.
 import { Server } from 'socket.io';
 
 let io;
@@ -11,38 +13,50 @@ export const init = (httpServer) => {
         },
     });
 
-    io.on('connection', (socket) => {
-        console.log('User connected:', socket.id);
+    io.use(async (socket, next) => {
+        try {
+            const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+            if (!token) return next(new Error('Authentication required'));
 
-        // Client should emit { userId, role }
-        socket.on('register', async ({ userId, role }) => {
-            if (userId) {
-                socket.join(userId.toString());
-                console.log(`User ${userId} joined their room`);
-                
-                // Secure role check: verify from DB instead of trusting client
-                try {
-                    const { db } = await import('./lib/firebaseAdmin.js');
-                    const userDoc = await db.collection('users').doc(userId.toString()).get();
-                    if (userDoc.exists && userDoc.data().role === 'admin') {
-                        socket.join('admins');
-                        console.log(`Verified Admin ${userId} joined admins room`);
-                    }
-                } catch (err) {
-                    console.error('Socket role verification failed:', err);
-                }
+            const { auth, db } = await import('./lib/firebaseAdmin.js');
+            let userId, userRole;
+            try {
+                const decoded = await auth.verifyIdToken(token);
+                userId = decoded.uid;
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (!userDoc.exists) return next(new Error('User not found'));
+                userRole = userDoc.data().role;
+            } catch {
+                const jwt = (await import('jsonwebtoken')).default;
+                const { JWT_SECRET } = await import('./lib/jwtSecret.js');
+                const decoded = jwt.verify(token, JWT_SECRET);
+                userId = decoded.id;
+                userRole = decoded.role;
             }
-        });
 
-        // Backwards compatibility
-        socket.on('join', (userId) => {
-            if (userId) socket.join(userId.toString());
-        });
+            socket.userId = userId;
+            socket.userRole = userRole;
+            next();
+        } catch (err) {
+            next(new Error('Invalid token'));
+        }
+    });
+
+    io.on('connection', (socket) => {
+        socket.join(socket.userId);
+        if (socket.userRole === 'admin') {
+            socket.join('admins');
+        }
+        console.log('Socket authenticated:', socket.userId, 'role:', socket.userRole);
 
         socket.on('sendMessage', (data) => {
+            if (data.sender !== socket.userId) {
+                socket.emit('error', { message: 'Cannot send messages as another user' });
+                return;
+            }
             // data: { sender, receiver, content, createdAt }
             io.to(data.receiver).emit('receiveMessage', data);
-            
+
             // Also notify the receiver about a new message
             io.to(data.receiver).emit('newNotification', {
                 type: 'message',

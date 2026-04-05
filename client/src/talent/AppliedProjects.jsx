@@ -27,6 +27,15 @@ const Toast = ({ message, type, onDone }) => {
 };
 
 const AppliedProjects = () => {
+    const projectIdOf = (p) => {
+        if (!p) return '';
+        if (typeof p === 'string') return p;
+        if (typeof p === 'object') {
+            return p.id || p._id || p.projectId || (p.project ? projectIdOf(p.project) : '');
+        }
+        return '';
+    };
+
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const { user: authUser } = useNotifications();
@@ -144,18 +153,24 @@ const AppliedProjects = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-6">
-                        {filteredApps.map((app) => {
+                        {filteredApps.map((app, index) => {
                             const proj = app.project;
+                            const projectId = projectIdOf(proj);
+                            const explicitId = projectId || app.id || app._id;
+                            const appId = explicitId || `fallback-${index}`;
+                            if (!explicitId) {
+                                console.warn('AppliedProjects: missing explicit id for application', app);
+                            }
                             const cfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.applied;
                             return (
-                                <div key={app._id}
+                                <div key={appId}
                                     className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden group hover:border-primary/50 transition-all shadow-sm">
                                     <div className="relative h-32 md:h-44 overflow-hidden">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"/>
                                         <img
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                             alt={proj?.title || 'Project'}
-                                            src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80"
+                                            src={proj?.projectImage || "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80"}
                                         />
                                         <div className="absolute bottom-2 md:bottom-3 left-2 md:left-3 z-20">
                                             <span className={`px-2 md:px-2.5 py-1 text-[9px] md:text-[10px] font-black rounded uppercase tracking-widest ${cfg.color}`}>
@@ -184,18 +199,24 @@ const AppliedProjects = () => {
                                         <div className="flex justify-between items-end border-t border-slate-100 dark:border-zinc-800 pt-3 md:pt-4">
                                             <div className="space-y-1">
                                                 <p className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest">Applied</p>
-                                                <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-xs">calendar_today</span>
-                                                    {new Date(app.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => navigate(`/talent/audition-details`, { state: { projectId: proj?._id } })}
-                                                className={`p-2 md:p-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 ${
-                                                    app.status === 'selected'
+                                            <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 font-bold flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-xs">calendar_today</span>
+                                                {new Date(app.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                if (!projectId) return;
+                                                navigate(`/talent/project/${projectId}`);
+                                            }}
+                                            disabled={!projectId}
+                                            className={`p-2 md:p-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 ${
+                                                !projectId
+                                                    ? 'bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-60 hover:scale-100'
+                                                    : app.status === 'selected'
                                                         ? 'bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-white'
                                                         : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
-                                                }`}
+                                            }`}
                                             >
                                                 <span className="material-symbols-outlined text-base md:text-[20px]">arrow_forward</span>
                                             </button>

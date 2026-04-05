@@ -1,8 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { getMyProfile, uploadMedia } from '../services/profileService';
+import { getMyProfile, uploadMedia, updateProfile } from '../services/profileService';
+import { changePassword } from '../services/authService';
 import { DIRECTOR_MENU } from '../constants/navigation';
+
+const Toast = ({ message, type, onDone }) => {
+    useEffect(() => {
+        const id = setTimeout(() => { onDone?.(); }, 3000);
+        return () => clearTimeout(id);
+    }, [onDone]);
+    return (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-2xl ${type === 'error' ? 'bg-red-600' : 'bg-green-600'}`}>
+            {message}
+        </div>
+    );
+};
 
 const DirectorSettings = () => {
     const [profile, setProfile] = useState(null);
@@ -12,12 +25,24 @@ const DirectorSettings = () => {
     const [portfolioFile, setPortfolioFile] = useState(null);
     const [portfolioTitle, setPortfolioTitle] = useState('');
     const [portfolioDescription, setPortfolioDescription] = useState('');
+    const [toast, setToast] = useState(null);
+    const [isToggling2FA, setIsToggling2FA] = useState(false);
+
+    // Security state
+    const [security, setSecurity] = useState({ twoFactorEnabled: false, lastUpdated: null });
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [pwLoading, setPwLoading] = useState(false);
+    const [pwError, setPwError] = useState('');
 
     useEffect(() => {
         const fetchProfile = async () => {
             try {
                 const response = await getMyProfile();
                 setProfile(response.data);
+                if (response.data?.securitySettings) {
+                    setSecurity(prev => ({ ...prev, ...response.data.securitySettings }));
+                }
             } catch (err) {
                 console.error('Error fetching director profile:', err);
             } finally {
@@ -66,6 +91,45 @@ const DirectorSettings = () => {
         }
     };
 
+    const handleToggle2FA = async () => {
+        if (isToggling2FA) return;
+        const next = !security.twoFactorEnabled;
+        const prev = security;
+        const timestamp = new Date().toISOString();
+        setIsToggling2FA(true);
+        setSecurity(curr => ({ ...curr, twoFactorEnabled: next, lastUpdated: timestamp }));
+        try {
+            await updateProfile({ securitySettings: { twoFactorEnabled: next, lastUpdated: timestamp } });
+            setToast({ type: 'success', message: `Two-Factor ${next ? 'enabled' : 'disabled'}.` });
+        } catch (err) {
+            console.error('2FA toggle failed:', err);
+            setSecurity(() => ({ ...prev }));
+            setToast({ type: 'error', message: 'Could not update 2FA. Try again.' });
+        } finally {
+            setIsToggling2FA(false);
+        }
+    };
+
+    const handleChangePassword = async (e) => {
+        e?.preventDefault();
+        setPwError('');
+        if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('Passwords do not match.'); return; }
+        if (pwForm.newPassword.length < 6) { setPwError('Password must be at least 6 characters.'); return; }
+        setPwLoading(true);
+        try {
+            await changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+            setToast({ type: 'success', message: 'Password changed successfully.' });
+            setShowPasswordModal(false);
+            setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (err) {
+            setPwError(err.response?.data?.message || 'Failed to change password.');
+        } finally {
+            setPwLoading(false);
+        }
+    };
+
+    const clearToast = useCallback(() => setToast(null), []);
+
     const userData = {
         name: profile?.fullName || 'Rohan Mehra',
         roleTitle: `${profile?.companyName || 'Lead Director'} • ${profile?.location || 'Mumbai, IN'}`,
@@ -91,6 +155,8 @@ const DirectorSettings = () => {
                     </div>
                 ) : (
                     <div className="max-w-4xl mx-auto py-8 space-y-12 pb-24">
+                        {toast && <Toast message={toast.message} type={toast.type} onDone={clearToast} />}
+
                         {/* Project Visibility & Privacy */}
                         <section>
                             <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
@@ -173,32 +239,73 @@ const DirectorSettings = () => {
                                 <h2 className="text-base md:text-lg font-bold">Account Security</h2>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                <button className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
+                                <button
+                                    onClick={() => setShowPasswordModal(true)}
+                                    className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
                                     <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
                                         <div className="size-8 md:size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors flex-shrink-0">
                                             <span className="material-symbols-outlined text-lg md:text-xl">lock_reset</span>
                                         </div>
                                         <div className="text-left min-w-0 flex-1">
                                             <p className="font-bold text-slate-900 dark:text-white truncate">Change Password</p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">Last changed 2 months ago</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Update your login password</p>
                                         </div>
                                     </div>
                                     <span className="material-symbols-outlined text-slate-400 flex-shrink-0">chevron_right</span>
                                 </button>
-                                <button className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors group shadow-sm">
+
+                                <div className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 hover:border-primary/50 transition-colors shadow-sm">
                                     <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-                                        <div className="size-8 md:size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors flex-shrink-0">
+                                    <div className="size-8 md:size-10 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-500 dark:text-slate-400">
                                             <span className="material-symbols-outlined text-lg md:text-xl">verified_user</span>
                                         </div>
                                         <div className="text-left min-w-0 flex-1">
                                             <p className="font-bold text-slate-900 dark:text-white truncate">Two-Factor Auth</p>
-                                            <p className="text-xs text-emerald-500 font-medium">Currently Enabled</p>
+                                            <p className={`text-xs font-medium ${security.twoFactorEnabled ? 'text-emerald-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                {security.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                                            </p>
                                         </div>
                                     </div>
-                                    <span className="material-symbols-outlined text-slate-400 flex-shrink-0">chevron_right</span>
-                                </button>
+                                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                        <input type="checkbox" className="sr-only peer" checked={security.twoFactorEnabled} onChange={handleToggle2FA} disabled={isToggling2FA} />
+                                        <div className="w-11 h-6 bg-slate-200 dark:bg-background-dark peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
                             </div>
                         </section>
+
+                        {/* Password Change Modal */}
+                        {showPasswordModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowPasswordModal(false)}>
+                                <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 w-full max-w-md shadow-2xl border border-slate-200 dark:border-zinc-700" onClick={e => e.stopPropagation()}>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-xl font-black dark:text-white uppercase italic tracking-tighter">Change Password</h3>
+                                        <button onClick={() => setShowPasswordModal(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                            <span className="material-symbols-outlined">close</span>
+                                        </button>
+                                    </div>
+                                    <form onSubmit={handleChangePassword} className="space-y-4">
+                                        {[
+                                            { label: 'Current Password', key: 'currentPassword', placeholder: '••••••••' },
+                                            { label: 'New Password', key: 'newPassword', placeholder: 'Min 6 characters' },
+                                            { label: 'Confirm New Password', key: 'confirmPassword', placeholder: 'Re-enter new password' },
+                                        ].map(({ label, key, placeholder }) => (
+                                            <div key={key}>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block mb-2">{label}</label>
+                                                <input type="password" value={pwForm[key]} onChange={e => setPwForm(p => ({ ...p, [key]: e.target.value }))}
+                                                    placeholder={placeholder}
+                                                    className="w-full bg-slate-100 dark:bg-zinc-800 rounded-xl px-4 py-3 text-sm font-medium dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"/>
+                                            </div>
+                                        ))}
+                                        {pwError && <p className="text-red-500 text-xs font-bold">{pwError}</p>}
+                                        <button type="submit" disabled={pwLoading}
+                                            className="w-full py-3.5 bg-primary text-white font-black rounded-xl uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-70">
+                                            {pwLoading ? <><span className="material-symbols-outlined text-sm animate-spin">sync</span> Saving...</> : 'Update Password'}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Notification Preferences */}
                         <section>

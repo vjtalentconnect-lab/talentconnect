@@ -15,6 +15,11 @@ export const getProfileById = async (id) => {
     return response.data;
 };
 
+export const getProfileByUser = async (userId) => {
+    const response = await api.get(`/profile/by-user/${userId}`);
+    return response.data;
+};
+
 export const getProfiles = async (filters) => {
     const response = await api.get('/profile', { params: filters });
     return response.data;

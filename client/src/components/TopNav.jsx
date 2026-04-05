@@ -9,9 +9,9 @@ const TopNav = () => {
     <nav className="fixed top-0 left-0 right-0 w-full z-50 bg-white/90 dark:bg-black/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <img src="/TC Logo.png" alt="Logo" className="h-10 w-auto" />
-            <span className="font-display font-bold text-2xl tracking-wide text-gray-900 dark:text-white">
+          <div className="flex-shrink-0 flex items-center gap-1 sm:gap-2">
+            <img src="/TC Logo.png" alt="Logo" className="h-8 sm:h-10 w-auto" />
+            <span className="font-display font-bold text-lg sm:text-2xl tracking-wide text-gray-900 dark:text-white truncate">
               TALENT<span className="text-primary">CONNECT</span>
             </span>
           </div>

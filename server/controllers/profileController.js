@@ -2,6 +2,13 @@ import { db } from '../lib/firebaseAdmin.js';
 import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 import { broadcastAdminEvent, sendNotification } from '../socket.js';
 
+const PROFILE_ALLOWED_FIELDS = new Set([
+    'fullName', 'bio', 'location', 'mobile', 'skills', 'experienceYears',
+    'talentCategory', 'physicalMetrics', 'showreelUrl', 'socialLinks',
+    'privacySettings', 'companyName', 'industryType', 'previousProjects',
+    'portfolio'
+]);
+
 // @desc    Get current user profile
 // @route   GET /api/profile/me
 // @access  Private
@@ -55,22 +62,28 @@ export const updateProfile = async (req, res) => {
             .limit(1)
             .get();
 
-        let profileData = { ...req.body, updatedAt: new Date().toISOString() };
+        const updateData = { updatedAt: new Date().toISOString() };
+        for (const [key, value] of Object.entries(req.body)) {
+            if (PROFILE_ALLOWED_FIELDS.has(key)) {
+                updateData[key] = value;
+            } else {
+                console.warn('[SECURITY] Rejected unknown profile field:', key, 'from user:', req.user.id);
+            }
+        }
+
+        let profileData = { ...updateData };
         let profileId;
 
         if (profileSnapshot.empty) {
-            profileData.user = req.user.id;
-            profileData.createdAt = new Date().toISOString();
+            profileData = {
+                ...updateData,
+                user: req.user.id,
+                createdAt: new Date().toISOString(),
+            };
             const docRef = await addWithBackup('profiles', profileData);
             profileId = docRef.id;
         } else {
             profileId = profileSnapshot.docs[0].id;
-            const existingData = profileSnapshot.docs[0].data();
-            
-            // Prepare update data to handle nested objects correctly
-            // Firestore merged update handles nested fields if you provide paths or just merge manually
-            const updateData = { ...req.body, updatedAt: new Date().toISOString() };
-
             await updateWithBackup('profiles', profileId, updateData);
             const updatedDoc = await db.collection('profiles').doc(profileId).get();
             profileData = updatedDoc.data();
@@ -104,6 +117,46 @@ export const getProfileById = async (req, res) => {
                 ...profileData, 
                 user: { id: userDoc.id, email: userData.email, role: userData.role } 
             } 
+        });
+    } catch (err) {
+        res.status(400).json({ message: err.message });
+    }
+};
+
+// @desc    Get profile by user id (first match)
+// @route   GET /api/profile/by-user/:userId
+// @access  Public
+export const getProfileByUser = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        let profileSnap = await db.collection('profiles').where('user', '==', userId).limit(1).get();
+        let profileDoc;
+
+        if (profileSnap.empty) {
+            // Fallback: Check user document for profile link
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists && userDoc.data().profile) {
+                profileDoc = await db.collection('profiles').doc(userDoc.data().profile).get();
+            }
+        } else {
+            profileDoc = profileSnap.docs[0];
+        }
+
+        if (!profileDoc || !profileDoc.exists) {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
+
+        const profileData = profileDoc.data();
+        const userDoc = await db.collection('users').doc(profileData.user || userId).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+
+        res.status(200).json({
+            success: true,
+            data: {
+                id: profileDoc.id,
+                ...profileData,
+                user: { id: userDoc.id || userId, email: userData.email, role: userData.role }
+            }
         });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -186,7 +239,7 @@ export const uploadMedia = async (req, res) => {
 
         // File is uploaded to Cloudinary via multer storage middleware
         const fileUrl = req.file.path;
-        const { type } = req.body; // 'profilePicture' or 'portfolio'
+        const { type, title, description, idType, membershipId, associationName } = req.body; // explicit allowlist
 
         const updateData = {};
 
@@ -197,8 +250,8 @@ export const uploadMedia = async (req, res) => {
             portfolio.push({
                 type: req.file.mimetype.startsWith('video') ? 'video' : 'image',
                 url: fileUrl,
-                title: req.body.title || 'Untitled',
-                description: req.body.description || ''
+                title: title || 'Untitled',
+                description: description || ''
             });
             updateData.portfolio = portfolio;
         } else if (['idFile', 'membershipCard', 'videoSelfie'].includes(type)) {
@@ -206,11 +259,11 @@ export const uploadMedia = async (req, res) => {
             
             if (type === 'idFile') {
                 vs.idFileUrl = fileUrl;
-                vs.idType = req.body.idType;
+                vs.idType = idType;
             } else if (type === 'membershipCard') {
                 vs.membershipCardUrl = fileUrl;
-                vs.membershipId = req.body.membershipId;
-                vs.associationName = req.body.associationName;
+                vs.membershipId = membershipId;
+                vs.associationName = associationName;
             } else if (type === 'videoSelfie') {
                 vs.videoSelfieUrl = fileUrl;
             }
@@ -239,6 +292,7 @@ export const submitForVerification = async (req, res) => {
         const userDoc = await db.collection('users').doc(req.user.id).get();
         if (!userDoc.exists) return res.status(404).json({ message: 'User not found' });
 
+        // verificationStatus is always forced to 'pending' here, never from req.body
         await updateWithBackup('users', req.user.id, {
             verificationStatus: 'pending',
             isVerified: false

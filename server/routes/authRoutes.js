@@ -14,11 +14,13 @@ import {
     resetPassword,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validate.js';
+import { registerSchema, loginSchema } from '../lib/schemas.js';
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', validate(registerSchema), register);
+router.post('/login', validate(loginSchema), login);
 router.post('/admin-login', adminLogin);
 router.post('/login/google', googleLogin);
 router.post('/login/linkedin', linkedinLogin);

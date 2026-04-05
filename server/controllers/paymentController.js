@@ -50,6 +50,7 @@ export const confirmPayment = async (req, res) => {
 
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
+        // Webhook is now the authoritative source for plan activation; this remains as a secondary/backfill path.
         if (paymentIntent.status === 'succeeded') {
             // Update user subscription status
             const userRef = db.collection('users').doc(req.user.id);
@@ -94,19 +95,76 @@ export const handleWebhook = async (req, res) => {
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // Handle the event
-    switch (event.type) {
-        case 'payment_intent.succeeded':
-            const paymentIntent = event.data.object;
-            // Update user subscription status
-            console.log('Payment succeeded:', paymentIntent.id);
-            break;
-        case 'payment_intent.payment_failed':
-            console.log('Payment failed:', event.data.object.id);
-            break;
-        default:
-            console.log(`Unhandled event type ${event.type}`);
-    }
+const eventRef = db.collection('processedWebhookEvents').doc(event.id);
 
-    res.json({ received: true });
+    try {
+        let alreadyProcessed = false;
+        try {
+            await eventRef.create({
+                eventId: event.id,
+                type: event.type,
+                processedAt: new Date().toISOString()
+            });
+        } catch (createErr) {
+            if (createErr.code === 6 || (createErr.message && createErr.message.includes('already exists'))) {
+                console.log('[Stripe] Duplicate webhook event ignored:', event.id);
+                alreadyProcessed = true;
+            } else {
+                throw createErr;
+            }
+        }
+
+        if (alreadyProcessed) {
+            return res.json({ received: true });
+        }
+
+        switch (event.type) {
+            case 'payment_intent.succeeded': {
+                const paymentIntent = event.data.object;
+                const { userId, planType } = paymentIntent.metadata || {};
+                if (!userId || !planType) {
+                    console.error('[Stripe] Missing metadata in payment intent:', paymentIntent.id);
+                    break;
+                }
+                const userRef = db.collection('users').doc(userId);
+                const userDoc = await userRef.get();
+                if (!userDoc.exists) {
+                    console.error('[Stripe] User not found for payment:', userId);
+                    break;
+                }
+                await userRef.update({
+                    plan: planType,
+                    subscriptionStatus: 'active',
+                    stripePaymentIntentId: paymentIntent.id,
+                    planActivatedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                });
+                console.info('[Payment] Plan upgraded for user:', userId, 'to:', planType);
+                break;
+            }
+case 'payment_intent.payment_failed': {
+                const pi = event.data.object;
+                if (pi.metadata?.userId) {
+                    const userRef = db.collection('users').doc(pi.metadata.userId);
+                    const userDoc = await userRef.get();
+                    if (userDoc.exists) {
+                        await userRef.update({
+                            subscriptionStatus: 'inactive',
+                            updatedAt: new Date().toISOString()
+                        });
+                    } else {
+                        console.warn('[Stripe] User not found for payment failure:', pi.metadata.userId);
+                    }
+                }
+                break;
+            }
+            default:
+                console.log(`Unhandled event type ${event.type}`);
+        }
+
+return res.json({ received: true });
+    } catch (err) {
+        console.error('[Stripe] Webhook processing error:', err);
+        return res.status(500).json({ error: 'Webhook processing failed' });
+    }
 };

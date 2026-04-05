@@ -4,6 +4,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const connectDB = async () => {
+    if (!process.env.MONGODB_URI) {
+        console.warn('[MongoDB] MONGODB_URI not set -- skipping MongoDB connection.');
+        return;
+    }
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI, {
             maxPoolSize: 20,

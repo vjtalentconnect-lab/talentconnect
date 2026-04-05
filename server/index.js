@@ -10,6 +10,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { RedisStore } from 'rate-limit-redis';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
@@ -21,9 +22,12 @@ import workshopRoutes from './routes/workshopRoutes.js';
 import { init as initSocket } from './socket.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import connectDB from './config/db.js';
+import { getRedisClient } from './lib/redisClient.js';
+import { scheduleTokenCleanup } from './lib/tokenCleanup.js';
 
 // Load env vars
 dotenv.config({ override: true });
+import './lib/jwtSecret.js';
 
 // Firebase is initialized in lib/firebaseAdmin.js
 // Connect MongoDB (optional secondary backup store for text data, not required for primary Firestore). 
@@ -44,28 +48,42 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+// Parse allowed origins from environment variables
+const parseAllowedOrigins = () => {
+  const origins = new Set([
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ])
+  // Add from FRONTEND_URL env var
+  if (process.env.FRONTEND_URL) {
+    process.env.FRONTEND_URL.split(',').forEach(o => {
+      const trimmed = o.trim().replace(/\/$/, '')
+      if (trimmed) origins.add(trimmed)
+    })
+  }
+  // Add from ALLOWED_ORIGINS env var (comma-separated list)
+  if (process.env.ALLOWED_ORIGINS) {
+    process.env.ALLOWED_ORIGINS.split(',').forEach(o => {
+      const trimmed = o.trim().replace(/\/$/, '')
+      if (trimmed) origins.add(trimmed)
+    })
+  }
+  console.info('[CORS] Allowed origins:', [...origins].join(', '))
+  return origins
+}
+
+const ALLOWED_ORIGINS = parseAllowedOrigins()
+
 app.use(
     cors({
         origin: function (origin, callback) {
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
 
-            const allowedOrigins = [
-                'http://localhost:5173',
-                'http://localhost:3000', 
-                'https://talentconnect-6e347.web.app',
-                'https://talentconnect-6e347.firebaseapp.com',
-                'https://talentconnect-api.onrender.com'
-            ];
-
-            const envOrigin = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
-            if (envOrigin && !allowedOrigins.includes(envOrigin)) {
-                allowedOrigins.push(envOrigin);
-            }
-
-            if (allowedOrigins.indexOf(origin) !== -1) {
+            if (ALLOWED_ORIGINS.has(origin)) {
                 callback(null, true);
             } else {
+                console.warn('[CORS] Blocked request from origin:', origin);
                 callback(new Error('Not allowed by CORS'));
             }
         },
@@ -100,25 +118,52 @@ app.use(helmet({
 }));
 
 // Rate limiting
+const buildStore = () => {
+    const client = getRedisClient();
+    if (!client || client.status !== 'ready') return undefined; // fallback to memory store
+    try {
+        return new RedisStore({ sendCommand: (...args) => client.call(...args) });
+    } catch (err) {
+        console.warn('[Redis] Rate limit store init failed, falling back to memory:', err.message);
+        return undefined;
+    }
+};
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.',
+    store: buildStore(),
+    message: { message: 'Too many requests, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+});
+
+// Strict limiter for admin login attempts
+const adminLoginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { message: 'Too many admin login attempts. Try again in 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: false,
+    store: buildStore(),
 });
 
 // Stricter rate limiting for auth routes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Relaxed for development
-    message: 'Too many authentication attempts, please try again later.',
+    max: 20, // Tightened from 100
+    store: buildStore(),
+    message: { message: 'Too many authentication attempts, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+    skipSuccessfulRequests: true,  // Only count failures
 });
 
 // Apply general rate limiting
 app.use(limiter);
+// Apply strict admin-login limiter before auth routes
+app.use('/api/auth/admin-login', adminLoginLimiter);
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
@@ -160,3 +205,4 @@ httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     console.log(`Health check available at http://localhost:${PORT}/health`);
 });
+scheduleTokenCleanup();

@@ -3,7 +3,7 @@ import { Link, useParams, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getMyProfile } from '../services/profileService';
 import { getProject, getProjectApplications, updateProject, applyToProject, updateApplicationStatus } from '../services/projectService';
-import { DIRECTOR_MENU } from '../constants/navigation';
+import { DIRECTOR_MENU, TALENT_MENU } from '../constants/navigation';
 
 const ProjectDetails = () => {
     const { id } = useParams();
@@ -18,6 +18,9 @@ const ProjectDetails = () => {
     const [applying, setApplying] = useState(false);
     const [hasApplied, setHasApplied] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(null);
+    const [imageError, setImageError] = useState('');
+
+    const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
     // Determine user role from URL path
     const userRole = location.pathname.startsWith('/director') ? 'director' : 
@@ -73,7 +76,7 @@ const ProjectDetails = () => {
             case 'admin':
                 return DIRECTOR_MENU; // Using director menu for now, could create admin menu
             case 'talent':
-                return []; // Talents don't have a dashboard menu in this view
+                return TALENT_MENU;
             default:
                 return DIRECTOR_MENU;
         }
@@ -81,24 +84,52 @@ const ProjectDetails = () => {
 
     const menuItems = getMenuForRole(userRole);
 
-    const userData = {
-        name: profile?.fullName || (userRole === 'director' ? 'Director' : userRole === 'admin' ? 'Admin' : 'Talent'),
-        roleTitle: userRole === 'director' 
-            ? `${profile?.companyName || 'Lead Director'} • ${profile?.location || 'India'}`
-            : userRole === 'admin'
-            ? 'Administrator • TalentConnect'
-            : `${profile?.talentCategory || 'Talent'} • ${profile?.location || 'India'}`,
-        avatar: profile?.profilePicture === 'no-photo.jpg' 
-            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'User') 
+    const directorData = project?.director || {};
+
+    const talentHeader = {
+        name: profile?.fullName || 'Artist',
+        roleTitle: `${profile?.talentCategory || 'Talent'} • ${profile?.location || 'India'}`,
+        avatar: profile?.profilePicture === 'no-photo.jpg'
+            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'Artist')
             : (profile?.profilePicture || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80")
     };
+
+    const directorHeader = {
+        name: profile?.fullName || 'Director',
+        roleTitle: `${profile?.companyName || 'Lead Director'} • ${profile?.location || 'India'}`,
+        avatar: profile?.profilePicture === 'no-photo.jpg'
+            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'Director')
+            : (profile?.profilePicture || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80")
+    };
+
+    const adminHeader = {
+        name: profile?.fullName || 'Admin',
+        roleTitle: 'Administrator • TalentConnect',
+        avatar: profile?.profilePicture === 'no-photo.jpg'
+            ? 'https://ui-avatars.com/api/?name=' + (profile?.fullName || 'Admin')
+            : (profile?.profilePicture || "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80")
+    };
+
+    const headerUserData = userRole === 'talent'
+        ? talentHeader
+        : userRole === 'admin'
+        ? adminHeader
+        : directorHeader;
+
+    const directorCard = {
+        name: directorData.profile?.fullName || directorData.email?.split('@')[0] || 'Director',
+        roleTitle: `Director • ${project?.location || directorData.location || 'India'}`,
+        avatar: directorData.profile?.profilePicture || ('https://ui-avatars.com/api/?name=' + (directorData.email || 'Director')),
+        profileId: directorData.profileId || directorData.profile?.id || directorData.id || directorData._id || null
+    };
+    const directorProfileId = directorData.id || directorData._id;
 
     if (loading) {
         return (
             <DashboardLayout
-                menuItems={DIRECTOR_MENU}
-                userRole="India • Director"
-                userData={userData}
+                menuItems={menuItems}
+                userRole={userRole === 'director' ? "India • Director" : userRole === 'admin' ? "Admin • TalentConnect" : "India • Talent"}
+                userData={headerUserData}
                 headerTitle="Project Details"
                 headerSubtitle="Loading details..."
                 searchPlaceholder="Search roles or talent..."
@@ -114,9 +145,9 @@ const ProjectDetails = () => {
     if (!project) {
         return (
             <DashboardLayout
-                menuItems={DIRECTOR_MENU}
-                userRole="India • Director"
-                userData={userData}
+                menuItems={menuItems}
+                userRole={userRole === 'director' ? "India • Director" : userRole === 'admin' ? "Admin • TalentConnect" : "India • Talent"}
+                userData={headerUserData}
                 headerTitle="Project Details"
                 headerSubtitle="Project Not Found"
             >
@@ -209,11 +240,37 @@ const ProjectDetails = () => {
         }
     };
 
+    const handleImageUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > MAX_IMAGE_BYTES) {
+            setImageError('Image must be 5MB or smaller.');
+            return;
+        }
+        if (!file.type?.startsWith('image/')) {
+            setImageError('Only image files are allowed.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => setImageError('Failed to read image file. Please try again.');
+        reader.onloadend = () => {
+            if (!reader.result) {
+                setImageError('Failed to load image preview.');
+                return;
+            }
+            setImageError('');
+            setEditForm(prev => ({ ...prev, projectImage: reader.result }));
+        };
+        reader.readAsDataURL(file);
+    };
+
     return (
         <DashboardLayout
             menuItems={menuItems}
             userRole={userRole === 'director' ? "India • Director" : userRole === 'admin' ? "Admin • TalentConnect" : "Talent • India"}
-            userData={userData}
+            userData={headerUserData}
             headerTitle="Project Details"
             headerSubtitle={userRole === 'director' 
                 ? `${project.title} • Manage roles, requirements, and applications.`
@@ -245,6 +302,7 @@ const ProjectDetails = () => {
                                             </div>
                                             <p className="text-white font-bold">Change Project Image</p>
                                         </label>
+                                        {imageError && <p className="mt-3 text-xs text-red-200 font-semibold">{imageError}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -283,8 +341,8 @@ const ProjectDetails = () => {
                                         <>
                                             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-4 uppercase">{project.title}</h1>
                                             <p className="text-slate-300 text-sm font-bold flex items-center gap-6 uppercase tracking-widest">
-                                                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary">calendar_today</span> Deadline: {new Date(project.deadline).toLocaleDateString()}</span>
-                                                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary">location_on</span> {project.location}</span>
+                                                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary">calendar_today</span> Deadline: {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'Not set'}</span>
+                                                <span className="flex items-center gap-2"><span className="material-symbols-outlined text-primary">location_on</span> {project.location || 'TBD'}</span>
                                             </p>
                                         </>
                                     )}
@@ -599,10 +657,10 @@ const ProjectDetails = () => {
                                         <div className="bg-white dark:bg-card-dark rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm space-y-4">
                                             <div className="flex items-center gap-4 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
                                                 <div className="size-10 rounded-xl bg-slate-200 overflow-hidden border border-slate-200 dark:border-white/5">
-                                                    <img className="w-full h-full object-cover" src={userData.avatar} alt={userData.name} />
+                                                    <img className="w-full h-full object-cover" src={headerUserData.avatar} alt={headerUserData.name} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="font-bold text-sm leading-none mb-1">{userData.name}</p>
+                                                    <p className="font-bold text-sm leading-none mb-1">{headerUserData.name}</p>
                                                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Lead Director</p>
                                                 </div>
                                             </div>
@@ -658,13 +716,24 @@ const ProjectDetails = () => {
                                         <div className="bg-white dark:bg-card-dark rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
                                             <div className="flex items-center gap-4">
                                                 <div className="size-12 rounded-xl bg-slate-200 overflow-hidden border border-slate-200 dark:border-white/5">
-                                                    <img className="w-full h-full object-cover" src={userData.avatar} alt={userData.name} />
+                                                    <img className="w-full h-full object-cover" src={directorCard.avatar} alt={directorCard.name} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="font-bold text-base leading-none mb-1">{userData.name}</p>
-                                                    <p className="text-sm text-slate-500 font-medium">{userData.roleTitle}</p>
+                                                    <p className="font-bold text-base leading-none mb-1">{directorCard.name}</p>
+                                                    <p className="text-sm text-slate-500 font-medium">{directorCard.roleTitle}</p>
                                                 </div>
                                             </div>
+                                            {directorCard.profileId && (
+                                                <div className="mt-4">
+                                                    <Link
+                                                        to={`/director/${directorCard.profileId}`}
+                                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-colors"
+                                                    >
+                                                        View Director Profile
+                                                        <span className="material-symbols-outlined text-sm">arrow_outward</span>
+                                                    </Link>
+                                                </div>
+                                            )}
                                         </div>
                                     </section>
                                 </>
@@ -681,3 +750,6 @@ const ProjectDetails = () => {
 };
 
 export default ProjectDetails;
+
+
+

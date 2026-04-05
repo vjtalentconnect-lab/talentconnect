@@ -1,6 +1,7 @@
 import { auth, db } from '../lib/firebaseAdmin.js';
 import addDays from '../utils/addDays.js';
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../lib/jwtSecret.js';
 
 // Protect routes
 export const protect = async (req, res, next) => {
@@ -37,8 +38,9 @@ export const protect = async (req, res, next) => {
     } catch (err) {
         // Fallback: JWT-based env admin login
         try {
-            const decodedJwt = jwt.verify(token, process.env.JWT_SECRET || 'change_this_secret');
+            const decodedJwt = jwt.verify(token, JWT_SECRET);
             if (decodedJwt.isEnvAdmin && decodedJwt.email === process.env.ADMIN_EMAIL) {
+                console.info('[AUDIT] Admin route accessed:', req.method, req.path, 'by env-admin at', new Date().toISOString());
                 req.user = {
                     id: decodedJwt.id,
                     email: decodedJwt.email,

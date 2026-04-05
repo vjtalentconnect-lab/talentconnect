@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getProfileById } from '../services/profileService';
+import { getProfileById, getProfileByUser } from '../services/profileService';
 import { getProjects } from '../services/projectService';
 
 /* ══════════════════════════════════════════════════════════════
@@ -17,11 +17,23 @@ const PublicDirectorProfile = () => {
     useEffect(() => {
         (async () => {
             try {
-                // getProfileById returns the profile object
-                const res = await getProfileById(id);
-                const p = res.data || res;
-                // Filter only director profiles
-                if (p?.user?.role !== 'director' && p?.role !== 'director') {
+                let p = null;
+                try {
+                    const res = await getProfileById(id);
+                    p = res.data || res;
+                } catch (e) {
+                    // If not found by profile id, try by user id fallback
+                    if (e?.response?.status === 404) {
+                        const res2 = await getProfileByUser(id);
+                        p = res2.data || res2;
+                    } else {
+                        throw e;
+                    }
+                }
+
+                // More flexible role check
+                const isDirector = p?.user?.role === 'director' || p?.role === 'director' || p?.userType === 'director';
+                if (!isDirector) {
                     setError('This profile is not a director profile.');
                     setLoading(false);
                     return;
@@ -30,7 +42,7 @@ const PublicDirectorProfile = () => {
 
                 // Fetch their posted projects
                 try {
-                    const projRes = await getProjects({ director: id });
+                    const projRes = await getProjects({ director: p.user?._id || id });
                     setProjects((projRes.data || projRes || []).slice(0, 6));
                 } catch {
                     // Projects optional – don't block if API doesn't support filter

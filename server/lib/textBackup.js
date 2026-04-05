@@ -1,3 +1,7 @@
+/* IMPORTANT: This module writes to MongoDB as a best-effort audit backup only.
+   Firestore is the source of truth. These backups are NOT guaranteed to be
+   restorable due to ObjectId/string ID incompatibility with Mongoose models.
+   See ARCHITECTURE.md */
 import mongoose from 'mongoose';
 import { db } from './firebaseAdmin.js';
 import Backup from '../models/Backup.js';
@@ -12,6 +16,7 @@ const backupToMongo = async (collection, docId, data) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
     } catch (err) {
+        // Backup failures must never block primary Firestore writes.
         console.error(`Backup failure for ${collection}/${docId}:`, err.message);
     }
 };

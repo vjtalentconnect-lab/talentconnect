@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getProjects, applyToProject, getMyApplications } from '../services/projectService';
 import { getMyProfile } from '../services/profileService';
@@ -19,6 +20,15 @@ const Toast = ({ message, type, onDone }) => {
 };
 
 const ProjectDiscovery = () => {
+    const projectIdOf = (p) => {
+        if (!p) return '';
+        if (typeof p === 'string') return p;
+        if (typeof p === 'object') {
+            return p._id || p.id || p.projectId || (p.project ? projectIdOf(p.project) : '');
+        }
+        return '';
+    };
+
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState(null);
@@ -41,7 +51,9 @@ const ProjectDiscovery = () => {
             ]);
             setProfile(profileRes.data);
             setProjects(projectsRes.data);
-            const applied = new Set(appsRes.data.map(a => a.project?._id || a.project));
+            const applied = new Set(
+                (appsRes.data || []).map((a) => projectIdOf(a.project) || a.project)
+            );
             setAppliedIds(applied);
         } catch (err) {
             console.error('Error fetching discovery data:', err);
@@ -55,9 +67,11 @@ const ProjectDiscovery = () => {
     useEffect(() => {
         const handleProjectCreated = (project) => {
             if (project.status === 'open') {
+                const incomingId = projectIdOf(project);
                 setProjects((prev) => {
-                    if (prev.find(p => p._id === project._id)) return prev;
-                    return [project, ...prev];
+                    if (!incomingId) return prev;
+                    if (prev.find(p => projectIdOf(p) === incomingId)) return prev;
+                    return [{ ...project, _id: incomingId, id: incomingId }, ...prev];
                 });
             }
         };
@@ -83,6 +97,10 @@ const ProjectDiscovery = () => {
     };
 
     const handleApply = async (projectId) => {
+        if (!projectId) {
+            showToast('Project unavailable right now', 'error');
+            return;
+        }
         if (appliedIds.has(projectId) || applyingIds.has(projectId)) return;
         setApplyingIds(prev => new Set([...prev, projectId]));
         try {
@@ -178,11 +196,15 @@ const ProjectDiscovery = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-                            {projects.map((project) => {
-                                const isApplied = appliedIds.has(project._id);
-                                const isApplying = applyingIds.has(project._id);
+                            {projects.map((project, index) => {
+                                const projectId = projectIdOf(project);
+                                if (!projectId) {
+                                    console.warn('ProjectDiscovery: missing project id, using index fallback', project);
+                                }
+                                const isApplied = appliedIds.has(projectId);
+                                const isApplying = applyingIds.has(projectId);
                                 return (
-                                    <div key={project._id}
+                                    <div key={projectId || `project-${index}`}
                                         className="bg-white dark:bg-[#0f1115] border border-slate-200 dark:border-white/5 rounded-xl md:rounded-[2rem] p-4 md:p-6 hover:border-primary/50 transition-all group shadow-sm relative overflow-hidden">
                                         {isApplied && (
                                             <div className="absolute top-2 md:top-4 right-2 md:right-4 z-10 bg-green-500 text-white text-[8px] md:text-[9px] font-black px-2 md:px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1 shadow-lg">
@@ -193,7 +215,7 @@ const ProjectDiscovery = () => {
                                             <div className="w-16 h-24 md:w-24 md:h-32 rounded-lg md:rounded-2xl overflow-hidden bg-slate-200 flex-shrink-0 shadow-lg border border-white/5">
                                                 <img alt={project.title}
                                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                                    src="https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80"/>
+                                                    src={project.projectImage || "https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80"}/>
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -216,25 +238,47 @@ const ProjectDiscovery = () => {
                                                         {new Date(project.deadline).toLocaleDateString()}
                                                     </div>
                                                 </div>
+                                                {project.description && (
+                                                    <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
+                                                        {project.description}
+                                                    </p>
+                                                )}
                                                 <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between flex-wrap gap-2">
                                                     <div className="text-[8px] md:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest min-w-0">
-                                                        Budget: <span className="text-primary italic">{project.budget}</span>
+                                                        Budget: <span className="text-primary italic">{project.budget ?? 'Negotiable'}</span>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleApply(project._id)}
-                                                        disabled={isApplied || isApplying}
-                                                        className={`text-[8px] md:text-[10px] font-black px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1 md:gap-2 shadow-lg shrink-0 ${
-                                                            isApplied
-                                                                ? 'bg-green-500/10 text-green-500 border border-green-500/20 cursor-default'
-                                                                : 'bg-primary text-white hover:bg-primary/90 shadow-primary/10 hover:scale-105'
-                                                        }`}
-                                                    >
-                                                        {isApplying ? (
-                                                            <span className="material-symbols-outlined text-sm animate-spin">sync</span>
-                                                        ) : isApplied ? (
-                                                            <><span className="material-symbols-outlined text-sm">check</span> <span className="hidden sm:inline">Applied</span></>
-                                                        ) : <><span className="hidden sm:inline">Apply</span><span className="sm:hidden">Apply</span><span className="hidden sm:inline"> Now</span></>}
-                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        {!isApplied && (
+                                                            <button
+                                                                onClick={() => handleApply(projectId)}
+                                                                disabled={!projectId || isApplying}
+                                                                className={`text-[8px] md:text-[10px] font-black px-2 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl uppercase tracking-widest transition-all active:scale-95 flex items-center gap-1 md:gap-2 shadow-lg shrink-0 ${
+                                                                    (!projectId || isApplying)
+                                                                        ? 'opacity-70 cursor-not-allowed bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-300'
+                                                                        : 'bg-primary text-white hover:bg-primary/90 shadow-primary/10 hover:scale-105'
+                                                                }`}
+                                                            >
+                                                                {isApplying ? (
+                                                                    <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                                                                ) : <><span className="sm:hidden">Apply</span><span className="hidden sm:inline">Apply Now</span></>}
+                                                            </button>
+                                                        )}
+                                                        {projectId ? (
+                                                            <Link
+                                                                to={`/talent/project/${projectId}`}
+                                                                className="text-[8px] md:text-[10px] font-black px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl uppercase tracking-widest transition-all active:scale-95 bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-white/20"
+                                                            >
+                                                                View
+                                                            </Link>
+                                                        ) : (
+                                                            <button
+                                                                disabled
+                                                                className="text-[8px] md:text-[10px] font-black px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl uppercase tracking-widest bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                                                            >
+                                                                View
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

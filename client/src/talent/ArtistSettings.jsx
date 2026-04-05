@@ -47,6 +47,8 @@ const ArtistSettings = () => {
     const [portfolioFile, setPortfolioFile] = useState(null);
     const [portfolioTitle, setPortfolioTitle] = useState('');
     const [portfolioDescription, setPortfolioDescription] = useState('');
+    const [security, setSecurity] = useState({ twoFactorEnabled: false, lastUpdated: null });
+    const [isToggling2FA, setIsToggling2FA] = useState(false);
 
     const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -58,6 +60,9 @@ const ArtistSettings = () => {
                 // Load stored privacy settings if profile has them
                 if (res.data?.privacySettings) {
                     setPrivacy(prev => ({ ...prev, ...res.data.privacySettings }));
+                }
+                if (res.data?.securitySettings) {
+                    setSecurity(prev => ({ ...prev, ...res.data.securitySettings }));
                 }
             } catch (err) {
                 console.error('Error fetching profile:', err);
@@ -136,6 +141,33 @@ const ArtistSettings = () => {
             showToast('Failed to upload portfolio media.', 'error');
         } finally {
             setUploadingPortfolio(false);
+        }
+    };
+
+    const requireTwoFactorConfirmation = async () => {
+        const confirmed = window.confirm('Confirm this two-factor change by completing OTP/re-authentication.');
+        if (!confirmed) {
+            throw new Error('Two-factor change cancelled by user.');
+        }
+    };
+
+    const handleToggle2FA = async () => {
+        if (isToggling2FA) return;
+        const next = !security.twoFactorEnabled;
+        const prev = security;
+        const timestamp = new Date().toISOString();
+        setIsToggling2FA(true);
+        try {
+            await requireTwoFactorConfirmation();
+            setSecurity(current => ({ ...current, twoFactorEnabled: next, lastUpdated: timestamp }));
+            await updateProfile({ securitySettings: { twoFactorEnabled: next, lastUpdated: timestamp } });
+            showToast(`Two-Factor ${next ? 'enabled' : 'disabled'}.`, 'success');
+        } catch (err) {
+            console.error('2FA toggle failed:', err);
+            setSecurity(() => ({ ...prev }));
+            showToast(err.message || 'Could not update 2FA. Try again.', 'error');
+        } finally {
+            setIsToggling2FA(false);
         }
     };
 
@@ -320,18 +352,23 @@ const ArtistSettings = () => {
                             </div>
                             <span className="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">chevron_right</span>
                         </button>
-                        <button className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 transition-all group shadow-sm">
+                        <div className="flex items-center justify-between p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 transition-all group shadow-sm">
                             <div className="flex items-center gap-4">
                                 <div className="size-10 rounded-xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 group-hover:text-primary transition-colors">
                                     <span className="material-symbols-outlined text-xl">verified_user</span>
                                 </div>
                                 <div className="text-left min-w-0 flex-1">
                                     <p className="font-bold text-slate-800 dark:text-white">Two-Factor Auth</p>
-                                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Enabled</p>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${security.twoFactorEnabled ? 'text-emerald-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        {security.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                                    </p>
                                 </div>
                             </div>
-                            <span className="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">chevron_right</span>
-                        </button>
+                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                <input type="checkbox" className="sr-only peer" checked={security.twoFactorEnabled} onChange={handleToggle2FA} disabled={isToggling2FA} />
+                                <div className="w-11 h-6 bg-slate-200 dark:bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
                     </div>
                 </section>
 
