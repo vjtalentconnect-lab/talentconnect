@@ -1,31 +1,24 @@
 import api from './api';
 import { auth } from '../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { clearAuthSession, persistAuthSession } from '../utils/authStorage';
 
 export const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
-    if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
+    persistAuthSession({ token: response.data.token, user: response.data.user });
     return response.data;
 };
 
 export const loginAdmin = async (email, password) => {
     const response = await api.post('/auth/admin-login', { email, password });
-    if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify({ id: 'env-admin', email, role: 'admin' }));
-    }
-    return response.data;
+    const user = { id: 'env-admin', email, role: 'admin' };
+    persistAuthSession({ token: response.data.token, user });
+    return { ...response.data, user };
 };
 
 export const register = async (userData) => {
     const response = await api.post('/auth/register', userData);
-    if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
+    persistAuthSession({ token: response.data.token, user: response.data.user });
     return response.data;
 };
 
@@ -35,10 +28,7 @@ export const loginWithGoogle = async (role = 'talent') => {
     const idToken = await credential.user.getIdToken();
 
     const response = await api.post('/auth/login/google', { idToken, role });
-    if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
+    persistAuthSession({ token: response.data.token, user: response.data.user });
     return response.data;
 };
 
@@ -63,36 +53,28 @@ export const getLinkedInAuthUrl = () => {
         throw new Error('LinkedIn client ID is not configured.');
     }
 
-    localStorage.setItem('linkedin_oauth_state', state);
+    sessionStorage.setItem('linkedin_oauth_state', state);
     return `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
 };
 
 export const completeLinkedInLogin = async (code, state, role = 'talent') => {
-    const storedState = localStorage.getItem('linkedin_oauth_state');
-    
-    // CSRF protection: Abort login if state doesn't match
-    if (storedState && state && storedState !== state) {
-        throw new Error('CSRF state mismatch detected. Please try again.');
+    const storedState = sessionStorage.getItem('linkedin_oauth_state');
+    sessionStorage.removeItem('linkedin_oauth_state');
+
+    if (!storedState || storedState !== state) {
+        throw new Error('Invalid OAuth state. Please restart LinkedIn sign-in.');
     }
-    
-    // Clean up state after validation
-    localStorage.removeItem('linkedin_oauth_state');
     
     const redirectUri = getLinkedInRedirectUri();
     
     const response = await api.post('/auth/login/linkedin', { code, redirectUri, role });
-    if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
+    persistAuthSession({ token: response.data.token, user: response.data.user });
     return response.data;
 };
 
 export const autoLinkedInLogin = async (role = 'talent') => {
-    const redirectUri = getLinkedInRedirectUri();
-    
     const authUrl = getLinkedInAuthUrl();
-    localStorage.setItem('linkedin_oauth_role', role);
+    sessionStorage.setItem('linkedin_oauth_role', role);
     window.location.href = authUrl;
 };
 
@@ -102,8 +84,7 @@ export const logout = async () => {
     } catch (e) {
         console.warn('Backend logout failed');
     } finally {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        clearAuthSession();
     }
 };
 

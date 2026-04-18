@@ -3,11 +3,14 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { getProfiles, getMyProfile } from '../services/profileService';
 import { Link } from 'react-router-dom';
 import { DIRECTOR_MENU } from '../constants/navigation';
+import { transformCloudinaryUrl } from '../utils/cloudinaryUrl';
 
 const TalentDiscovery = () => {
     const [talents, setTalents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState(null);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [filters, setFilters] = useState({
         talentCategory: '',
         location: '',
@@ -20,20 +23,25 @@ const TalentDiscovery = () => {
 
     const categories = ['actor', 'artist', 'model', 'musician', 'video_editor', 'dancer', 'content_creator', 'cinematographer', 'voice_over'];
 
-    const fetchData = async () => {
-        setLoading(true);
+    const fetchData = async (cursor = null, append = false) => {
+        if (!append) {
+            setLoading(true);
+        }
         try {
             const [profileData, talentsData] = await Promise.all([
                 getMyProfile(),
-                getProfiles(filters)
+                getProfiles({ ...filters, cursor, limit: 12 })
             ]);
             setProfile(profileData.data);
-            const talentProfiles = talentsData.data.filter(t => t.user?.role === 'talent');
-            setTalents(talentProfiles);
+            const talentProfiles = (talentsData.data || []).filter(t => t.user?.role === 'talent');
+            setTalents((prev) => append ? [...prev, ...talentProfiles] : talentProfiles);
+            setNextCursor(talentsData.nextCursor || null);
         } catch (err) {
             console.error('Error fetching talent discovery data:', err);
         } finally {
-            setLoading(false);
+            if (!append) {
+                setLoading(false);
+            }
         }
     };
 
@@ -47,6 +55,16 @@ const TalentDiscovery = () => {
 
     const applyFilters = () => {
         fetchData();
+    };
+
+    const loadMore = async () => {
+        if (!nextCursor || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            await fetchData(nextCursor, true);
+        } finally {
+            setLoadingMore(false);
+        }
     };
 
     const userData = {
@@ -182,7 +200,7 @@ const TalentDiscovery = () => {
                             {talents.map((talent) => (
                                 <div key={talent.id} className="bg-white dark:bg-card-dark rounded-2xl md:rounded-[2rem] border border-slate-200 dark:border-white/5 overflow-hidden group hover:ring-4 hover:ring-primary/10 transition-all shadow-sm">
                                     <div className="aspect-[3/4] relative overflow-hidden">
-                                        <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={talent.profilePicture === 'no-photo.jpg' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80' : talent.profilePicture} alt={talent.fullName} />
+                                        <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={talent.profilePicture === 'no-photo.jpg' ? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80' : transformCloudinaryUrl(talent.profilePicture, 400, 540)} alt={talent.fullName} />
                                         <div className="absolute top-3 md:top-4 left-3 md:left-4">
                                             <span className="bg-black/40 backdrop-blur-xl text-white text-[10px] font-black px-2 md:px-3 py-1 md:py-1.5 rounded-lg flex items-center gap-1.5 border border-white/10 shadow-xl">
                                                 <span className="material-symbols-outlined text-[10px] fill-current text-primary">star</span> 4.8
@@ -213,6 +231,18 @@ const TalentDiscovery = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                    {nextCursor && (
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={loadMore}
+                                disabled={loadingMore}
+                                className="rounded-2xl bg-slate-100 dark:bg-white/10 px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-white/20 disabled:opacity-60"
+                            >
+                                {loadingMore ? 'Loading...' : 'Load More'}
+                            </button>
                         </div>
                     )}
                 </div>

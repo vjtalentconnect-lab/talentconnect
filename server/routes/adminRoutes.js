@@ -15,7 +15,7 @@ import {
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validate.js';
-import { adminVerifySchema } from '../lib/schemas.js';
+import { adminVerifySchema, updateUserRoleSchema, updateProjectStatusSchema } from '../lib/schemas.js';
 
 const router = express.Router();
 
@@ -26,13 +26,13 @@ router.use(authorize('admin'));
 router.get('/stats', getStats);
 router.get('/search', searchGlobal);
 router.get('/users', getUsers);
-router.put('/users/:id/role', updateUserRole);
+router.put('/users/:id/role', validate(updateUserRoleSchema), updateUserRole);
 router.delete('/users/:id', deleteUser);
 router.get('/verifications', getPendingVerifications);
 router.put('/verify/:id', validate(adminVerifySchema), verifyUser);
 router.get('/projects', getAdminProjects);
 router.get('/projects/:id', getAdminProjectDetails);
-router.put('/projects/:id/status', updateProjectStatus);
+router.put('/projects/:id/status', validate(updateProjectStatusSchema), updateProjectStatus);
 router.delete('/projects/:id', deleteProject);
 router.get('/media', getMediaAssets);
 

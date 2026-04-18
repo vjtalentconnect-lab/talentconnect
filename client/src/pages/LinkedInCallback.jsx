@@ -2,11 +2,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { completeLinkedInLogin } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
+import { useAuth } from '../context/AuthContext';
 
 const LinkedInCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  const { setSessionFromAuthResponse } = useAuth();
 
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
@@ -35,9 +36,10 @@ const LinkedInCallback = () => {
       hasRun.current = true;
 
       try {
-        const role = localStorage.getItem('linkedin_oauth_role') || 'talent';
+        const role = sessionStorage.getItem('linkedin_oauth_role') || 'talent';
         const data = await completeLinkedInLogin(code, state, role);
-        localStorage.removeItem('linkedin_oauth_role');
+        sessionStorage.removeItem('linkedin_oauth_role');
+        setSessionFromAuthResponse(data);
 
         const userRole = data.user.role || role;
 

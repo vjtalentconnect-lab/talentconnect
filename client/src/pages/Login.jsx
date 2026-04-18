@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login, loginAdmin, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin, requestPasswordReset, resendEmailVerification } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
+  const { setSessionFromAuthResponse, user } = useAuth();
   const [userType, setUserType] = useState('artist');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -13,9 +15,11 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [attempts, setAttempts] = useState(0);
+  const [lockUntil, setLockUntil] = useState(null);
   const navigate = useNavigate();
 
-  const navigateAfterSocial = async (role) => {
+  const navigateAfterSocial = async (role, socialUser = user) => {
     try {
       const res = await getMyProfile();
       const profile = res.data?.data || res.data || {};
@@ -27,13 +31,8 @@ const Login = () => {
       if (missing.length) {
         navigate('/onboarding/complete-profile', { state: { role, missing } });
       } else if (role === 'talent') {
-        let user = {};
-        try {
-          user = JSON.parse(localStorage.getItem('user') || '{}');
-        } catch (e) {
-          user = {};
-        }
-        const vStatus = user.verificationStatus || 'none';
+        const cachedUser = socialUser || {};
+        const vStatus = cachedUser.verificationStatus || 'none';
         
         if (vStatus === 'none') {
           navigate('/talent/verify');
@@ -64,13 +63,19 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (lockUntil && Date.now() < lockUntil) {
+      setError(`Too many attempts. Try again in ${Math.ceil((lockUntil - Date.now()) / 1000)}s.`);
+      return;
+    }
     setLoading(true);
     setError('');
 
     try {
       // Try env-admin first so admins can log in from here
       try {
-        await loginAdmin(email, password);
+        const adminData = await loginAdmin(email, password);
+        setSessionFromAuthResponse(adminData);
+        setAttempts(0);
         navigate('/dashboard/admin');
         return;
       } catch (adminErr) {
@@ -78,12 +83,24 @@ const Login = () => {
       }
 
       const data = await login(email, password);
+      setSessionFromAuthResponse(data);
+      setAttempts(0);
+      setLockUntil(null);
       const role = data.user.role;
       if (role === 'talent') navigate('/dashboard/talent');
       else if (role === 'director') navigate('/dashboard/director');
       else if (role === 'admin') navigate('/dashboard/admin');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
+      if (nextAttempts >= 3) {
+        const delayMs = Math.min(nextAttempts * 10000, 60000);
+        const nextLock = Date.now() + delayMs;
+        setLockUntil(nextLock);
+        setError(`Login failed. Try again in ${Math.ceil(delayMs / 1000)}s.`);
+      } else {
+        setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -130,8 +147,9 @@ const Login = () => {
     setError('');
     try {
       const role = userType === 'director' ? 'director' : 'talent';
-      await loginWithGoogle(role);
-      await navigateAfterSocial(role);
+      const data = await loginWithGoogle(role);
+      setSessionFromAuthResponse(data);
+      await navigateAfterSocial(role, data.user);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
     } finally {
@@ -302,7 +320,7 @@ const Login = () => {
               <button
                 className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 type="submit"
-                disabled={loading}
+                disabled={loading || (lockUntil && Date.now() < lockUntil)}
               >
                 <span>{loading ? 'OPENING GATES...' : 'ENTER THE STAGE'}</span>
                 {!loading && <span className="material-symbols-outlined">chevron_right</span>}

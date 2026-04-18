@@ -125,3 +125,5 @@ export const sendEmail = async ({ to, subject, html }) => {
         throw new Error(`Failed to send email: ${error.message}`);
     }
 };
+
+export const wrapEmailTemplate = wrapEmail;

@@ -15,7 +15,7 @@ import {
 } from '../controllers/projectController.js';
 import { protect, authorize, enforceDirectorBilling } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validate.js';
-import { createProjectSchema, updateApplicationStatusSchema, submitVideoSchema } from '../lib/schemas.js';
+import { createProjectSchema, updateApplicationStatusSchema, scheduleAuditionSchema, submitVideoSchema, updateProjectSchema } from '../lib/schemas.js';
 
 const router = express.Router();
 
@@ -28,10 +28,10 @@ router.get('/:id', getProject);
 
 // Director only routes
 router.post('/', protect, authorize('director', 'admin'), enforceDirectorBilling, validate(createProjectSchema), createProject);
-router.put('/:id', protect, authorize('director', 'admin'), enforceDirectorBilling, updateProject);
+router.put('/:id', protect, authorize('director', 'admin'), enforceDirectorBilling, validate(updateProjectSchema), updateProject);
 router.get('/:id/applications', protect, authorize('director', 'admin'), enforceDirectorBilling, getProjectApplications);
 router.put('/applications/:appId/status', protect, authorize('director', 'admin'), enforceDirectorBilling, validate(updateApplicationStatusSchema), updateApplicationStatus);
-router.put('/applications/:appId/schedule-audition', protect, authorize('director', 'admin'), enforceDirectorBilling, scheduleAudition);
+router.put('/applications/:appId/schedule-audition', protect, authorize('director', 'admin'), enforceDirectorBilling, validate(scheduleAuditionSchema), scheduleAudition);
 
 // Talent only routes
 router.post('/:id/apply', protect, authorize('talent'), applyToProject);

@@ -7,6 +7,7 @@ import {
     getProfiles,
     uploadMedia,
     submitForVerification,
+    exportMyData,
 } from '../controllers/profileController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import upload, { verifyAndUpload } from '../middleware/uploadMiddleware.js';
@@ -17,6 +18,7 @@ const router = express.Router();
 
 router.get('/', getProfiles);
 router.get('/me', protect, getMyProfile);
+router.get('/export-data', protect, exportMyData);
 router.get('/by-user/:userId', getProfileByUser);
 router.get('/:id', getProfileById);
 router.put('/', protect, validate(updateProfileSchema), updateProfile);

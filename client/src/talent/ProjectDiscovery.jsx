@@ -4,8 +4,8 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { getProjects, applyToProject, getMyApplications } from '../services/projectService';
 import { getMyProfile } from '../services/profileService';
 import { TALENT_MENU } from '../constants/navigation';
-import socket from '../services/socket';
 import { useNotifications } from '../context/NotificationContext';
+import { transformCloudinaryUrl } from '../utils/cloudinaryUrl';
 
 const CATEGORIES = ['Film', 'Advertisement', 'Music Video', 'TV Series', 'Web Series', 'Short Film'];
 
@@ -37,20 +37,25 @@ const ProjectDiscovery = () => {
     const [appliedIds, setAppliedIds] = useState(new Set());
     const [applyingIds, setApplyingIds] = useState(new Set());
     const [toast, setToast] = useState(null);
+    const [nextCursor, setNextCursor] = useState(null);
+    const [loadingMore, setLoadingMore] = useState(false);
     const debounceRef = useRef(null);
 
     const showToast = (message, type = 'success') => setToast({ message, type });
 
-    const fetchData = useCallback(async (currentFilters) => {
-        setLoading(true);
+    const fetchData = useCallback(async (currentFilters, cursor = null, append = false) => {
+        if (!append) {
+            setLoading(true);
+        }
         try {
             const [profileRes, projectsRes, appsRes] = await Promise.all([
                 getMyProfile(),
-                getProjects(currentFilters),
+                getProjects({ ...currentFilters, cursor, limit: 12 }),
                 getMyApplications(),
             ]);
             setProfile(profileRes.data);
-            setProjects(projectsRes.data);
+            setProjects((prev) => append ? [...prev, ...(projectsRes.data || [])] : (projectsRes.data || []));
+            setNextCursor(projectsRes.nextCursor || null);
             const applied = new Set(
                 (appsRes.data || []).map((a) => projectIdOf(a.project) || a.project)
             );
@@ -58,27 +63,19 @@ const ProjectDiscovery = () => {
         } catch (err) {
             console.error('Error fetching discovery data:', err);
         } finally {
-            setLoading(false);
+            if (!append) {
+                setLoading(false);
+            }
         }
     }, []);
 
     useEffect(() => { fetchData(filters); }, []);
 
     useEffect(() => {
-        const handleProjectCreated = (project) => {
-            if (project.status === 'open') {
-                const incomingId = projectIdOf(project);
-                setProjects((prev) => {
-                    if (!incomingId) return prev;
-                    if (prev.find(p => projectIdOf(p) === incomingId)) return prev;
-                    return [{ ...project, _id: incomingId, id: incomingId }, ...prev];
-                });
-            }
-        };
-        // Listen for real-time verification updates
-        window.addEventListener('userStateChange', fetchData);
-        return () => window.removeEventListener('userStateChange', fetchData);
-    }, []);
+        const handleUserStateChange = () => fetchData(filters);
+        window.addEventListener('userStateChange', handleUserStateChange);
+        return () => window.removeEventListener('userStateChange', handleUserStateChange);
+    }, [fetchData, filters]);
 
     const handleFilterChange = (e) => {
         const updated = { ...filters, [e.target.name]: e.target.value };
@@ -94,6 +91,16 @@ const ProjectDiscovery = () => {
         const reset = { category: '', location: '', budget: '', title: '' };
         setFilters(reset);
         fetchData(reset);
+    };
+
+    const loadMore = async () => {
+        if (!nextCursor || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            await fetchData(filters, nextCursor, true);
+        } finally {
+            setLoadingMore(false);
+        }
     };
 
     const handleApply = async (projectId) => {
@@ -212,10 +219,10 @@ const ProjectDiscovery = () => {
                                             </div>
                                         )}
                                         <div className="flex items-start gap-3 md:gap-6">
-                                            <div className="w-16 h-24 md:w-24 md:h-32 rounded-lg md:rounded-2xl overflow-hidden bg-slate-200 flex-shrink-0 shadow-lg border border-white/5">
+                                                    <div className="w-16 h-24 md:w-24 md:h-32 rounded-lg md:rounded-2xl overflow-hidden bg-slate-200 flex-shrink-0 shadow-lg border border-white/5">
                                                 <img alt={project.title}
                                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                                    src={project.projectImage || "https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80"}/>
+                                                    src={transformCloudinaryUrl(project.projectImage, 192, 256) || "https://images.unsplash.com/photo-1485090916755-2bc2fdf84c62?auto=format&fit=crop&q=80"}/>
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -285,6 +292,18 @@ const ProjectDiscovery = () => {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+                    {nextCursor && (
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={loadMore}
+                                disabled={loadingMore}
+                                className="rounded-2xl bg-slate-100 dark:bg-white/10 px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-white/20 disabled:opacity-60"
+                            >
+                                {loadingMore ? 'Loading...' : 'Load More'}
+                            </button>
                         </div>
                     )}
                 </div>

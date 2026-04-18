@@ -1,0 +1,20 @@
+import pino from 'pino'
+
+const isDev = process.env.NODE_ENV !== 'production'
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
+  base: { service: 'talentconnect-api', env: process.env.NODE_ENV || 'development' },
+  ...(isDev && {
+    transport: {
+      target: 'pino-pretty',
+      options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname,service,env' }
+    }
+  }),
+  redact: {
+    paths: ['req.headers.authorization', 'req.headers.cookie', '*.password', '*.token', '*.secret'],
+    censor: '[REDACTED]'
+  },
+})
+
+export default logger

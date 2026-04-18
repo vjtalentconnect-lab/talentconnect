@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register, login, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
+import { useAuth } from '../context/AuthContext';
 
 const RegisterDirector = () => {
+  const { setSessionFromAuthResponse } = useAuth();
   const industryTypes = [
     'Feature Films',
     'OTT / Web Series',
@@ -63,6 +65,8 @@ const RegisterDirector = () => {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState({ google: false, linkedin: false });
   const [error, setError] = useState('');
+  const [submitAttempts, setSubmitAttempts] = useState(0);
+  const [lockUntil, setLockUntil] = useState(null);
   const navigate = useNavigate();
 
   const navigateAfterSocial = async () => {
@@ -91,6 +95,10 @@ const RegisterDirector = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (lockUntil && Date.now() < lockUntil) {
+      setError(`Too many attempts. Try again in ${Math.ceil((lockUntil - Date.now()) / 1000)}s.`);
+      return;
+    }
     setLoading(true);
     setError('');
 
@@ -112,12 +120,24 @@ const RegisterDirector = () => {
         mobile: formData.mobile,
       };
 
-      await register(userData);
+      const registered = await register(userData);
+      setSessionFromAuthResponse(registered);
       // Auto-login so directors immediately start their free trial experience
-      await login(formData.email, formData.password);
+      const loggedIn = await login(formData.email, formData.password);
+      setSessionFromAuthResponse(loggedIn);
+      setSubmitAttempts(0);
+      setLockUntil(null);
       navigate('/dashboard/director');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      const nextAttempts = submitAttempts + 1;
+      setSubmitAttempts(nextAttempts);
+      if (nextAttempts >= 3) {
+        const delayMs = Math.min(nextAttempts * 10000, 60000);
+        setLockUntil(Date.now() + delayMs);
+        setError(`Registration failed. Try again in ${Math.ceil(delayMs / 1000)}s.`);
+      } else {
+        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -127,7 +147,8 @@ const RegisterDirector = () => {
     setError('');
     setSocialLoading(prev => ({ ...prev, google: true }));
     try {
-      await loginWithGoogle('director');
+      const data = await loginWithGoogle('director');
+      setSessionFromAuthResponse(data);
       await navigateAfterSocial();
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
@@ -331,7 +352,7 @@ const RegisterDirector = () => {
               <button
                 className={`w-full py-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary/20 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                 type="submit"
-                disabled={loading}
+                disabled={loading || (lockUntil && Date.now() < lockUntil)}
               >
                 {loading ? 'SETTING UP THE STAGE...' : 'Create Professional Account'}
               </button>

@@ -15,7 +15,10 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'talentconnect',
     resource_type: 'auto', // Important for both images and videos
-    transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+    transformation: [
+      { quality: 'auto', fetch_format: 'auto' },
+      { flags: 'strip_profile' },
+    ]
   },
 });
 

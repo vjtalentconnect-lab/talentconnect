@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import NotificationCenter from '../common/NotificationCenter';
 import ThemeToggle from '../common/ThemeToggle';
-import { logout } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 const Header = ({ title, subtitle, showSearch = true, searchPlaceholder = "Search...", actions, userData, onMenuToggle }) => {
     const navigate = useNavigate();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const { user, logout } = useAuth();
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -25,8 +26,7 @@ const Header = ({ title, subtitle, showSearch = true, searchPlaceholder = "Searc
         });
     };
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const profileLink = user.role === 'talent' ? '/talent/portfolio' : user.role === 'director' ? '/director/portfolio' : '/admin/profile';
+    const profileLink = user?.role === 'talent' ? '/talent/portfolio' : user?.role === 'director' ? '/director/portfolio' : '/admin/profile';
 
     return (
         <header className="border-b border-slate-200 dark:border-white/5 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-xl sticky top-0 z-[40] transition-all duration-500 px-4 py-4 sm:px-6 lg:px-8">

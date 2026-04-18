@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getMyProfile, updateProfile } from '../services/profileService';
+import { useAuth } from '../context/AuthContext';
 
 const talentCategories = [
   'Actor',
@@ -48,13 +49,10 @@ const getRequiredFields = (role) =>
 const CompleteProfile = () => {
   const locationState = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const persistedUser = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem('user') || '{}');
-    } catch {
-      return {};
-    }
-  }, []);
+    return user || {};
+  }, [user]);
 
   const role = locationState.state?.role || persistedUser.role || 'talent';
 
@@ -124,9 +122,6 @@ const CompleteProfile = () => {
       await updateProfile(payload);
       
       if (role === 'talent') {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        // Update local user status if needed, though usually the backend returns it on next fetch
-        // For now, redirect to verification as requested
         navigate('/talent/verify');
       } else {
         navigate(role === 'director' ? '/dashboard/director' : '/dashboard/talent');

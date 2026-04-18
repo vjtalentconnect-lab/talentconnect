@@ -21,5 +21,9 @@
         "supportEmail": "support@undefined.firebaseapp.com"
       }
     }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   }
 }

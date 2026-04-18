@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
+import { useAuth } from '../context/AuthContext';
 
 const RegisterActor = () => {
+    const { setSessionFromAuthResponse } = useAuth();
     const categories = [
         'Actor',
         'Background Artist',
@@ -46,6 +48,8 @@ const RegisterActor = () => {
     const [loading, setLoading] = useState(false);
     const [socialLoading, setSocialLoading] = useState({ google: false, linkedin: false });
     const [error, setError] = useState('');
+    const [submitAttempts, setSubmitAttempts] = useState(0);
+    const [lockUntil, setLockUntil] = useState(null);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -75,6 +79,10 @@ const RegisterActor = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (lockUntil && Date.now() < lockUntil) {
+            setError(`Too many attempts. Try again in ${Math.ceil((lockUntil - Date.now()) / 1000)}s.`);
+            return;
+        }
         setLoading(true);
         setError('');
 
@@ -97,10 +105,21 @@ const RegisterActor = () => {
             };
 
             const data = await register(userData);
+            setSessionFromAuthResponse(data);
+            setSubmitAttempts(0);
+            setLockUntil(null);
             console.log('Registration successful:', data);
             navigate('/talent/verify');
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            const nextAttempts = submitAttempts + 1;
+            setSubmitAttempts(nextAttempts);
+            if (nextAttempts >= 3) {
+                const delayMs = Math.min(nextAttempts * 10000, 60000);
+                setLockUntil(Date.now() + delayMs);
+                setError(`Registration failed. Try again in ${Math.ceil(delayMs / 1000)}s.`);
+            } else {
+                setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -110,7 +129,8 @@ const RegisterActor = () => {
         setError('');
         setSocialLoading(prev => ({ ...prev, google: true }));
         try {
-            await loginWithGoogle('talent');
+            const data = await loginWithGoogle('talent');
+            setSessionFromAuthResponse(data);
             await navigateAfterSocial();
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Google sign-in failed.');
@@ -324,7 +344,7 @@ const RegisterActor = () => {
                                 <button
                                     className={`w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                                     type="submit"
-                                    disabled={loading}
+                                    disabled={loading || (lockUntil && Date.now() < lockUntil)}
                                 >
                                     <span>{loading ? 'TAKING THE STAGE...' : 'Sign Up Now'}</span>
                                     {!loading && <span className="material-symbols-outlined">arrow_forward</span>}

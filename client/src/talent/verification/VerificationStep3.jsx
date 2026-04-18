@@ -6,6 +6,7 @@ const VerificationStep3 = ({ formData, updateFormData, onFinish, onSave, isSavin
     const [elapsed, setElapsed] = useState(0); // seconds elapsed
     const [videoUrl, setVideoUrl] = useState(null);
     const [cameraError, setCameraError] = useState('');
+    const [estimatedSizeMb, setEstimatedSizeMb] = useState(0);
     const videoRef = useRef(null);
     const previewRef = useRef(null);
     const mediaRecorderRef = useRef(null);
@@ -54,13 +55,20 @@ const VerificationStep3 = ({ formData, updateFormData, onFinish, onSave, isSavin
         setRecordingState('recording');
         setElapsed(0);
         chunksRef.current = [];
-        const recorder = new MediaRecorder(stream);
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : 'video/webm';
+        const recorder = new MediaRecorder(stream, {
+            mimeType,
+            videoBitsPerSecond: 500_000,
+        });
         mediaRecorderRef.current = recorder;
         recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
         recorder.onstop = () => {
             const blob = new Blob(chunksRef.current, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
             setVideoUrl(url);
+            setEstimatedSizeMb(Number((blob.size / (1024 * 1024)).toFixed(2)));
             updateFormData({ videoBlob: blob, videoRecorded: true });
             stopStream();
             setRecordingState('done');
@@ -83,6 +91,7 @@ const VerificationStep3 = ({ formData, updateFormData, onFinish, onSave, isSavin
     const retake = () => {
         setVideoUrl(null);
         setElapsed(0);
+        setEstimatedSizeMb(0);
         updateFormData({ videoBlob: null, videoRecorded: false });
         setRecordingState('idle');
     };
@@ -192,7 +201,7 @@ const VerificationStep3 = ({ formData, updateFormData, onFinish, onSave, isSavin
                 {recordingState === 'done' && (
                     <div className="absolute top-4 left-4 z-20 flex items-center gap-2 px-3 py-1.5 bg-green-500/90 rounded-full">
                         <span className="material-symbols-outlined !text-sm text-white">check_circle</span>
-                        <span className="text-white text-xs font-bold">Recording Complete</span>
+                        <span className="text-white text-xs font-bold">Recording Complete {estimatedSizeMb ? `• ${estimatedSizeMb} MB` : ''}</span>
                     </div>
                 )}
 

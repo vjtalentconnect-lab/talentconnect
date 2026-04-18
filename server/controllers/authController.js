@@ -11,6 +11,12 @@ import { sendEmail } from '../lib/email.js';
 const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
+const getCookieOptions = (days = 30) => ({
+    expires: new Date(Date.now() + days * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+});
 
 const storeToken = async (collection, token, data) => {
     await db.collection(collection).doc(token).set({
@@ -348,13 +354,7 @@ export const googleLogin = async (req, res) => {
             provider: 'google',
         });
 
-        const options = {
-            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        };
-
-        res.status(200).cookie('token', idToken, options).json({
+        res.status(200).cookie('token', idToken, getCookieOptions(30)).json({
             success: true,
             token: idToken,
             user: { id: uid, email, role: userData.role, verificationStatus: userData.verificationStatus },
@@ -378,13 +378,10 @@ export const linkedinLogin = async (req, res) => {
     }
 
     try {
-        console.log('🔵 LinkedIn OAuth - Debug Info:');
-        console.log('  Code:', code.substring(0, 20) + '...');
-        console.log('  Redirect URI:', redirectUri);
-        console.log('  Client ID:', process.env.LINKEDIN_CLIENT_ID);
+        console.log('[LinkedIn] Authorization code received');
+        console.log('[LinkedIn] Redirect URI:', redirectUri);
+        console.log('[LinkedIn] Client ID configured:', Boolean(process.env.LINKEDIN_CLIENT_ID));
 
-        // Exchange authorization code for access token
-        // LinkedIn requires form-encoded data in the request body
         const tokenResp = await axios.post(
             'https://www.linkedin.com/oauth/v2/accessToken',
             new URLSearchParams({
@@ -399,14 +396,13 @@ export const linkedinLogin = async (req, res) => {
             }
         );
         const accessToken = tokenResp.data.access_token;
-        console.log('✅ LinkedIn - Access token obtained:', accessToken.substring(0, 20) + '...');
+        console.log('[LinkedIn] OAuth token exchange successful');
 
         let linkedinId;
         let fullName;
         let email;
         let profilePicture;
 
-        // Prefer OpenID Connect userinfo (recommended for Sign In with LinkedIn using OpenID Connect)
         try {
             const userinfoResp = await axios.get('https://api.linkedin.com/v2/userinfo', {
                 headers: { Authorization: `Bearer ${accessToken}` },
@@ -416,19 +412,17 @@ export const linkedinLogin = async (req, res) => {
             linkedinId = data.sub;
             fullName = data.name || `${data.given_name || ''} ${data.family_name || ''}`.trim();
             email = data.email;
-            
-            // Handle profile picture - can be string URL or nested object { url: '...' }
+
             if (data.picture && typeof data.picture === 'object' && data.picture.url) {
                 profilePicture = data.picture.url;
             } else {
                 profilePicture = data.picture || '';
             }
 
-            console.log('✅ LinkedIn - Got userinfo from OIDC endpoint');
+            console.log('[LinkedIn] User info fetched from OIDC endpoint');
         } catch (userinfoErr) {
-            console.log('⚠️ LinkedIn userinfo endpoint failed, falling back to v2/me + emailAddress path', userinfoErr?.response?.data || userinfoErr?.message);
+            console.log('[LinkedIn] User info endpoint failed, falling back to legacy API path', userinfoErr?.response?.data || userinfoErr?.message);
 
-            // Legacy API flow (for r_liteprofile / r_emailaddress integration)
             const profileResp = await axios.get(
                 'https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,profilePicture(displayImage~:playableStreams))',
                 {
@@ -472,13 +466,7 @@ export const linkedinLogin = async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        const options = {
-            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        };
-
-        res.status(200).cookie('token', token, options).json({
+        res.status(200).cookie('token', token, getCookieOptions(7)).json({
             success: true,
             token,
             user: { id: uid, email, role: userData.role, verificationStatus: userData.verificationStatus },
@@ -486,20 +474,20 @@ export const linkedinLogin = async (req, res) => {
     } catch (err) {
         const status = err?.response?.status || 500;
         const errorData = err?.response?.data || {};
-        
-        console.error('❌ LinkedIn OAuth Error details:');
+
+        console.error('[LinkedIn] OAuth error details:');
         console.error('  URL:', err?.config?.url);
         console.error('  Status:', status);
         console.error('  Error:', errorData.error || 'N/A');
         console.error('  Description:', errorData.error_description || err.message);
-        
+
         if (status === 401) {
-            console.warn('  💡 Hint: Check your LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in .env.');
+            console.warn('[LinkedIn] Hint: Check LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET in .env.');
         }
 
         const isProduction = process.env.NODE_ENV === 'production';
-        
-        res.status(status).json({ 
+
+        res.status(status).json({
             message: errorData.error_description || errorData.error || err?.message || 'LinkedIn login failed',
             ...(isProduction ? {} : { details: { status, error: errorData.error, error_description: errorData.error_description } })
         });
@@ -531,16 +519,7 @@ export const login = async (req, res) => {
         const userData = userDoc.data();
 
         // Set cookie
-        const options = {
-            expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            httpOnly: true,
-        };
-
-        if (process.env.NODE_ENV === 'production') {
-            options.secure = true;
-        }
-
-        res.status(200).cookie('token', idToken, options).json({
+        res.status(200).cookie('token', idToken, getCookieOptions(30)).json({
             success: true,
             token: idToken,
             user: {
@@ -565,7 +544,12 @@ export const resendVerification = async (req, res) => {
 
     try {
         const user = await fetchUserByEmail(email);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(200).json({
+                success: true,
+                message: 'If your account exists and is unverified, we sent a new verification email.',
+            });
+        }
         if (user.isVerified) {
             return res.status(200).json({ success: true, message: 'Email already verified' });
         }
@@ -624,7 +608,12 @@ export const forgotPassword = async (req, res) => {
 
     try {
         const user = await fetchUserByEmail(email);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(200).json({
+                success: true,
+                message: 'If an account exists with this email, a reset link has been sent.',
+            });
+        }
 
         await sendResetPasswordEmail({ userId: user.id, email });
         res.status(200).json({ success: true, message: 'Password reset email sent' });
@@ -747,6 +736,8 @@ export const logout = async (req, res) => {
     res.cookie('token', 'none', {
         expires: new Date(Date.now() + 10 * 1000),
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
     });
 
     res.status(200).json({ success: true, data: {} });

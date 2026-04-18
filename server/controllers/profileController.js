@@ -2,12 +2,74 @@ import { db } from '../lib/firebaseAdmin.js';
 import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 import { broadcastAdminEvent, sendNotification } from '../socket.js';
 
+const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:']);
+
+const isSafeUrl = (value) => {
+    if (typeof value !== 'string' || value.trim().length === 0) return false;
+    try {
+        const url = new URL(value);
+        return SAFE_URL_PROTOCOLS.has(url.protocol) && url.hostname.length > 0;
+    } catch {
+        return false;
+    }
+};
+
+const isSafeUrlOrEmpty = (value) => value === '' || isSafeUrl(value);
+
+const sanitizeSocialLinks = (socialLinks) => {
+    if (!socialLinks || typeof socialLinks !== 'object') return null;
+    const allowedKeys = ['instagram', 'twitter', 'linkedin', 'website', 'imdb', 'wikipedia'];
+    const sanitized = {};
+
+    for (const key of allowedKeys) {
+        const value = socialLinks[key];
+        if (typeof value !== 'string' || value.trim() === '') continue;
+
+        if (value.startsWith('http://') || value.startsWith('https://')) {
+            if (!isSafeUrl(value)) continue;
+        }
+
+        sanitized[key] = value.trim();
+    }
+
+    return Object.keys(sanitized).length > 0 ? sanitized : null;
+};
+
+const sanitizePortfolioItems = (portfolio) => {
+    if (!Array.isArray(portfolio)) return null;
+    return portfolio
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => {
+            const sanitized = {};
+            if (typeof item.type === 'string' && ['image', 'video'].includes(item.type)) {
+                sanitized.type = item.type;
+            }
+            if (isSafeUrl(item.url)) {
+                sanitized.url = item.url;
+            }
+            if (typeof item.title === 'string') {
+                sanitized.title = item.title.trim();
+            }
+            if (typeof item.description === 'string') {
+                sanitized.description = item.description.trim();
+            }
+            return sanitized.url ? sanitized : null;
+        })
+        .filter(Boolean);
+};
+
 const PROFILE_ALLOWED_FIELDS = new Set([
     'fullName', 'bio', 'location', 'mobile', 'skills', 'experienceYears',
     'talentCategory', 'physicalMetrics', 'showreelUrl', 'socialLinks',
     'privacySettings', 'companyName', 'industryType', 'previousProjects',
     'portfolio'
 ]);
+
+const parseLimitAndCursor = (req, defaultLimit = 20, maxLimit = 100) => {
+    const limitVal = Math.min(Math.max(1, parseInt(req.query.limit, 10) || defaultLimit), maxLimit);
+    const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
+    return { limitVal, cursor };
+};
 
 // @desc    Get current user profile
 // @route   GET /api/profile/me
@@ -64,11 +126,49 @@ export const updateProfile = async (req, res) => {
 
         const updateData = { updatedAt: new Date().toISOString() };
         for (const [key, value] of Object.entries(req.body)) {
-            if (PROFILE_ALLOWED_FIELDS.has(key)) {
-                updateData[key] = value;
-            } else {
+            if (!PROFILE_ALLOWED_FIELDS.has(key)) {
                 console.warn('[SECURITY] Rejected unknown profile field:', key, 'from user:', req.user.id);
+                continue;
             }
+
+            if (key === 'showreelUrl') {
+                if (!isSafeUrlOrEmpty(value)) {
+                    console.warn('[SECURITY] Rejected unsafe showreelUrl for user:', req.user.id);
+                    continue;
+                }
+                updateData.showreelUrl = value;
+                continue;
+            }
+
+            if (key === 'socialLinks') {
+                if (value && typeof value === 'object' && Object.keys(value).length === 0) {
+                    updateData.socialLinks = {};
+                    continue;
+                }
+                const sanitizedLinks = sanitizeSocialLinks(value);
+                if (sanitizedLinks) {
+                    updateData.socialLinks = sanitizedLinks;
+                } else {
+                    console.warn('[SECURITY] Rejected unsafe socialLinks for user:', req.user.id);
+                }
+                continue;
+            }
+
+            if (key === 'portfolio') {
+                if (Array.isArray(value) && value.length === 0) {
+                    updateData.portfolio = [];
+                    continue;
+                }
+                const sanitizedPortfolio = sanitizePortfolioItems(value);
+                if (sanitizedPortfolio) {
+                    updateData.portfolio = sanitizedPortfolio;
+                } else {
+                    console.warn('[SECURITY] Rejected unsafe portfolio items for user:', req.user.id);
+                }
+                continue;
+            }
+
+            updateData[key] = value;
         }
 
         let profileData = { ...updateData };
@@ -115,7 +215,7 @@ export const getProfileById = async (req, res) => {
             data: { 
                 id: profileDoc.id, 
                 ...profileData, 
-                user: { id: userDoc.id, email: userData.email, role: userData.role } 
+                user: { id: userDoc.id, role: userData.role } 
             } 
         });
     } catch (err) {
@@ -155,7 +255,7 @@ export const getProfileByUser = async (req, res) => {
             data: {
                 id: profileDoc.id,
                 ...profileData,
-                user: { id: userDoc.id || userId, email: userData.email, role: userData.role }
+                user: { id: userDoc.id || userId, role: userData.role }
             }
         });
     } catch (err) {
@@ -169,10 +269,19 @@ export const getProfileByUser = async (req, res) => {
 export const getProfiles = async (req, res) => {
     try {
         const { talentCategory, location, skills, eyeColor, hairColor, minHeight, maxHeight } = req.query;
-        let query = db.collection('profiles');
+        const { limitVal, cursor } = parseLimitAndCursor(req);
+        let query = db.collection('profiles').orderBy('createdAt', 'desc').limit(limitVal);
 
         if (talentCategory) {
             query = query.where('talentCategory', '==', talentCategory);
+        }
+
+        if (cursor) {
+            const cursorDoc = await db.collection('profiles').doc(cursor).get();
+            if (!cursorDoc.exists) {
+                return res.status(400).json({ message: 'Invalid cursor' });
+            }
+            query = query.startAfter(cursorDoc);
         }
         
         // Note: Firestore doesn't support native RegEx or $in efficiently like Mongoose.
@@ -205,18 +314,110 @@ export const getProfiles = async (req, res) => {
         }
 
         // Populate user info for each profile
-        const populatedProfiles = await Promise.all(profiles.map(async (p) => {
-            const userDoc = await db.collection('users').doc(p.user).get();
-            const userData = userDoc.exists ? userDoc.data() : {};
-            return {
-                ...p,
-                user: { id: userDoc.id, email: userData.email, role: userData.role }
-            };
-        }));
+        const userRefs = [...new Set(profiles.map((profile) => profile.user).filter(Boolean))]
+            .map((userId) => db.collection('users').doc(userId));
+        const userDocs = userRefs.length > 0 ? await db.getAll(...userRefs) : [];
+        const userMap = new Map(userDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
 
-        res.status(200).json({ success: true, count: populatedProfiles.length, data: populatedProfiles });
+        const populatedProfiles = profiles.map((profile) => {
+            const userData = userMap.get(profile.user) || {};
+            return {
+                ...profile,
+                user: { id: profile.user, role: userData?.role }
+            };
+        });
+
+        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        res.status(200).json({ success: true, count: populatedProfiles.length, nextCursor, data: populatedProfiles });
     } catch (err) {
         res.status(400).json({ message: err.message });
+    }
+};
+
+// @desc    Export the current user's personal data
+// @route   GET /api/profile/export-data
+// @access  Private
+export const exportMyData = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const [
+            userDoc,
+            profileSnap,
+            applicationsSnap,
+            sentMessagesSnap,
+            receivedMessagesSnap,
+            notificationsSnap,
+        ] = await Promise.all([
+            db.collection('users').doc(userId).get(),
+            db.collection('profiles').where('user', '==', userId).limit(1).get(),
+            db.collection('applications').where('talent', '==', userId).get(),
+            db.collection('messages').where('sender', '==', userId).get(),
+            db.collection('messages').where('receiver', '==', userId).get(),
+            db.collection('notifications').where('user', '==', userId).limit(100).get(),
+        ]);
+
+        const profileData = profileSnap.empty ? null : profileSnap.docs[0].data();
+        const exportData = {
+            exportedAt: new Date().toISOString(),
+            requestedBy: userId,
+            note: 'This is all personal data TalentConnect currently holds about you, provided for GDPR and DPDP compliance.',
+            account: userDoc.exists ? {
+                email: userDoc.data().email,
+                role: userDoc.data().role,
+                plan: userDoc.data().plan,
+                verificationStatus: userDoc.data().verificationStatus,
+                createdAt: userDoc.data().createdAt,
+                authProvider: userDoc.data().authProvider,
+            } : null,
+            profile: profileData ? {
+                fullName: profileData.fullName,
+                bio: profileData.bio,
+                location: profileData.location,
+                skills: profileData.skills,
+                talentCategory: profileData.talentCategory,
+                portfolio: (profileData.portfolio || []).map((item) => ({
+                    title: item.title,
+                    type: item.type,
+                    url: item.url,
+                })),
+                socialLinks: profileData.socialLinks,
+                createdAt: profileData.createdAt,
+            } : null,
+            applications: applicationsSnap.docs.map((doc) => ({
+                id: doc.id,
+                projectId: doc.data().project,
+                status: doc.data().status,
+                createdAt: doc.data().createdAt,
+            })),
+            messagesSent: sentMessagesSnap.docs.map((doc) => ({
+                id: doc.id,
+                to: doc.data().receiver,
+                content: doc.data().content,
+                createdAt: doc.data().createdAt,
+            })),
+            messagesReceived: receivedMessagesSnap.docs.map((doc) => ({
+                id: doc.id,
+                from: doc.data().sender,
+                content: doc.data().content,
+                createdAt: doc.data().createdAt,
+                read: doc.data().read,
+            })),
+            notifications: notificationsSnap.docs.map((doc) => ({
+                id: doc.id,
+                type: doc.data().type,
+                title: doc.data().title,
+                createdAt: doc.data().createdAt,
+                read: doc.data().read,
+            })),
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="my-talentconnect-data-${new Date().toISOString().split('T')[0]}.json"`);
+        res.status(200).json(exportData);
+        console.info('[GDPR] Data exported for user:', userId);
+    } catch (err) {
+        console.error('[GDPR] Export error:', err);
+        res.status(500).json({ message: 'Data export failed. Please try again.' });
     }
 };
 
@@ -246,6 +447,15 @@ export const uploadMedia = async (req, res) => {
         if (type === 'profilePicture') {
             updateData.profilePicture = fileUrl;
         } else if (type === 'portfolio') {
+            const currentPortfolio = profileData.portfolio || [];
+            const MAX_PORTFOLIO_ITEMS = 20;
+
+            if (currentPortfolio.length >= MAX_PORTFOLIO_ITEMS) {
+                return res.status(400).json({
+                    message: `Portfolio limit reached. Maximum ${MAX_PORTFOLIO_ITEMS} items allowed. Remove an existing item to add a new one.`,
+                });
+            }
+
             const portfolio = profileData.portfolio || [];
             portfolio.push({
                 type: req.file.mimetype.startsWith('video') ? 'video' : 'image',

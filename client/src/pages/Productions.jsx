@@ -218,10 +218,29 @@ const Productions = () => {
                 The world's most trusted platform for discovering talent and casting for films, ads, and web series — across every cinema industry.
               </p>
               <div className="flex gap-4">
-                <a className="text-gray-400 hover:text-white transition-colors" href="#"><i className="text-xl">FB</i></a>
-                <a className="text-gray-400 hover:text-white transition-colors" href="#"><i className="text-xl">IG</i></a>
-                <a className="text-gray-400 hover:text-white transition-colors" href="#"><i className="text-xl">TW</i></a>
-                <a className="text-gray-400 hover:text-white transition-colors" href="#"><i className="text-xl">LI</i></a>
+                <a className="text-gray-400 hover:text-primary transition-colors" href="#" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+                  <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                    <path d="M17 2.5h-2.5A4.5 4.5 0 0 0 10 7v2H7.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5H10v7a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-7h2.1a.5.5 0 0 0 .5-.5l.4-3a.5.5 0 0 0-.5-.5H14V7a1 1 0 0 1 1-1H17a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 0-.5-.5z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+                <a className="text-gray-400 hover:text-primary transition-colors" href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+                  <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                    <rect x="3" y="3" width="18" height="18" rx="5" strokeWidth="1.5"/>
+                    <circle cx="12" cy="12" r="4" strokeWidth="1.5"/>
+                    <circle cx="17" cy="7" r="1" fill="currentColor"/>
+                  </svg>
+                </a>
+                <a className="text-gray-400 hover:text-primary transition-colors" href="#" aria-label="Twitter" target="_blank" rel="noopener noreferrer">
+                  <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                    <path d="M22 5.92a8.38 8.38 0 0 1-2.36.65A4.13 4.13 0 0 0 21.4 4.1a8.19 8.19 0 0 1-2.6.99A4.11 4.11 0 0 0 12 8.09c0 .32.04.64.1.94A11.65 11.65 0 0 1 3 4.89a4.11 4.11 0 0 0 1.27 5.48A4.07 4.07 0 0 1 2.8 9.1v.05a4.11 4.11 0 0 0 3.3 4.03c-.2.05-.41.08-.62.08-.15 0-.3-.01-.45-.04a4.13 4.13 0 0 0 3.84 2.85A8.24 8.24 0 0 1 2 19.54a11.62 11.62 0 0 0 6.29 1.84c7.55 0 11.68-6.26 11.68-11.68 0-.18-.01-.36-.02-.54A8.18 8.18 0 0 0 22 5.92z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+                <a className="text-gray-400 hover:text-primary transition-colors" href="#" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer">
+                  <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                    <rect x="2" y="2" width="20" height="20" rx="5" strokeWidth="1.5"/>
+                    <path d="M7 10v7M7 7v.01M12 10v7m0 0v-4a2 2 0 0 1 4 0v4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
               </div>
             </div>
             <div>

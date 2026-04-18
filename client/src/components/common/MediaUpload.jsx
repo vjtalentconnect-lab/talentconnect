@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { uploadMedia } from '../../services/profileService';
+import { validateFileForUpload } from '../../utils/fileValidation';
 
 const MediaUpload = ({ type, onUploadSuccess, title = '', description = '' }) => {
     const [uploading, setUploading] = useState(false);
@@ -13,14 +14,14 @@ const MediaUpload = ({ type, onUploadSuccess, title = '', description = '' }) =>
         setUploading(true);
         setError(null);
 
-        const formData = new FormData();
-        formData.append('media', file);
-        formData.append('type', type);
-        if (title) formData.append('title', title);
-        if (description) formData.append('description', description);
-
         try {
-            const result = await uploadMedia(formData);
+            await validateFileForUpload(
+                file,
+                type === 'profilePicture'
+                    ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+                    : ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf']
+            );
+            const result = await uploadMedia(file, type, { title, description });
             if (result.success) {
                 onUploadSuccess(result.data);
             }
@@ -39,7 +40,7 @@ const MediaUpload = ({ type, onUploadSuccess, title = '', description = '' }) =>
                 id={`file-upload-${type}`}
                 className="hidden"
                 onChange={handleFileChange}
-                accept={type === 'profilePicture' ? 'image/*' : '*'}
+                accept={type === 'profilePicture' ? 'image/jpeg,image/png,image/webp,image/gif' : 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm,application/pdf'}
                 disabled={uploading}
             />
             <label

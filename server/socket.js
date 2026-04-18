@@ -1,13 +1,19 @@
 // Security model: All room memberships are derived server-side from the verified token.
 // Clients cannot request to join arbitrary rooms; joins are automatic after auth.
 import { Server } from 'socket.io';
+import { logger } from './lib/logger.js'
 
 let io;
 
 export const init = (httpServer) => {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) || [
+        'http://localhost:5173',
+        'https://talentconnect-6e347.web.app',
+    ];
+
     io = new Server(httpServer, {
         cors: {
-            origin: [process.env.FRONTEND_URL || 'https://talentconnect-6e347.web.app', 'http://localhost:5173'],
+            origin: allowedOrigins,
             methods: ['GET', 'POST'],
             credentials: true,
         },
@@ -15,8 +21,8 @@ export const init = (httpServer) => {
 
     io.use(async (socket, next) => {
         try {
-            const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
-            if (!token) return next(new Error('Authentication required'));
+            const token = socket.handshake.auth?.token;
+            if (!token) return next(new Error('AUTH_REQUIRED'));
 
             const { auth, db } = await import('./lib/firebaseAdmin.js');
             let userId, userRole;
@@ -24,7 +30,7 @@ export const init = (httpServer) => {
                 const decoded = await auth.verifyIdToken(token);
                 userId = decoded.uid;
                 const userDoc = await db.collection('users').doc(userId).get();
-                if (!userDoc.exists) return next(new Error('User not found'));
+                if (!userDoc.exists) return next(new Error('USER_NOT_FOUND'));
                 userRole = userDoc.data().role;
             } catch {
                 const jwt = (await import('jsonwebtoken')).default;
@@ -38,7 +44,7 @@ export const init = (httpServer) => {
             socket.userRole = userRole;
             next();
         } catch (err) {
-            next(new Error('Invalid token'));
+            next(new Error('AUTH_INVALID'));
         }
     });
 
@@ -47,15 +53,17 @@ export const init = (httpServer) => {
         if (socket.userRole === 'admin') {
             socket.join('admins');
         }
-        console.log('Socket authenticated:', socket.userId, 'role:', socket.userRole);
+        logger.info({ userId: socket.userId, role: socket.userRole }, 'Socket authenticated');
 
         socket.on('sendMessage', (data) => {
-            if (data.sender !== socket.userId) {
+            if (!data?.receiver || !data?.content) {
+                return;
+            }
+            if (data.sender && data.sender !== socket.userId) {
                 socket.emit('error', { message: 'Cannot send messages as another user' });
                 return;
             }
-            // data: { sender, receiver, content, createdAt }
-            io.to(data.receiver).emit('receiveMessage', data);
+            io.to(data.receiver).emit('receiveMessage', { ...data, sender: socket.userId });
 
             // Also notify the receiver about a new message
             io.to(data.receiver).emit('newNotification', {
@@ -67,7 +75,7 @@ export const init = (httpServer) => {
         });
 
         socket.on('disconnect', () => {
-            console.log('User disconnected');
+            logger.info({ userId: socket.userId }, 'Socket disconnected');
         });
     });
 

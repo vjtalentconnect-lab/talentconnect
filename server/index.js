@@ -6,11 +6,13 @@ dns.setServers(['8.8.8.8', '8.8.4.4']);
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
+import pinoHttp from 'pino-http';
+import { logger } from './lib/logger.js';
+import { v4 as uuidv4 } from 'uuid';
 import authRoutes from './routes/authRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
@@ -24,29 +26,42 @@ import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 import connectDB from './config/db.js';
 import { getRedisClient } from './lib/redisClient.js';
 import { scheduleTokenCleanup } from './lib/tokenCleanup.js';
+import mongoose from 'mongoose';
 
 // Load env vars
 dotenv.config({ override: true });
 import './lib/jwtSecret.js';
+import './lib/sentry.js';
 
 // Firebase is initialized in lib/firebaseAdmin.js
 // Connect MongoDB (optional secondary backup store for text data, not required for primary Firestore). 
 if (process.env.MONGODB_URI) {
     connectDB();
 } else {
-    console.warn('MONGODB_URI not set; optional secondary MongoDB backups are disabled. This is expected for local/dev setups when Firestore is the primary DB.');
+    logger.warn('MONGODB_URI not set; optional secondary MongoDB backups are disabled. This is expected for local/dev setups when Firestore is the primary DB.');
 }
 
 const PORT = process.env.PORT || 5000;
 const app = express();
+let isShuttingDown = false;
 
 // Required for Render / Heroku to correctly get client IP for rate limiting
 app.set('trust proxy', 1);
 
 // Middleware
 app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const jsonParser = express.json();
+const urlencodedParser = express.urlencoded({ extended: true });
+
+app.use((req, res, next) => {
+    if (req.originalUrl === '/api/payment/webhook') return next();
+    return jsonParser(req, res, next);
+});
+
+app.use((req, res, next) => {
+    if (req.originalUrl === '/api/payment/webhook') return next();
+    return urlencodedParser(req, res, next);
+});
 app.use(cookieParser());
 // Parse allowed origins from environment variables
 const parseAllowedOrigins = () => {
@@ -68,7 +83,7 @@ const parseAllowedOrigins = () => {
       if (trimmed) origins.add(trimmed)
     })
   }
-  console.info('[CORS] Allowed origins:', [...origins].join(', '))
+  logger.info({ origins: [...origins] }, '[CORS] Allowed origins')
   return origins
 }
 
@@ -83,7 +98,7 @@ app.use(
             if (ALLOWED_ORIGINS.has(origin)) {
                 callback(null, true);
             } else {
-                console.warn('[CORS] Blocked request from origin:', origin);
+                logger.warn({ origin }, '[CORS] Blocked request from origin');
                 callback(new Error('Not allowed by CORS'));
             }
         },
@@ -124,7 +139,7 @@ const buildStore = () => {
     try {
         return new RedisStore({ sendCommand: (...args) => client.call(...args) });
     } catch (err) {
-        console.warn('[Redis] Rate limit store init failed, falling back to memory:', err.message);
+        logger.warn({ err: err.message }, '[Redis] Rate limit store init failed, falling back to memory');
         return undefined;
     }
 };
@@ -165,7 +180,29 @@ app.use(limiter);
 // Apply strict admin-login limiter before auth routes
 app.use('/api/auth/admin-login', adminLoginLimiter);
 
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(pinoHttp({
+  logger,
+  genReqId: (req) => req.headers['x-request-id'] || uuidv4(),
+  customLogLevel: (_req, res, err) => {
+    if (err || res.statusCode >= 500) return 'error'
+    if (res.statusCode >= 400) return 'warn'
+    return 'info'
+  },
+  customSuccessMessage: (req, res) => req.method + ' ' + req.url + ' ' + res.statusCode,
+  customErrorMessage: (_req, _res, err) => err.message,
+  serializers: {
+    req: (req) => ({ id: req.id, method: req.method, url: req.url, userId: req.raw.user?.id }),
+    res: (res) => ({ statusCode: res.statusCode }),
+  },
+  autoLogging: {
+    ignore: (req) => req.url === '/health'
+  },
+}))
+
+app.use((req, res, next) => {
+  if (req.id) res.setHeader('X-Request-ID', req.id)
+  next()
+})
 
 // Cache-Control for GET requests (exclude API)
 app.use((req, res, next) => {
@@ -186,8 +223,54 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/workshops', workshopRoutes);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', uptime: process.uptime() });
+app.get('/health', async (req, res) => {
+    const checks = {
+        status: isShuttingDown ? 'shutting_down' : 'ok',
+        uptime: Math.round(process.uptime()),
+        timestamp: new Date().toISOString(),
+        memory: {
+            heapUsedMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+            heapTotalMB: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        },
+        services: {},
+    };
+
+    try {
+        const { db } = await import('./lib/firebaseAdmin.js');
+        if (!db) {
+            checks.services.firestore = 'not_configured';
+            if (!isShuttingDown) checks.status = 'degraded';
+        } else {
+            await db.collection('_health').limit(1).get();
+            checks.services.firestore = 'ok';
+        }
+    } catch {
+        checks.services.firestore = 'error';
+        if (!isShuttingDown) checks.status = 'degraded';
+    }
+
+    if (process.env.REDIS_URL) {
+        try {
+            const redis = getRedisClient();
+            if (redis) {
+                await redis.ping();
+                checks.services.redis = 'ok';
+            } else {
+                checks.services.redis = 'not_connected';
+                if (!isShuttingDown) checks.status = 'degraded';
+            }
+        } catch {
+            checks.services.redis = 'error';
+            if (!isShuttingDown) checks.status = 'degraded';
+        }
+    } else {
+        checks.services.redis = 'disabled';
+    }
+
+    checks.services.mongodb = mongoose.connection.readyState === 1 ? 'ok' : (process.env.MONGODB_URI ? 'not_connected' : 'disabled');
+
+    const httpStatus = checks.status === 'shutting_down' ? 503 : 200;
+    res.status(httpStatus).json(checks);
 });
 
 // Basic route
@@ -202,7 +285,59 @@ const httpServer = http.createServer(app);
 initSocket(httpServer);
 
 httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    console.log(`Health check available at http://localhost:${PORT}/health`);
+    logger.info({ port: PORT, env: process.env.NODE_ENV }, 'Server running');
+    logger.info({ port: PORT }, 'Health check available at http://localhost:${PORT}/health');
 });
 scheduleTokenCleanup();
+
+const gracefulShutdown = async (signal) => {
+    if (isShuttingDown) return;
+
+    isShuttingDown = true;
+    logger.info({ signal }, '[Shutdown] Signal received - starting graceful shutdown');
+
+    const forceExitTimer = setTimeout(() => {
+        logger.error('[Shutdown] Forced exit after 10s timeout');
+        process.exit(1);
+    }, 10000);
+
+    httpServer.close(async () => {
+        logger.info('[Shutdown] HTTP server closed');
+
+        try {
+            try {
+                const { getIO } = await import('./socket.js');
+                getIO().close();
+            } catch {}
+
+            const redis = getRedisClient();
+            if (redis) {
+                await redis.quit();
+                logger.info('[Shutdown] Redis connection closed');
+            }
+
+            if (mongoose.connection.readyState === 1) {
+                await mongoose.connection.close();
+                logger.info('[Shutdown] MongoDB connection closed');
+            }
+
+            clearTimeout(forceExitTimer);
+            logger.info('[Shutdown] Graceful shutdown complete');
+            process.exit(0);
+        } catch (err) {
+            clearTimeout(forceExitTimer);
+            logger.error({ err }, '[Shutdown] Error during shutdown');
+            process.exit(1);
+        }
+    });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('uncaughtException', (err) => {
+    logger.error({ err }, '[FATAL] Uncaught exception');
+    gracefulShutdown('uncaughtException');
+});
+process.on('unhandledRejection', (reason) => {
+    logger.error({ reason }, '[FATAL] Unhandled promise rejection');
+});

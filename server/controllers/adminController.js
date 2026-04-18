@@ -1,6 +1,19 @@
 import { db } from '../lib/firebaseAdmin.js';
 import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 import { cloudinary } from '../config/cloudinary.js';
+import { sendVerificationApprovedEmail } from '../lib/emailTemplates.js';
+
+const parseLimit = (value, defaultLimit, maxLimit) => Math.min(Math.max(1, parseInt(value, 10) || defaultLimit), maxLimit);
+
+const MAX_GLOBAL_SEARCH_RESULTS = 50;
+
+const buildRangeSearch = (collection, field, searchTerm) => {
+    return db.collection(collection)
+        .orderBy(field)
+        .startAt(searchTerm)
+        .endAt(`${searchTerm}\uf8ff`)
+        .limit(MAX_GLOBAL_SEARCH_RESULTS);
+};
 
 // @desc    Get platform stats
 // @route   GET /api/admin/stats
@@ -65,7 +78,7 @@ export const getStats = async (req, res) => {
 // @access  Private (Admin)
 export const getUsers = async (req, res) => {
     try {
-        const limitVal = Math.min(Math.max(1, parseInt(req.query.limit) || 50), 100);
+        const limitVal = parseLimit(req.query.limit, 50, 100);
         const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null;
 
         let query = db.collection('users').orderBy('createdAt', 'desc').limit(limitVal);
@@ -78,23 +91,23 @@ export const getUsers = async (req, res) => {
         }
 
         const snapshot = await query.get();
-        const users = await Promise.all(snapshot.docs.map(async (doc) => {
-            const userData = doc.data();
-            let profileData = null;
-            if (userData.profile) {
-                const profileDoc = await db.collection('profiles').doc(userData.profile).get();
-                profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
-            }
-            return { id: doc.id, _id: doc.id, ...userData, profile: profileData };
+        const users = snapshot.docs.map((doc) => ({ id: doc.id, _id: doc.id, ...doc.data() }));
+        const profileRefs = [...new Set(users.map((user) => user.profile).filter(Boolean))]
+            .map((profileId) => db.collection('profiles').doc(profileId));
+        const profileDocs = profileRefs.length > 0 ? await db.getAll(...profileRefs) : [];
+        const profileMap = new Map(profileDocs.map((doc) => [doc.id, doc.exists ? { id: doc.id, ...doc.data() } : null]));
+        const populatedUsers = users.map((user) => ({
+            ...user,
+            profile: user.profile ? profileMap.get(user.profile) || null : null,
         }));
 
         const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        console.info('[Admin] getUsers fetched', users.length, 'users');
+        console.info('[Admin] getUsers fetched', populatedUsers.length, 'users');
         res.status(200).json({
             success: true,
-            count: users.length,
+            count: populatedUsers.length,
             nextCursor: lastDoc ? lastDoc.id : null,
-            data: users
+            data: populatedUsers
         });
     } catch (err) {
         console.error(`[AdminController] Error fetching users: ${err.message}`);
@@ -172,6 +185,12 @@ export const verifyUser = async (req, res) => {
             updatedAt: new Date().toISOString()
         });
 
+        if (verificationStatus === 'verified') {
+          const profileSnap = await db.collection('profiles').where('user','==',req.params.id).limit(1).get()
+          const userName = profileSnap.empty ? '' : profileSnap.docs[0].data().fullName
+          await sendVerificationApprovedEmail({ userEmail: user.email, userName })
+        }
+
         // Real-time update via Socket.io
         if (oldStatus !== verificationStatus) {
             try {
@@ -227,7 +246,7 @@ export const verifyUser = async (req, res) => {
 // @access  Private (Admin)
 export const getAdminProjects = async (req, res) => {
     try {
-        const limitVal = Math.min(Math.max(1, parseInt(req.query.limit) || 50), 100);
+        const limitVal = parseLimit(req.query.limit, 50, 100);
         const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null;
 
         let query = db.collection('projects').orderBy('createdAt', 'desc').limit(limitVal);
@@ -240,25 +259,25 @@ export const getAdminProjects = async (req, res) => {
         }
 
         const snapshot = await query.get();
-        const projects = await Promise.all(snapshot.docs.map(async (doc) => {
-            const pData = doc.data();
-            let director = null;
-            if (pData && pData.director) {
-                const directorDoc = await db.collection('users').doc(pData.director).get();
-                if (directorDoc.exists) {
-                    const dData = directorDoc.data();
-                    director = { id: directorDoc.id, email: dData.email, profile: dData.profile };
-                }
-            }
-            return { id: doc.id, ...pData, director };
-        }));
+        const projects = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const directorRefs = [...new Set(projects.map((project) => project.director).filter(Boolean))]
+            .map((directorId) => db.collection('users').doc(directorId));
+        const directorDocs = directorRefs.length > 0 ? await db.getAll(...directorRefs) : [];
+        const directorMap = new Map(directorDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+        const populatedProjects = projects.map((project) => {
+            const directorData = directorMap.get(project.director);
+            return {
+                ...project,
+                director: directorData ? { id: project.director, email: directorData.email, profile: directorData.profile } : null,
+            };
+        });
 
         const lastDoc = snapshot.docs[snapshot.docs.length - 1];
         res.status(200).json({
             success: true,
-            count: projects.length,
+            count: populatedProjects.length,
             nextCursor: lastDoc ? lastDoc.id : null,
-            data: projects
+            data: populatedProjects
         });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -436,20 +455,27 @@ export const deleteUser = async (req, res) => {
 export const searchGlobal = async (req, res) => {
     try {
         const { query } = req.query;
-if (!query) {
-            return res.status(200).json({ success: true, data: { users: [], projects: [] } });
+        if (!query || typeof query !== 'string' || query.trim().length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: { users: [], projects: [] },
+                meta: { truncated: { users: false, projects: false } }
+            });
         }
 
-        const searchTerm = query.toLowerCase();
+        const searchTerm = query.trim();
+        const normalizedTerm = searchTerm.toLowerCase();
 
-        // 1. Search Users
-        const usersSnapshot = await db.collection('users').limit(500).get();
-        const userDocsCapped = usersSnapshot.docs;
-        if (usersSnapshot.size >= 500) {
-            console.warn('Global search is scanning a large collection — consider adding Algolia/Typesense');
+        const exactUserDoc = await db.collection('users').doc(searchTerm).get();
+        const exactProjectDoc = await db.collection('projects').doc(searchTerm).get();
+
+        const usersSnapshot = await buildRangeSearch('users', 'email', searchTerm).get();
+        const userDocs = [...usersSnapshot.docs];
+        if (exactUserDoc.exists && !userDocs.some((doc) => doc.id === exactUserDoc.id)) {
+            userDocs.unshift(exactUserDoc);
         }
-        
-        const profileIds = [...new Set(userDocsCapped.map(doc => doc.data()?.profile).filter(Boolean))];
+
+        const profileIds = [...new Set(userDocs.map(doc => doc.data()?.profile).filter(Boolean))];
         const profileRefs = profileIds.map(id => db.collection('profiles').doc(id));
         const profileSnapshots = profileRefs.length > 0 ? await db.getAll(...profileRefs) : [];
         const profilesMap = new Map();
@@ -457,27 +483,27 @@ if (!query) {
             if (doc.exists) profilesMap.set(doc.id, { id: doc.id, ...doc.data() });
         });
 
-        const allUsers = userDocsCapped.map(doc => {
+        const allUsers = userDocs.map(doc => {
             const userData = doc.data();
             const profileData = userData.profile ? profilesMap.get(userData.profile) : null;
             return { id: doc.id, _id: doc.id, ...userData, profile: profileData };
         });
 
         const matchedUsers = allUsers.filter(u => 
-            (u.profile?.fullName || '').toLowerCase().includes(searchTerm) ||
-            (u.email || '').toLowerCase().includes(searchTerm) ||
-            u.id.toLowerCase().includes(searchTerm)
+            (u.profile?.fullName || '').toLowerCase().includes(normalizedTerm) ||
+            (u.email || '').toLowerCase().includes(normalizedTerm) ||
+            u.id.toLowerCase().includes(normalizedTerm)
         ).slice(0, 10);
 
-        // 2. Search Projects
-        const projectsSnapshot = await db.collection('projects').limit(500).get();
-        const projectDocsCapped = projectsSnapshot.docs;
-        if (projectsSnapshot.size >= 500) {
-            console.warn('Global search is scanning a large collection — consider adding Algolia/Typesense');
+        const projectsSnapshot = await buildRangeSearch('projects', 'title', searchTerm).get();
+        const projectDocs = [...projectsSnapshot.docs];
+        if (exactProjectDoc.exists && !projectDocs.some((doc) => doc.id === exactProjectDoc.id)) {
+            projectDocs.unshift(exactProjectDoc);
         }
-        const matchedProjects = projectDocsCapped
+
+        const matchedProjects = projectDocs
             .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(p => (p.title || '').toLowerCase().includes(searchTerm))
+            .filter(p => (p.title || '').toLowerCase().includes(normalizedTerm))
             .slice(0, 10);
 
         res.status(200).json({
@@ -485,6 +511,12 @@ if (!query) {
             data: {
                 users: matchedUsers,
                 projects: matchedProjects
+            },
+            meta: {
+                truncated: {
+                    users: usersSnapshot.size === MAX_GLOBAL_SEARCH_RESULTS,
+                    projects: projectsSnapshot.size === MAX_GLOBAL_SEARCH_RESULTS,
+                }
             }
         });
     } catch (err) {

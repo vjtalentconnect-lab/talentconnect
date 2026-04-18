@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { TALENT_MENU } from '../constants/navigation';
 import { useNotifications } from '../context/NotificationContext';
-import { getMyProfile, updateProfile, uploadMedia } from '../services/profileService';
+import { getMyProfile, updateProfile, uploadMedia, exportMyData } from '../services/profileService';
 import { changePassword } from '../services/authService';
 
 const Toast = ({ message, type, onDone }) => {
@@ -37,6 +37,7 @@ const ArtistSettings = () => {
     const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [pwLoading, setPwLoading] = useState(false);
     const [pwError, setPwError] = useState('');
+    const [exportingData, setExportingData] = useState(false);
 
     // Delete modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -94,7 +95,9 @@ const ArtistSettings = () => {
         e.preventDefault();
         setPwError('');
         if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('Passwords do not match.'); return; }
-        if (pwForm.newPassword.length < 6) { setPwError('Password must be at least 6 characters.'); return; }
+        if (pwForm.newPassword.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+        if (!/[A-Z]/.test(pwForm.newPassword)) { setPwError('Password must include at least one uppercase letter.'); return; }
+        if (!/[0-9]/.test(pwForm.newPassword)) { setPwError('Password must include at least one number.'); return; }
         setPwLoading(true);
         try {
             await changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
@@ -171,6 +174,19 @@ const ArtistSettings = () => {
         }
     };
 
+    const handleExportData = async () => {
+        setExportingData(true);
+        try {
+            await exportMyData();
+            showToast('Your data export has been downloaded.', 'success');
+        } catch (err) {
+            console.error('Data export failed:', err);
+            showToast('Failed to download your data export.', 'error');
+        } finally {
+            setExportingData(false);
+        }
+    };
+
     const userData = {
         name: profile?.fullName || 'Artist',
         roleTitle: `${profile?.talentCategory || 'Actor'} • ${profile?.location || 'India'}`,
@@ -209,7 +225,7 @@ const ArtistSettings = () => {
                         <form onSubmit={handleChangePassword} className="space-y-4">
                             {[
                                 { label: 'Current Password', key: 'currentPassword', placeholder: '••••••••' },
-                                { label: 'New Password', key: 'newPassword', placeholder: 'Min 6 characters' },
+                                { label: 'New Password', key: 'newPassword', placeholder: 'Min 8 chars, 1 uppercase, 1 number' },
                                 { label: 'Confirm New Password', key: 'confirmPassword', placeholder: 'Re-enter new password' },
                             ].map(({ label, key, placeholder }) => (
                                 <div key={key}>
@@ -398,6 +414,26 @@ const ArtistSettings = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div className="flex items-center gap-2 mb-6 text-primary">
+                        <span className="material-symbols-outlined">download</span>
+                        <h2 className="text-lg font-bold dark:text-white uppercase italic tracking-tighter">Privacy & Data Export</h2>
+                    </div>
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <p className="font-bold text-slate-800 dark:text-white">Download My Data</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Get a JSON export of your account, profile, applications, messages, and notifications.</p>
+                        </div>
+                        <button
+                            onClick={handleExportData}
+                            disabled={exportingData}
+                            className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-xl text-xs uppercase tracking-widest hover:opacity-90 transition-all disabled:opacity-70"
+                        >
+                            {exportingData ? 'Preparing Export...' : 'Download My Data'}
+                        </button>
                     </div>
                 </section>
 

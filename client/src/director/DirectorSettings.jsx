@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { getMyProfile, uploadMedia, updateProfile } from '../services/profileService';
+import { getMyProfile, uploadMedia, updateProfile, exportMyData } from '../services/profileService';
 import { changePassword } from '../services/authService';
 import { DIRECTOR_MENU } from '../constants/navigation';
 
@@ -34,6 +34,7 @@ const DirectorSettings = () => {
     const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [pwLoading, setPwLoading] = useState(false);
     const [pwError, setPwError] = useState('');
+    const [exportingData, setExportingData] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -114,7 +115,9 @@ const DirectorSettings = () => {
         e?.preventDefault();
         setPwError('');
         if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('Passwords do not match.'); return; }
-        if (pwForm.newPassword.length < 6) { setPwError('Password must be at least 6 characters.'); return; }
+        if (pwForm.newPassword.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+        if (!/[A-Z]/.test(pwForm.newPassword)) { setPwError('Password must include at least one uppercase letter.'); return; }
+        if (!/[0-9]/.test(pwForm.newPassword)) { setPwError('Password must include at least one number.'); return; }
         setPwLoading(true);
         try {
             await changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
@@ -129,6 +132,19 @@ const DirectorSettings = () => {
     };
 
     const clearToast = useCallback(() => setToast(null), []);
+
+    const handleExportData = async () => {
+        setExportingData(true);
+        try {
+            await exportMyData();
+            setToast({ type: 'success', message: 'Your data export has been downloaded.' });
+        } catch (err) {
+            console.error('Data export failed:', err);
+            setToast({ type: 'error', message: 'Failed to download your data export.' });
+        } finally {
+            setExportingData(false);
+        }
+    };
 
     const userData = {
         name: profile?.fullName || 'Rohan Mehra',
@@ -287,7 +303,7 @@ const DirectorSettings = () => {
                                     <form onSubmit={handleChangePassword} className="space-y-4">
                                         {[
                                             { label: 'Current Password', key: 'currentPassword', placeholder: '••••••••' },
-                                            { label: 'New Password', key: 'newPassword', placeholder: 'Min 6 characters' },
+                                            { label: 'New Password', key: 'newPassword', placeholder: 'Min 8 chars, 1 uppercase, 1 number' },
                                             { label: 'Confirm New Password', key: 'confirmPassword', placeholder: 'Re-enter new password' },
                                         ].map(({ label, key, placeholder }) => (
                                             <div key={key}>
@@ -422,6 +438,26 @@ const DirectorSettings = () => {
                                 <div className="absolute -right-6 md:-right-10 -bottom-6 md:-bottom-10 opacity-10">
                                     <span className="material-symbols-outlined text-[120px] md:text-[180px] text-primary">business_center</span>
                                 </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <div className="flex items-center gap-2 mb-4 md:mb-6 text-primary">
+                                <span className="material-symbols-outlined text-lg md:text-xl">download</span>
+                                <h2 className="text-base md:text-lg font-bold">Privacy & Data Export</h2>
+                            </div>
+                            <div className="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-white/5 p-4 md:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                <div className="space-y-1 min-w-0 flex-1">
+                                    <h3 className="font-bold text-slate-900 dark:text-white">Download My Data</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Export your account, profile, messages, notifications, and application data as JSON.</p>
+                                </div>
+                                <button
+                                    onClick={handleExportData}
+                                    disabled={exportingData}
+                                    className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 md:px-5 py-2 md:py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition-all disabled:opacity-70 flex-shrink-0"
+                                >
+                                    {exportingData ? 'Preparing Export...' : 'Download My Data'}
+                                </button>
                             </div>
                         </section>
 

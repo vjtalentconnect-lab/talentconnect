@@ -1,4 +1,5 @@
 import api from './api';
+import { validateFileForUpload } from '../utils/fileValidation';
 
 export const getMyProfile = async () => {
     const response = await api.get('/profile/me');
@@ -26,20 +27,33 @@ export const getProfiles = async (filters) => {
 };
 
 export const uploadMedia = async (mediaFile, type, metadata = {}) => {
-  // type: 'profilePicture' or 'portfolio'
-  // mediaFile can be a File object or a FormData object
-  // metadata: { title, description } - used for portfolio items
   const data = new FormData();
+  const acceptedTypes = type === 'profilePicture'
+    ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    : ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf'];
+  let fileToUpload = null;
   
   if (mediaFile instanceof FormData) {
-    // If already FormData, get the file and append it properly
-    const file = mediaFile.get('media');
-    if (file) {
-      data.append('media', file);
-    }
+    fileToUpload = mediaFile.get('media');
   } else {
-    data.append('media', mediaFile);
+    fileToUpload = mediaFile;
   }
+
+  if (!fileToUpload) {
+    throw new Error('No media file selected.');
+  }
+
+  await validateFileForUpload(fileToUpload, acceptedTypes);
+  data.append('media', fileToUpload);
+
+  if (mediaFile instanceof FormData) {
+    for (const [key, value] of mediaFile.entries()) {
+      if (key !== 'media') {
+        data.append(key, value);
+      }
+    }
+  }
+
   data.append('type', type);
   
   // Add metadata for portfolio items
@@ -50,15 +64,31 @@ export const uploadMedia = async (mediaFile, type, metadata = {}) => {
     data.append('description', metadata.description);
   }
 
-  const response = await api.post('/profile/upload', data, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const response = await api.post('/profile/upload', data);
   return response.data;
 };
 
 export const submitForVerification = async () => {
   const response = await api.post('/profile/submit-verification');
   return response.data;
+};
+
+export const exportMyData = async () => {
+  const response = await api.get('/profile/export-data', {
+    responseType: 'blob',
+  });
+
+  const blob = new Blob([response.data], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+  const contentDisposition = response.headers['content-disposition'] || '';
+  const matchedName = contentDisposition.match(/filename=\"?([^"]+)\"?/i);
+  const filename = matchedName?.[1] || `my-talentconnect-data-${new Date().toISOString().split('T')[0]}.json`;
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };

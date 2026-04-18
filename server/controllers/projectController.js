@@ -1,6 +1,21 @@
 import { db } from '../lib/firebaseAdmin.js';
 import { sendNotification, broadcastAdminEvent, broadcastProjectCreated } from '../socket.js';
 import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
+import { sendApplicationShortlistedEmail, sendSelectedEmail, sendApplicationRejectedEmail, sendAuditionScheduledEmail } from '../lib/emailTemplates.js';
+
+const parseLimit = (value, defaultLimit, maxLimit) => Math.min(Math.max(1, parseInt(value, 10) || defaultLimit), maxLimit);
+
+const buildCursorQuery = async ({ collection, orderField = 'createdAt', direction = 'desc', limitVal, cursor, baseQuery }) => {
+    let query = (baseQuery || db.collection(collection)).orderBy(orderField, direction).limit(limitVal);
+    if (cursor) {
+        const cursorDoc = await db.collection(collection).doc(cursor).get();
+        if (!cursorDoc.exists) {
+            return { error: 'Invalid cursor' };
+        }
+        query = query.startAfter(cursorDoc);
+    }
+    return { query };
+};
 
 // @desc    Get all projects
 // @route   GET /api/projects
@@ -8,10 +23,21 @@ import { addWithBackup, updateWithBackup } from '../lib/textBackup.js';
 export const getProjects = async (req, res) => {
     try {
         const { category, location, budget } = req.query;
-        let query = db.collection('projects').where('status', '==', 'open');
+        const limitVal = parseLimit(req.query.limit, 20, 100);
+        const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
+        let baseQuery = db.collection('projects').where('status', '==', 'open');
 
-        if (category) query = query.where('category', '==', category);
-        
+        if (category) baseQuery = baseQuery.where('category', '==', category);
+        const { query, error } = await buildCursorQuery({
+            collection: 'projects',
+            limitVal,
+            cursor,
+            baseQuery,
+        });
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
+
         const snapshot = await query.get();
         let projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -26,15 +52,18 @@ export const getProjects = async (req, res) => {
         }
 
         // Populate director
-        const populatedProjects = await Promise.all(projects.map(async (p) => {
-            const directorDoc = await db.collection('users').doc(p.director).get();
-            return {
-                ...p,
-                director: directorDoc.exists ? { id: directorDoc.id, email: directorDoc.data().email } : p.director
-            };
+        const directorRefs = [...new Set(projects.map((project) => project.director).filter(Boolean))]
+            .map((directorId) => db.collection('users').doc(directorId));
+        const directorDocs = directorRefs.length > 0 ? await db.getAll(...directorRefs) : [];
+        const directorMap = new Map(directorDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+
+        const populatedProjects = projects.map((project) => ({
+            ...project,
+            director: directorMap.get(project.director) ? { id: project.director } : project.director,
         }));
 
-        res.status(200).json({ success: true, count: populatedProjects.length, data: populatedProjects });
+        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        res.status(200).json({ success: true, count: populatedProjects.length, nextCursor, data: populatedProjects });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -63,7 +92,7 @@ export const getProject = async (req, res) => {
                     directorProfileId = profileSnap.docs[0].id;
                 }
             }
-            director = { id: directorDoc.id, email: directorData.email, profileId: directorProfileId };
+            director = { id: directorDoc.id, profileId: directorProfileId };
         }
 
         res.status(200).json({ success: true, data: { id: projectDoc.id, ...projectData, director } });
@@ -220,23 +249,26 @@ export const getProjectApplications = async (req, res) => {
         }
 
         const appsSnapshot = await db.collection('applications').where('project', '==', req.params.id).get();
-        const applications = await Promise.all(appsSnapshot.docs.map(async (doc) => {
-            const app = { id: doc.id, ...doc.data() };
-            // Populate talent and profile
-            const talentDoc = await db.collection('users').doc(app.talent).get();
-            const talentData = talentDoc.exists ? talentDoc.data() : {};
-            let profileData = null;
-            if (talentData.profile) {
-                const profileDoc = await db.collection('profiles').doc(talentData.profile).get();
-                profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
-            }
+        const applications = appsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const talentRefs = [...new Set(applications.map((app) => app.talent).filter(Boolean))]
+            .map((talentId) => db.collection('users').doc(talentId));
+        const talentDocs = talentRefs.length > 0 ? await db.getAll(...talentRefs) : [];
+        const talentMap = new Map(talentDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+        const profileRefs = [...new Set(talentDocs.map((doc) => (doc.exists ? doc.data()?.profile : null)).filter(Boolean))]
+            .map((profileId) => db.collection('profiles').doc(profileId));
+        const profileDocs = profileRefs.length > 0 ? await db.getAll(...profileRefs) : [];
+        const profileMap = new Map(profileDocs.map((doc) => [doc.id, doc.exists ? { id: doc.id, ...doc.data() } : null]));
+
+        const populatedApplications = applications.map((app) => {
+            const talentData = talentMap.get(app.talent) || {};
+            const profileData = talentData?.profile ? profileMap.get(talentData.profile) || null : null;
             return {
                 ...app,
-                talent: { id: talentDoc.id, email: talentData.email, profile: profileData }
+                talent: { id: app.talent, email: talentData?.email, profile: profileData }
             };
-        }));
+        });
 
-        res.status(200).json({ success: true, count: applications.length, data: applications });
+        res.status(200).json({ success: true, count: populatedApplications.length, data: populatedApplications });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -247,13 +279,25 @@ export const getProjectApplications = async (req, res) => {
 // @access  Private (Director only)
 export const getMyProjects = async (req, res) => {
     try {
-        const snapshot = await db.collection('projects')
-            .where('director', '==', req.user.id)
-            .get();
+        const limitVal = parseLimit(req.query.limit, 20, 100);
+        const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
+        const baseQuery = db.collection('projects').where('director', '==', req.user.id);
+        const { query, error } = await buildCursorQuery({
+            collection: 'projects',
+            limitVal,
+            cursor,
+            baseQuery,
+        });
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
+
+        const snapshot = await query.get();
         const projects = snapshot.docs
             .map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }))
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        res.status(200).json({ success: true, count: projects.length, data: projects });
+        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        res.status(200).json({ success: true, count: projects.length, nextCursor, data: projects });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -320,6 +364,9 @@ export const updateApplicationStatus = async (req, res) => {
 
         // Get project to check director
         const projectDoc = await db.collection('projects').doc(application.project).get();
+        if (!projectDoc.exists) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
         const project = projectDoc.data();
 
         if (project.director !== req.user.id) {
@@ -327,6 +374,24 @@ export const updateApplicationStatus = async (req, res) => {
         }
 
         await updateWithBackup('applications', req.params.appId, { status, updatedAt: new Date().toISOString() });
+
+        // Send email notifications
+        const talentUserDoc = await db.collection('users').doc(application.talent).get()
+        const talentEmail = talentUserDoc.data()?.email
+        const talentProfileSnap = await db.collection('profiles').where('user','==',application.talent).limit(1).get()
+        const talentName = talentProfileSnap.empty ? 'Artist' : (talentProfileSnap.docs[0].data().fullName || 'Artist')
+
+        if (status === 'shortlisted') {
+          const directorProfileSnap = await db.collection('profiles').where('user','==',req.user.id).limit(1).get()
+          const directorName = directorProfileSnap.empty ? 'Director' : (directorProfileSnap.docs[0].data().fullName || 'Director')
+          await sendApplicationShortlistedEmail({ talentEmail, talentName, projectTitle: project.title, directorName })
+        } else if (status === 'selected') {
+          const directorProfileSnap = await db.collection('profiles').where('user','==',req.user.id).limit(1).get()
+          const directorName = directorProfileSnap.empty ? 'Director' : (directorProfileSnap.docs[0].data().fullName || 'Director')
+          await sendSelectedEmail({ talentEmail, talentName, projectTitle: project.title, directorName })
+        } else if (status === 'rejected') {
+          await sendApplicationRejectedEmail({ talentEmail, talentName, projectTitle: project.title })
+        }
 
         // If talent is selected, send a default congratulatory message
         if (status === 'selected') {
@@ -392,15 +457,23 @@ export const scheduleAudition = async (req, res) => {
         const application = { id: appDoc.id, ...appDoc.data() };
 
         const projectDoc = await db.collection('projects').doc(application.project).get();
+        if (!projectDoc.exists) {
+            return res.status(404).json({ message: 'Project not found' });
+        }
         const project = projectDoc.data();
 
         if (project.director !== req.user.id) {
             return res.status(403).json({ message: 'Not authorized to schedule auditions for this application' });
         }
 
+        const auditionDateObj = new Date(auditionDate);
+        if (Number.isNaN(auditionDateObj.getTime())) {
+            return res.status(400).json({ message: 'Invalid audition date' });
+        }
+
         const updateData = {
             auditionScheduled: true,
-            auditionDate: new Date(auditionDate).toISOString(),
+            auditionDate: auditionDateObj.toISOString(),
             auditionLocation,
             auditionNotes,
             status: 'auditioning',
@@ -408,6 +481,13 @@ export const scheduleAudition = async (req, res) => {
         };
 
         await updateWithBackup('applications', req.params.appId, updateData);
+
+        // Send audition scheduled email
+        const talentUserDoc = await db.collection('users').doc(application.talent).get()
+        const talentEmail = talentUserDoc.data()?.email
+        const talentProfileSnap = await db.collection('profiles').where('user','==',application.talent).limit(1).get()
+        const talentName = talentProfileSnap.empty ? 'Artist' : (talentProfileSnap.docs[0].data().fullName || 'Artist')
+        await sendAuditionScheduledEmail({ talentEmail, talentName, projectTitle: project.title, auditionDate, auditionLocation, auditionNotes })
 
         // Notify Talent
         const notificationDoc = {
@@ -484,11 +564,13 @@ export const submitAuditionVideo = async (req, res) => {
 export const getDirectorApplications = async (req, res) => {
     try {
         const { status } = req.query;
+        const page = Math.max(0, parseInt(req.query.page, 10) || 0);
+        const limitVal = parseLimit(req.query.limit, 20, 100);
         const projectsSnapshot = await db.collection('projects').where('director', '==', req.user.id).get();
         const projectIds = projectsSnapshot.docs.map(doc => doc.id);
         
         if (projectIds.length === 0) {
-            return res.status(200).json({ success: true, count: 0, data: [] });
+            return res.status(200).json({ success: true, total: 0, page, hasMore: false, count: 0, data: [] });
         }
 
         let query = db.collection('applications').where('project', 'in', projectIds);
@@ -504,25 +586,35 @@ export const getDirectorApplications = async (req, res) => {
             applications = applications.filter(app => statusArray.includes(app.status));
         }
 
-        const populatedApps = await Promise.all(applications.map(async (app) => {
-            const talentDoc = await db.collection('users').doc(app.talent).get();
-            const talentData = talentDoc.data();
-            let profileData = null;
-            if (talentData.profile) {
-                const profileDoc = await db.collection('profiles').doc(talentData.profile).get();
-                profileData = profileDoc.exists ? { id: profileDoc.id, ...profileDoc.data() } : null;
-            }
-            const pDoc = await db.collection('projects').doc(app.project).get();
-            const pData = pDoc.data();
+        applications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const total = applications.length;
+        const pagedApplications = applications.slice(page * limitVal, (page + 1) * limitVal);
 
+        const talentRefs = [...new Set(pagedApplications.map((app) => app.talent).filter(Boolean))]
+            .map((talentId) => db.collection('users').doc(talentId));
+        const projectRefs = [...new Set(pagedApplications.map((app) => app.project).filter(Boolean))]
+            .map((projectId) => db.collection('projects').doc(projectId));
+        const talentDocs = talentRefs.length > 0 ? await db.getAll(...talentRefs) : [];
+        const projectDocs = projectRefs.length > 0 ? await db.getAll(...projectRefs) : [];
+        const talentMap = new Map(talentDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+        const projectMap = new Map(projectDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+        const profileRefs = [...new Set(talentDocs.map((doc) => (doc.exists ? doc.data()?.profile : null)).filter(Boolean))]
+            .map((profileId) => db.collection('profiles').doc(profileId));
+        const profileDocs = profileRefs.length > 0 ? await db.getAll(...profileRefs) : [];
+        const profileMap = new Map(profileDocs.map((doc) => [doc.id, doc.exists ? { id: doc.id, ...doc.data() } : null]));
+
+        const populatedApps = pagedApplications.map((app) => {
+            const talentData = talentMap.get(app.talent) || {};
+            const projectData = projectMap.get(app.project) || {};
+            const profileData = talentData?.profile ? profileMap.get(talentData.profile) || null : null;
             return {
                 ...app,
-                talent: { id: talentDoc.id, email: talentData.email, profile: profileData },
-                project: { id: pDoc.id, title: pData.title, category: pData.category }
+                talent: { id: app.talent, email: talentData?.email, profile: profileData },
+                project: { id: app.project, title: projectData?.title, category: projectData?.category }
             };
-        }));
+        });
 
-        res.status(200).json({ success: true, count: populatedApps.length, data: populatedApps });
+        res.status(200).json({ success: true, total, page, hasMore: (page + 1) * limitVal < total, count: populatedApps.length, data: populatedApps });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -533,31 +625,47 @@ export const getDirectorApplications = async (req, res) => {
 // @access  Private (Talent only)
 export const getMyApplications = async (req, res) => {
     try {
-        const snapshot = await db.collection('applications')
-            .where('talent', '==', req.user.id)
-            .get();
-        
-        const applications = await Promise.all(snapshot.docs.map(async (doc) => {
-            const app = { id: doc.id, ...doc.data() };
-            const pDoc = await db.collection('projects').doc(app.project).get();
-            const pData = pDoc.data();
-            const dDoc = await db.collection('users').doc(pData.director).get();
-            const dData = dDoc.data();
+        const limitVal = parseLimit(req.query.limit, 20, 100);
+        const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
+        const baseQuery = db.collection('applications').where('talent', '==', req.user.id);
+        const { query, error } = await buildCursorQuery({
+            collection: 'applications',
+            limitVal,
+            cursor,
+            baseQuery,
+        });
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
 
+        const snapshot = await query.get();
+        const applications = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const projectRefs = [...new Set(applications.map((app) => app.project).filter(Boolean))]
+            .map((projectId) => db.collection('projects').doc(projectId));
+        const projectDocs = projectRefs.length > 0 ? await db.getAll(...projectRefs) : [];
+        const projectMap = new Map(projectDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+        const directorRefs = [...new Set(projectDocs.map((doc) => (doc.exists ? doc.data()?.director : null)).filter(Boolean))]
+            .map((directorId) => db.collection('users').doc(directorId));
+        const directorDocs = directorRefs.length > 0 ? await db.getAll(...directorRefs) : [];
+        const directorMap = new Map(directorDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+
+        const populatedApplications = applications.map((app) => {
+            const projectData = projectMap.get(app.project) || {};
+            const directorData = directorMap.get(projectData?.director) || {};
             return {
                 ...app,
-                project: { 
-                    id: pDoc.id, 
-                    ...pData, 
-                    director: { id: dDoc.id, email: dData.email } 
+                project: {
+                    id: app.project,
+                    ...projectData,
+                    director: projectData?.director ? { id: projectData.director, email: directorData?.email } : null
                 }
             };
-        }));
+        });
 
-        // Sort manually since we can't orderBy on a field not in the filter easily without index
-        applications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        populatedApplications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        res.status(200).json({ success: true, count: applications.length, data: applications });
+        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        res.status(200).json({ success: true, count: populatedApplications.length, nextCursor, data: populatedApplications });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
