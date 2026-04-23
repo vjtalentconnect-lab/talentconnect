@@ -440,7 +440,23 @@ export const uploadMedia = async (req, res) => {
 
         // File is uploaded to Cloudinary via multer storage middleware
         const fileUrl = req.file.path;
-        const { type, title, description, idType, membershipId, associationName } = req.body; // explicit allowlist
+        
+        // Debug: Log all received fields
+        console.log('[Upload Media] req.body:', JSON.stringify(req.body));
+        console.log('[Upload Media] req.file:', { 
+            originalname: req.file.originalname, 
+            mimetype: req.file.mimetype,
+            size: req.file.size 
+        });
+        
+        const { type, title, description, idType, membershipId, associationName } = req.body;
+        const validTypes = ['profilePicture', 'portfolio', 'idFile', 'membershipCard', 'videoSelfie'];
+        
+        console.log('[Upload Media] Extracted type:', type, '| validTypes:', validTypes);
+        
+        if (!type || !validTypes.includes(type)) {
+            return res.status(400).json({ message: 'Invalid or missing upload type.', received: type });
+        }
 
         const updateData = {};
 
@@ -480,7 +496,9 @@ export const uploadMedia = async (req, res) => {
             updateData.verificationState = vs;
         }
 
-        await updateWithBackup('profiles', profileId, updateData);
+        if (Object.keys(updateData).length > 0) {
+            await updateWithBackup('profiles', profileId, updateData);
+        }
         res.status(200).json({ success: true, data: { ...profileData, ...updateData } });
     } catch (err) {
         console.error('Upload Error:', {

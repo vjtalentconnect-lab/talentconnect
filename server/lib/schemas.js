@@ -1,6 +1,29 @@
 import { z } from 'zod';
 
-const TALENT_CATEGORIES = ['actor', 'artist', 'model', 'musician', 'video_editor', 'dancer', 'content_creator', 'cinematographer', 'voice_over', 'other'];
+const TALENT_CATEGORIES = [
+  'Actor',
+  'Background Artist',
+  'Child Artist',
+  'Model',
+  'Theatre Actor',
+  'Voiceover Artist',
+  'Singer',
+  'Musician',
+  'Dancer / Choreographer',
+  'Stunt Performer',
+  'Comedian',
+  'Influencer / Creator',
+  'Anchor / Host',
+  'Cinematographer',
+  'Editor',
+  'Writer / Screenplay',
+  'Makeup / Hair',
+  'Costume / Stylist',
+  'Production Crew',
+  'Other'
+];
+
+console.log('[INIT] Active Talent Categories:', TALENT_CATEGORIES.join(', '));
 
 const socialLinksSchema = z.object({
   instagram: z.string().optional(),
@@ -24,16 +47,25 @@ export const loginSchema = z.object({
 });
 
 export const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['talent', 'director']),
-  fullName: z.string().min(2).max(100),
-  talentCategory: z.enum(TALENT_CATEGORIES).optional(),
-  location: z.string().optional(),
-  mobile: z.string().optional(),
-  companyName: z.string().optional(),
-  industryType: z.string().optional(),
-});
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(100, 'Password must be less than 100 characters'),
+  role: z.enum(['talent', 'director'], {
+    errorMap: () => ({ message: 'Please select a valid role (talent or director)' })
+  }),
+  fullName: z.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be less than 100 characters')
+    .transform(val => val?.trim()), // Trim whitespace
+  talentCategory: z.enum(TALENT_CATEGORIES, {
+    errorMap: () => ({ message: 'Please select a valid talent category' })
+  }).optional(),
+  location: z.string().max(200, 'Location must be less than 200 characters').optional(),
+  mobile: z.string().max(20, 'Mobile number must be less than 20 characters').optional(),
+  companyName: z.string().max(100, 'Company name must be less than 100 characters').optional(),
+  industryType: z.string().max(100, 'Industry type must be less than 100 characters').optional(),
+}).strict();
 
 export const updateProfileSchema = z
   .object({
@@ -75,30 +107,34 @@ export const createProjectSchema = z.object({
   requirements: z.array(z.string()).optional(),
   status: z.enum(['open', 'draft']).optional(),
   projectImage: z.string().optional(),
-});
+}).strict();
 
 export const updateApplicationStatusSchema = z.object({
   status: z.enum(['applied', 'shortlisted', 'auditioning', 'rejected', 'selected']),
-});
+}).strict();
 
 export const scheduleAuditionSchema = z.object({
   auditionDate: z.coerce.date().refine((date) => date > new Date(), { message: 'Must be in the future' }),
   auditionLocation: z.string().min(2).max(200),
   auditionNotes: z.string().max(500).optional(),
-});
+}).strict();
 
 export const submitVideoSchema = z.object({
   videoUrl: z.string().url(),
-});
+}).strict();
 
 export const adminVerifySchema = z.object({
-  verificationStatus: z.enum(['none', 'pending', 'verified', 'rejected']),
-});
+  verificationStatus: z.enum(['none', 'pending', 'verified', 'rejected']).optional(),
+  status: z.boolean().optional(),
+}).strict().refine(
+  (data) => data.verificationStatus !== undefined || data.status !== undefined,
+  { message: 'Either verificationStatus or status must be provided' }
+);
 
 export const sendMessageSchema = z.object({
   receiverId: z.string().min(1),
   content: z.string().min(1).max(5000),
-});
+}).strict();
 
 export const updateProjectSchema = z.object({
   title: z.string().min(3).max(200).optional(),

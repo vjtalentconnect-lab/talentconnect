@@ -26,6 +26,7 @@ const RegisterActor = () => {
         'Makeup / Hair',
         'Costume / Stylist',
         'Production Crew',
+        'Other',
     ];
 
     const countries = [
@@ -99,7 +100,7 @@ const RegisterActor = () => {
                 password: formData.password,
                 role: 'talent',
                 fullName: formData.fullName,
-                talentCategory: formData.category,
+                talentCategory: formData.category || undefined,
                 location,
                 mobile: formData.mobile,
             };
@@ -111,14 +112,29 @@ const RegisterActor = () => {
             console.log('Registration successful:', data);
             navigate('/talent/verify');
         } catch (err) {
-            const nextAttempts = submitAttempts + 1;
-            setSubmitAttempts(nextAttempts);
-            if (nextAttempts >= 3) {
-                const delayMs = Math.min(nextAttempts * 10000, 60000);
-                setLockUntil(Date.now() + delayMs);
-                setError(`Registration failed. Try again in ${Math.ceil(delayMs / 1000)}s.`);
+            console.error('Registration full error:', err);
+            // Better error handling with more specific messages
+            if (err.response?.data?.errors) {
+                const fieldErrors = err.response.data.errors;
+                const fieldName = Object.keys(fieldErrors)[0];
+                const errorMessage = fieldErrors[fieldName]?.[0] || 'Invalid value';
+                // Clean up field name for display
+                const displayField = fieldName.replace(/([A-Z])/g, ' $1').trim();
+                setError(`${displayField}: ${errorMessage}`);
+            } else if (err.response?.data?.message) {
+                // Handle network errors and other API errors
+                const msg = err.response.data.message;
+                if (msg.includes('email') || msg.includes('already exists')) {
+                    setError('This email is already registered. Try logging in instead.');
+                } else if (msg.includes('network') || msg.includes('fetch')) {
+                    setError('Network error. Please check your connection and try again.');
+                } else {
+                    setError(msg);
+                }
+            } else if (err.message?.includes('network') || err.message?.includes('fetch')) {
+                setError('Network error. Please check your internet connection and try again.');
             } else {
-                setError(err.response?.data?.message || 'Registration failed. Please try again.');
+                setError(err.message || 'Registration failed. Please try again.');
             }
         } finally {
             setLoading(false);
@@ -214,6 +230,8 @@ const RegisterActor = () => {
                                         className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                         placeholder="e.g. Ranbir Kapoor"
                                         type="text"
+                                        required
+                                        minLength={2}
                                     />
                                 </div>
 
@@ -230,6 +248,7 @@ const RegisterActor = () => {
                                         className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                         placeholder="name@example.com"
                                         type="email"
+                                        required
                                     />
                                 </div>
 
@@ -260,6 +279,7 @@ const RegisterActor = () => {
                                         value={formData.category}
                                         onChange={handleChange}
                                         className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none cursor-pointer"
+                                        required
                                     >
                                         <option value="" disabled>Select Category</option>
                                         {categories.map((c) => (
@@ -330,6 +350,8 @@ const RegisterActor = () => {
                                         className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                         placeholder="Min. 8 characters"
                                         type="password"
+                                        required
+                                        minLength={8}
                                     />
                                 </div>
 

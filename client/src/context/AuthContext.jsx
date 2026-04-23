@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getMe, logout as logoutRequest } from '../services/authService';
-import { AUTH_STORAGE_EVENT, clearAuthSession, getStoredAuth, persistAuthSession, updateStoredUser } from '../utils/authStorage';
+import { getMe, logout as logoutRequest, refreshAuthToken } from '../services/authService';
+import { AUTH_STORAGE_EVENT, TOKEN_REFRESH_EVENT, clearAuthSession, getStoredAuth, persistAuthSession, updateStoredUser, getAuthDiagnostics } from '../utils/authStorage';
+import tokenManager from '../utils/tokenManager.js';
 
 const AuthContext = createContext(null);
 
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
       token: stored.token,
       loading: true,
       initialized: false,
+      error: null,
     };
   });
 
@@ -35,6 +37,7 @@ export const AuthProvider = ({ children }) => {
         token: stored.token,
         loading: false,
         initialized: true,
+        error: null,
       });
       return stored.user;
     }
@@ -42,35 +45,81 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await getMe();
       const user = response?.data || response?.user || null;
-      persistAuthSession({ token: stored.token, user });
+      persistAuthSession({ 
+        token: stored.token, 
+        user,
+        issuedAt: stored.metadata?.issuedAt,
+        expiresIn: stored.metadata?.expiresIn,
+      });
       setAuthState({
         user,
         token: stored.token,
         loading: false,
         initialized: true,
+        error: null,
       });
       return user;
-    } catch {
+    } catch (err) {
+      console.error('[Auth] Failed to refresh user:', err);
       clearAuthSession();
       setAuthState({
         user: null,
         token: null,
         loading: false,
         initialized: true,
+        error: 'Session expired. Please login again.',
       });
       return null;
+    }
+  }, []);
+
+  const handleTokenRefresh = useCallback(async () => {
+    try {
+      console.log('[Auth] Token auto-refresh triggered');
+      await refreshAuthToken();
+      const stored = getStoredAuth();
+      setAuthState((prev) => ({
+        ...prev,
+        token: stored.token,
+      }));
+    } catch (err) {
+      console.error('[Auth] Token refresh failed:', err);
+      clearAuthSession();
+      setAuthState({
+        user: null,
+        token: null,
+        loading: false,
+        initialized: true,
+        error: 'Session expired. Please login again.',
+      });
     }
   }, []);
 
   useEffect(() => {
     const bootstrap = async () => {
       const stored = getStoredAuth();
+      
+      // Check if token is already expired
+      if (stored.token && tokenManager.isTokenExpired()) {
+        console.warn('[Auth] Stored token is expired');
+        clearAuthSession();
+        setAuthState({
+          user: null,
+          token: null,
+          loading: false,
+          initialized: true,
+          error: 'Session expired. Please login again.',
+        });
+        return;
+      }
+
       if (!stored.token && !stored.user) {
         setAuthState({
           user: null,
           token: null,
           loading: false,
           initialized: true,
+          error: null,
         });
         return;
       }
@@ -80,6 +129,12 @@ export const AuthProvider = ({ children }) => {
 
     bootstrap();
   }, [refreshUser]);
+
+  // Listen for token refresh events
+  useEffect(() => {
+    window.addEventListener(TOKEN_REFRESH_EVENT, handleTokenRefresh);
+    return () => window.removeEventListener(TOKEN_REFRESH_EVENT, handleTokenRefresh);
+  }, [handleTokenRefresh]);
 
   useEffect(() => {
     const handleAuthChanged = () => {
@@ -94,12 +149,15 @@ export const AuthProvider = ({ children }) => {
     persistAuthSession({
       token: payload?.token || null,
       user: payload?.user || null,
+      issuedAt: payload?.issuedAt,
+      expiresIn: payload?.expiresIn,
     });
     setAuthState({
       user: payload?.user || null,
       token: payload?.token || null,
       loading: false,
       initialized: true,
+      error: null,
     });
   }, []);
 
@@ -114,6 +172,8 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await logoutRequest();
+    } catch (err) {
+      console.error('[Auth] Logout request failed:', err);
     } finally {
       clearAuthSession();
       setAuthState({
@@ -121,6 +181,7 @@ export const AuthProvider = ({ children }) => {
         token: null,
         loading: false,
         initialized: true,
+        error: null,
       });
     }
   }, []);
@@ -130,11 +191,13 @@ export const AuthProvider = ({ children }) => {
     token: authState.token,
     loading: authState.loading,
     initialized: authState.initialized,
+    error: authState.error,
     isAuthenticated: Boolean(authState.user),
     refreshUser,
     setSessionFromAuthResponse,
     mergeUser,
     logout,
+    getDiagnostics: getAuthDiagnostics,
   }), [authState, logout, refreshUser, setSessionFromAuthResponse, mergeUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

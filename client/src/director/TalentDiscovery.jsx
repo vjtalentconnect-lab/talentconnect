@@ -21,7 +21,12 @@ const TalentDiscovery = () => {
         maxHeight: '',
     });
 
-    const categories = ['actor', 'artist', 'model', 'musician', 'video_editor', 'dancer', 'content_creator', 'cinematographer', 'voice_over'];
+    const categories = [
+        'Actor', 'Background Artist', 'Child Artist', 'Model', 'Theatre Actor', 'Voiceover Artist', 
+        'Singer', 'Musician', 'Dancer / Choreographer', 'Stunt Performer', 'Comedian', 
+        'Influencer / Creator', 'Anchor / Host', 'Cinematographer', 'Editor', 
+        'Writer / Screenplay', 'Makeup / Hair', 'Costume / Stylist', 'Production Crew', 'Other'
+    ];
 
     const fetchData = async (cursor = null, append = false) => {
         if (!append) {
@@ -47,7 +52,7 @@ const TalentDiscovery = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [filters]); // Refetch when filters change
 
     const handleFilterChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -102,7 +107,7 @@ const TalentDiscovery = () => {
                                 >
                                     <option value="">All Categories</option>
                                     {categories.map(cat => (
-                                        <option key={cat} value={cat}>{cat.replace('_', ' ').toUpperCase()}</option>
+                                        <option key={cat} value={cat}>{cat.toUpperCase()}</option>
                                     ))}
                                 </select>
                             </div>

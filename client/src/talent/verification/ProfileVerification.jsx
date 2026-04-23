@@ -97,12 +97,32 @@ const ProfileVerification = ({ defaultValue = 0 }) => {
             // Upload Video Selfie
             if (formData.videoBlob) {
                 const videoData = new FormData();
-                const blob = formData.videoBlob instanceof Blob
-                    ? formData.videoBlob
-                    : new Blob([formData.videoBlob], { type: 'video/webm' });
-                videoData.append('media', blob, 'verification-video.webm');
+                // Ensure proper MIME type for video/webm blob
+                let blob = formData.videoBlob;
+                if (!(blob instanceof Blob)) {
+                    blob = new Blob([formData.videoBlob], { type: 'video/webm' });
+                }
+                // Create a proper File object with correct MIME type
+                const videoFile = new File([blob], 'verification-video.webm', { 
+                    type: 'video/webm',
+                    lastModified: Date.now()
+                });
+                videoData.append('media', videoFile);
                 videoData.append('type', 'videoSelfie');
-                await uploadMedia(videoData);
+                
+                // Add timeout and retry logic
+                const uploadWithRetry = async (retries = 2) => {
+                    for (let i = 0; i < retries; i++) {
+                        try {
+                            const result = await uploadMedia(videoData);
+                            return result;
+                        } catch (err) {
+                            if (i === retries - 1) throw err;
+                            await new Promise(r => setTimeout(r, 1000)); // Wait 1s before retry
+                        }
+                    }
+                };
+                await uploadWithRetry();
             } else {
                 throw new Error('Please record a short video selfie before submitting.');
             }
@@ -116,7 +136,7 @@ const ProfileVerification = ({ defaultValue = 0 }) => {
             goToStep(4, 'forward');
         } catch (err) {
             console.error('Finish failed:', err);
-            const msg = err?.response?.data?.message || err?.message || 'Failed to complete verification. Please try again.';
+            const msg = err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'Failed to complete verification. Please try again.';
             alert(msg);
         } finally {
             setIsSaving(false);

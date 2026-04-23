@@ -54,7 +54,12 @@ const profileSchema = new mongoose.Schema(
         experienceYears: Number,
         talentCategory: {
             type: String,
-            enum: ['actor', 'artist', 'model', 'musician', 'video_editor', 'dancer', 'content_creator', 'cinematographer', 'voice_over', 'other'],
+            enum: [
+                'Actor', 'Background Artist', 'Child Artist', 'Model', 'Theatre Actor', 'Voiceover Artist', 
+                'Singer', 'Musician', 'Dancer / Choreographer', 'Stunt Performer', 'Comedian', 
+                'Influencer / Creator', 'Anchor / Host', 'Cinematographer', 'Editor', 
+                'Writer / Screenplay', 'Makeup / Hair', 'Costume / Stylist', 'Production Crew', 'Other'
+            ],
         },
         physicalMetrics: {
             height: String,

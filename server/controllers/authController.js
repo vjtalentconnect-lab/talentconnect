@@ -322,7 +322,9 @@ export const register = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            token: idToken, // may be undefined if sign-in failed; frontend should handle accordingly
+            token: idToken,
+            issuedAt: new Date().toISOString(),
+            expiresIn: 3600000, // 1 hour in milliseconds
             user: { id: uid, email, role: userDoc.role }
         });
     } catch (err) {
@@ -357,6 +359,8 @@ export const googleLogin = async (req, res) => {
         res.status(200).cookie('token', idToken, getCookieOptions(30)).json({
             success: true,
             token: idToken,
+            issuedAt: new Date().toISOString(),
+            expiresIn: 3600000,
             user: { id: uid, email, role: userData.role, verificationStatus: userData.verificationStatus },
         });
     } catch (err) {
@@ -469,6 +473,8 @@ export const linkedinLogin = async (req, res) => {
         res.status(200).cookie('token', token, getCookieOptions(7)).json({
             success: true,
             token,
+            issuedAt: new Date().toISOString(),
+            expiresIn: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
             user: { id: uid, email, role: userData.role, verificationStatus: userData.verificationStatus },
         });
     } catch (err) {
@@ -522,6 +528,8 @@ export const login = async (req, res) => {
         res.status(200).cookie('token', idToken, getCookieOptions(30)).json({
             success: true,
             token: idToken,
+            issuedAt: new Date().toISOString(),
+            expiresIn: 3600000, // 1 hour in milliseconds
             user: {
                 id: user.uid,
                 email: user.email,
@@ -531,7 +539,68 @@ export const login = async (req, res) => {
         });
     } catch (err) {
         console.error('Login error:', err);
-        res.status(401).json({ message: 'Invalid credentials' });
+        // Provide more specific error messages
+        let message = 'Invalid credentials';
+        if (err.code === 'auth/user-not-found') {
+            message = 'Email not found. Please register first.';
+        } else if (err.code === 'auth/wrong-password') {
+            message = 'Incorrect password. Please try again.';
+        } else if (err.code === 'auth/invalid-email') {
+            message = 'Invalid email format.';
+        } else if (err.code === 'auth/too-many-requests') {
+            message = 'Too many login attempts. Please try again later.';
+        }
+        res.status(401).json({ message });
+    }
+};
+
+// @desc    Refresh Firebase ID token
+// @route   POST /api/auth/refresh-token
+// @access  Private
+export const refreshToken = async (req, res) => {
+    try {
+        const currentToken = req.headers.authorization?.split(' ')[1] || req.cookies.token;
+        
+        if (!currentToken) {
+            return res.status(401).json({ message: 'No token provided' });
+        }
+
+        // Verify current token is still somewhat valid (even if close to expiry)
+        let decodedToken;
+        try {
+            decodedToken = await adminAuth.verifyIdToken(currentToken, false); // false = don't check revocation
+        } catch (err) {
+            // If token is completely invalid/expired, force re-login
+            return res.status(401).json({ message: 'Token expired. Please login again.' });
+        }
+
+        // Get the user and issue a new token
+        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Create a new ID token via Firebase Admin (this refreshes the token)
+        const newIdToken = await adminAuth.createCustomToken(decodedToken.uid);
+        const userData = userDoc.data();
+
+        res.status(200)
+            .cookie('token', newIdToken, getCookieOptions(30))
+            .json({
+                success: true,
+                token: newIdToken,
+                issuedAt: new Date().toISOString(),
+                expiresIn: 3600000,
+                user: {
+                    id: decodedToken.uid,
+                    email: userData.email,
+                    role: userData.role,
+                    verificationStatus: userData.verificationStatus,
+                },
+            });
+    } catch (err) {
+        console.error('Token refresh error:', err);
+        res.status(401).json({ message: 'Failed to refresh token. Please login again.' });
     }
 };
 
@@ -704,7 +773,12 @@ export const adminLogin = async (req, res) => {
     );
 
     await new Promise((resolve) => setTimeout(resolve, 200));
-    res.status(200).json({ success: true, token });
+    res.status(200).json({ 
+        success: true, 
+        token,
+        issuedAt: new Date().toISOString(),
+        expiresIn: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
+    });
 };
 
 // @desc    Change password

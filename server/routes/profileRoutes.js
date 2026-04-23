@@ -22,6 +22,8 @@ router.get('/export-data', protect, exportMyData);
 router.get('/by-user/:userId', getProfileByUser);
 router.get('/:id', getProfileById);
 router.put('/', protect, validate(updateProfileSchema), updateProfile);
+
+// Upload route - use upload.single() so req.file is set
 router.post('/upload', protect, upload.single('media'), verifyAndUpload, uploadMedia);
 router.post('/submit-verification', protect, submitForVerification);
 

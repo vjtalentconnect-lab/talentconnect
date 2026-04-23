@@ -208,19 +208,68 @@ describe('Project Controller Tests', () => {
     it('should update application status successfully', async () => {
       updateWithBackup.mockResolvedValue();
 
-      db.collection.mockReturnValue({
-        doc: vi.fn().mockReturnValue({
-          get: vi.fn().mockResolvedValue({
-            exists: true,
-            data: () => ({
-              id: 'app-id',
-              project: 'project-id',
-              talent: 'talent-id',
-              status: 'applied',
-              director: 'director-id',
+      db.collection.mockImplementation((collectionName) => {
+        if (collectionName === 'applications') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({
+                  id: 'app-id',
+                  project: 'project-id',
+                  talent: 'talent-id',
+                  status: 'applied',
+                }),
+              }),
             }),
-          }),
-        }),
+          };
+        } else if (collectionName === 'projects') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({
+                  id: 'project-id',
+                  director: 'director-id',
+                  title: 'Test Project',
+                }),
+              }),
+            }),
+          };
+        } else if (collectionName === 'users') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({
+                  email: 'talent@example.com',
+                }),
+              }),
+            }),
+          };
+        } else if (collectionName === 'profiles') {
+          return {
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                get: vi.fn().mockResolvedValue({
+                  empty: false,
+                  docs: [{
+                    data: () => ({
+                      fullName: 'Test Talent',
+                    }),
+                  }],
+                }),
+              }),
+            }),
+          };
+        } else if (collectionName === 'notifications') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              set: vi.fn().mockResolvedValue(),
+            }),
+          };
+        }
+        return {};
       });
 
       const mockReq = {
@@ -316,24 +365,69 @@ describe('Project Controller Tests', () => {
     it('should schedule audition successfully', async () => {
       updateWithBackup.mockResolvedValue();
 
-      db.collection.mockReturnValue({
-        doc: vi.fn().mockReturnValue({
-          get: vi.fn().mockResolvedValue({
-            exists: true,
-            data: () => ({
-              id: 'app-id',
-              director: 'director-id',
-              status: 'applied',
+      db.collection.mockImplementation((collectionName) => {
+        if (collectionName === 'applications') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({
+                  id: 'app-id',
+                  project: 'project-id',
+                  talent: 'talent-id',
+                  status: 'applied',
+                }),
+              }),
             }),
-          }),
-        }),
+          };
+        } else if (collectionName === 'projects') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({
+                  id: 'project-id',
+                  director: 'director-id',
+                  title: 'Test Project',
+                }),
+              }),
+            }),
+          };
+        } else if (collectionName === 'users') {
+          return {
+            doc: vi.fn().mockReturnValue({
+              get: vi.fn().mockResolvedValue({
+                exists: true,
+                data: () => ({
+                  email: 'talent@example.com',
+                }),
+              }),
+            }),
+          };
+        } else if (collectionName === 'profiles') {
+          return {
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                get: vi.fn().mockResolvedValue({
+                  empty: false,
+                  docs: [{
+                    data: () => ({
+                      fullName: 'Test Talent',
+                    }),
+                  }],
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
       });
 
       const mockReq = {
         user: { id: 'director-id' },
         params: { appId: 'app-id' },
         body: {
-          auditionDate: '2024-12-25T10:00:00Z',
+          auditionDate: '2026-12-25T10:00:00Z',
           auditionLocation: 'Studio A',
           auditionNotes: 'Please prepare a monologue',
         },
@@ -367,7 +461,7 @@ describe('Project Controller Tests', () => {
         user: { id: 'wrong-director-id' },
         params: { appId: 'app-id' },
         body: {
-          auditionDate: '2024-12-25T10:00:00Z',
+          auditionDate: '2026-12-25T10:00:00Z',
           auditionLocation: 'Studio A',
         },
       };

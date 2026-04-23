@@ -27,34 +27,58 @@ export const getProfiles = async (filters) => {
 };
 
 export const uploadMedia = async (mediaFile, type, metadata = {}) => {
-  const data = new FormData();
-  const acceptedTypes = type === 'profilePicture'
-    ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    : ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf'];
-  let fileToUpload = null;
+  let data;
   
   if (mediaFile instanceof FormData) {
-    fileToUpload = mediaFile.get('media');
+    // Ensure validateFileForUpload has a file to run if possible, though if we use FormData it might be tricky.
+    // Let's extract file for validation only, but send the original FormData.
+    const fileToUpload = mediaFile.get('media');
+    if (!fileToUpload) {
+        throw new Error('No media file selected.');
+    }
+    
+    // Validate file
+    const acceptedTypes = type === 'profilePicture'
+        ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        : ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf'];
+        
+    await validateFileForUpload(fileToUpload, acceptedTypes);
+    
+    data = mediaFile;
+    if (type && !data.has('type')) {
+        data.append('type', type);
+    }
   } else {
-    fileToUpload = mediaFile;
+    data = new FormData();
+    const acceptedTypes = type === 'profilePicture'
+        ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        : ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/quicktime', 'video/webm', 'application/pdf'];
+
+    if (!mediaFile) {
+        throw new Error('No media file selected.');
+    }
+
+    await validateFileForUpload(mediaFile, acceptedTypes);
+    data.append('media', mediaFile);
+
+    if (type) {
+        data.append('type', type);
+    }
+
+    Object.keys(metadata).forEach(key => {
+        data.append(key, metadata[key]);
+    });
   }
-
-  if (!fileToUpload) {
-    throw new Error('No media file selected.');
-  }
-
-  await validateFileForUpload(fileToUpload, acceptedTypes);
-  data.append('media', fileToUpload);
-
-  if (mediaFile instanceof FormData) {
-    for (const [key, value] of mediaFile.entries()) {
-      if (key !== 'media') {
-        data.append(key, value);
-      }
+  
+  // Debug: Log all form data entries
+  console.log('[uploadMedia] Final FormData entries:');
+  for (const [key, value] of data.entries()) {
+    if (value instanceof File) {
+      console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size})`);
+    } else {
+      console.log(`  ${key}: ${value}`);
     }
   }
-
-  data.append('type', type);
   
   // Add metadata for portfolio items
   if (metadata.title) {

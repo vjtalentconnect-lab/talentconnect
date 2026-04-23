@@ -36,6 +36,10 @@ export const verifyAndUpload = async (req, res, next) => {
       return res.status(400).json({ message: 'Image files must be under 10MB' });
     }
 
+    // Log what fields we received for debugging
+    console.log('[Upload] Received fields:', JSON.stringify(req.body));
+    console.log('[Upload] File mimetype:', req.file.mimetype);
+
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         { folder: 'talentconnect', resource_type: 'auto', transformation: [{ quality: 'auto', fetch_format: 'auto' }] },

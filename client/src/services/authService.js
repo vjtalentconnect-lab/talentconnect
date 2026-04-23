@@ -5,20 +5,35 @@ import { clearAuthSession, persistAuthSession } from '../utils/authStorage';
 
 export const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
-    persistAuthSession({ token: response.data.token, user: response.data.user });
+    persistAuthSession({ 
+        token: response.data.token, 
+        user: response.data.user,
+        issuedAt: response.data.issuedAt,
+        expiresIn: response.data.expiresIn,
+    });
     return response.data;
 };
 
 export const loginAdmin = async (email, password) => {
     const response = await api.post('/auth/admin-login', { email, password });
     const user = { id: 'env-admin', email, role: 'admin' };
-    persistAuthSession({ token: response.data.token, user });
+    persistAuthSession({ 
+        token: response.data.token, 
+        user,
+        issuedAt: response.data.issuedAt,
+        expiresIn: response.data.expiresIn,
+    });
     return { ...response.data, user };
 };
 
 export const register = async (userData) => {
     const response = await api.post('/auth/register', userData);
-    persistAuthSession({ token: response.data.token, user: response.data.user });
+    persistAuthSession({ 
+        token: response.data.token, 
+        user: response.data.user,
+        issuedAt: response.data.issuedAt,
+        expiresIn: response.data.expiresIn,
+    });
     return response.data;
 };
 
@@ -28,7 +43,12 @@ export const loginWithGoogle = async (role = 'talent') => {
     const idToken = await credential.user.getIdToken();
 
     const response = await api.post('/auth/login/google', { idToken, role });
-    persistAuthSession({ token: response.data.token, user: response.data.user });
+    persistAuthSession({ 
+        token: response.data.token, 
+        user: response.data.user,
+        issuedAt: response.data.issuedAt,
+        expiresIn: response.data.expiresIn,
+    });
     return response.data;
 };
 
@@ -76,6 +96,27 @@ export const autoLinkedInLogin = async (role = 'talent') => {
     const authUrl = getLinkedInAuthUrl();
     sessionStorage.setItem('linkedin_oauth_role', role);
     window.location.href = authUrl;
+};
+
+/**
+ * Refresh the authentication token
+ * Called automatically when token is nearing expiration
+ */
+export const refreshAuthToken = async () => {
+    try {
+        const response = await api.post('/auth/refresh-token');
+        persistAuthSession({ 
+            token: response.data.token, 
+            user: response.data.user,
+            issuedAt: response.data.issuedAt,
+            expiresIn: response.data.expiresIn,
+        });
+        return response.data;
+    } catch (err) {
+        // If refresh fails, clear session and force re-login
+        clearAuthSession();
+        throw err;
+    }
 };
 
 export const logout = async () => {

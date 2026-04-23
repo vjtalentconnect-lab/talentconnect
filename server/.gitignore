@@ -25,3 +25,7 @@ dist-ssr
 
 .env
 tmp_pk.pem
+
+.claude/
+AUTH_TROUBLESHOOTING_GUIDE.md
+CLAUDE.md

@@ -33,6 +33,7 @@ export const setWithBackup = async (collection, docId, data, options = { merge: 
 };
 
 export const updateWithBackup = async (collection, docId, data) => {
+    if (!data || Object.keys(data).length === 0) return;
     await db.collection(collection).doc(docId).update(data);
     backupToMongo(collection, docId, data);
 };

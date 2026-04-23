@@ -12,6 +12,7 @@ import {
     verifyEmail,
     forgotPassword,
     resetPassword,
+    refreshToken,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validate.js';
@@ -21,6 +22,7 @@ const router = express.Router();
 
 router.post('/register', validate(registerSchema), register);
 router.post('/login', validate(loginSchema), login);
+router.post('/refresh-token', refreshToken);
 router.post('/admin-login', validate(adminLoginSchema), adminLogin);
 router.post('/login/google', googleLogin);
 router.post('/login/linkedin', linkedinLogin);

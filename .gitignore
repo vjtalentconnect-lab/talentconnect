@@ -67,3 +67,7 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+.claude/
+AUTH_TROUBLESHOOTING_GUIDE.md
+CLAUDE.md

@@ -1,9 +1,13 @@
-import express from 'express';
+import { registerSchema } from './lib/schemas.js';
+console.log('[DEBUG] Server Start - registerSchema allowed categories:', 
+  registerSchema.shape.talentCategory._def.innerType._def.values
+);
 import dns from 'dns';
 import http from 'http';
 
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 import dotenv from 'dotenv';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';

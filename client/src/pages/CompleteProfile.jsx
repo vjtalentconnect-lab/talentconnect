@@ -23,6 +23,7 @@ const talentCategories = [
   'Makeup / Hair',
   'Costume / Stylist',
   'Production Crew',
+  'Other',
 ];
 
 const industryTypes = [
