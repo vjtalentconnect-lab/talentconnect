@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { register, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
+import { register, login, loginWithGoogle, autoLinkedInLogin } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
 import { useAuth } from '../context/AuthContext';
 
@@ -105,7 +105,10 @@ const RegisterActor = () => {
                 mobile: formData.mobile,
             };
 
-            const data = await register(userData);
+            let data = await register(userData);
+            if (!data?.token) {
+                data = await login(formData.email, formData.password);
+            }
             setSessionFromAuthResponse(data);
             setSubmitAttempts(0);
             setLockUntil(null);

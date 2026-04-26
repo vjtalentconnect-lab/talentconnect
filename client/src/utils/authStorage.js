@@ -1,6 +1,7 @@
 import tokenManager from './tokenManager.js';
 
 const USER_KEY = 'tc_auth_user';
+const PROFILE_KEY = 'tc_dashboard_profile';
 const AUTH_EVENT = 'tc-auth-changed';
 
 const safeParse = (value, fallback = null) => {
@@ -15,6 +16,7 @@ const safeParse = (value, fallback = null) => {
 export const getStoredToken = () => tokenManager.getToken();
 
 export const getStoredUser = () => safeParse(sessionStorage.getItem(USER_KEY), null);
+export const getStoredProfile = () => safeParse(sessionStorage.getItem(PROFILE_KEY), null);
 
 export const getStoredAuth = () => ({
   token: getStoredToken(),
@@ -23,6 +25,8 @@ export const getStoredAuth = () => ({
 });
 
 export const persistAuthSession = ({ token, user, issuedAt, expiresIn }) => {
+  const previousUser = getStoredUser();
+
   if (token) {
     tokenManager.storeToken(token, issuedAt, expiresIn);
   } else {
@@ -33,6 +37,10 @@ export const persistAuthSession = ({ token, user, issuedAt, expiresIn }) => {
     sessionStorage.setItem(USER_KEY, JSON.stringify(user));
   } else {
     sessionStorage.removeItem(USER_KEY);
+  }
+
+  if (!user || (previousUser?.id && user?.id && previousUser.id !== user.id)) {
+    sessionStorage.removeItem(PROFILE_KEY);
   }
 
   window.dispatchEvent(new Event(AUTH_EVENT));
@@ -47,9 +55,19 @@ export const updateStoredUser = (user) => {
   });
 };
 
+export const updateStoredProfile = (profile) => {
+  if (profile) {
+    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } else {
+    sessionStorage.removeItem(PROFILE_KEY);
+  }
+  window.dispatchEvent(new Event(AUTH_EVENT));
+};
+
 export const clearAuthSession = () => {
   tokenManager.clearToken();
   sessionStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(PROFILE_KEY);
   window.dispatchEvent(new Event(AUTH_EVENT));
 };
 
@@ -63,5 +81,6 @@ export const getAuthDiagnostics = () => {
   return {
     token: tokenManager.getDiagnostics(),
     user: getStoredUser() ? { id: getStoredUser().id, email: getStoredUser().email, role: getStoredUser().role } : null,
+    profile: getStoredProfile() ? { fullName: getStoredProfile().fullName, role: getStoredProfile().role } : null,
   };
 };

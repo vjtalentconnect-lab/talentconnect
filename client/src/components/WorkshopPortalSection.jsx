@@ -44,11 +44,17 @@ const WorkshopPortalSection = ({ variant = 'home' }) => {
       setLoading(true);
       try {
         // Try featured first, fall back to general list
-        const data =
+        const payload =
           (await getFeaturedWorkshops({ limit: 6 }).catch(() => null)) ||
           (await getWorkshops({ limit: 6, type: 'upcoming' }));
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((w) => ({
+        const items = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        if (items.length > 0) {
+          const mapped = items.map((w) => ({
             title: w.title || w.name,
             mentor: w.instructorName || w.mentor || 'Instructor',
             location: w.mode && w.city ? `${w.mode} • ${w.city}` : w.location || 'Online',

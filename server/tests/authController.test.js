@@ -79,14 +79,17 @@ vi.mock('axios', () => ({
 import { register, login, googleLogin, adminLogin } from '../controllers/authController.js';
 import { db, auth as adminAuth } from '../lib/firebaseAdmin.js';
 import { addWithBackup, setWithBackup, updateWithBackup } from '../lib/textBackup.js';
+import crypto from 'crypto';
 
 process.env.FRONTEND_URL = 'http://localhost:5173';
 process.env.ADMIN_EMAIL = 'admin@example.com';
 process.env.ADMIN_PASSWORD = 'admin-secret';
+process.env.FIREBASE_API_KEY = 'test-firebase-api-key';
 
 describe('Auth Controller Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    crypto.timingSafeEqual.mockReturnValue(false);
   });
 
   describe('register function', () => {
@@ -100,6 +103,13 @@ describe('Auth Controller Tests', () => {
       setWithBackup.mockResolvedValue({ id: 'user-doc-id' });
       addWithBackup.mockResolvedValue({ id: 'profile-id' });
       updateWithBackup.mockResolvedValue();
+      db.collection.mockReturnValue({
+        doc: vi.fn().mockReturnValue({
+          set: vi.fn().mockResolvedValue(),
+        }),
+      });
+      const axios = await import('axios');
+      axios.default.post.mockResolvedValue({ data: { idToken: 'fake-token', localId: 'test-uid-123', expiresIn: '3600' } });
 
       // Setup request/response
       const mockReq = {
@@ -177,7 +187,7 @@ describe('Auth Controller Tests', () => {
 
   describe('login function', () => {
     it('should login user successfully', async () => {
-      // Setup Firestore mock chain for fetching user
+      // Setup Firestore mock for fetching user by uid
       const mockUserData = {
         id: 'test-uid',
         email: 'test@example.com',
@@ -186,19 +196,20 @@ describe('Auth Controller Tests', () => {
       };
 
       db.collection.mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue({
-            get: vi.fn().mockResolvedValue({
-              empty: false,
-              docs: [{ id: 'doc-id', data: () => mockUserData }],
-            }),
+        doc: vi.fn().mockReturnValue({
+          get: vi.fn().mockResolvedValue({
+            exists: true,
+            data: () => mockUserData,
           }),
         }),
       });
 
+      const axios = await import('axios');
+      axios.default.post.mockResolvedValue({ data: { idToken: 'login-token', localId: 'test-uid', expiresIn: '3600' } });
+
       const mockReq = {
         body: {
-          email: 'test@example.com',
+          email: 'member@example.com',
           password: 'password123',
         },
       };
@@ -206,7 +217,7 @@ describe('Auth Controller Tests', () => {
       const mockRes = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
-        cookie: vi.fn(),
+        cookie: vi.fn().mockReturnThis(),
       };
 
       await login(mockReq, mockRes);
@@ -216,16 +227,8 @@ describe('Auth Controller Tests', () => {
     });
 
     it('should reject invalid credentials', async () => {
-      db.collection.mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue({
-            get: vi.fn().mockResolvedValue({
-              empty: true,
-              docs: [],
-            }),
-          }),
-        }),
-      });
+      const axios = await import('axios');
+      axios.default.post.mockRejectedValue({ response: { data: { error: { message: 'EMAIL_NOT_FOUND' } } } });
 
       const mockReq = {
         body: {
@@ -237,25 +240,87 @@ describe('Auth Controller Tests', () => {
       const mockRes = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
+        cookie: vi.fn().mockReturnThis(),
       };
 
       await login(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+    });
+
+    it('should allow env admin credentials via normal login endpoint', async () => {
+      crypto.timingSafeEqual.mockReturnValue(true);
+
+      const mockReq = {
+        body: {
+          email: 'admin@mail.com',
+          password: 'adminpassword123',
+        },
+        ip: '127.0.0.1',
+      };
+
+      const mockRes = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        cookie: vi.fn().mockReturnThis(),
+      };
+
+      await login(mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.cookie).toHaveBeenCalled();
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+        success: true,
+        user: expect.objectContaining({
+          role: 'admin',
+          email: 'admin@mail.com',
+        }),
+      }));
+    });
+
+    it('should map INVALID_LOGIN_CREDENTIALS to a friendly message', async () => {
+      const axios = await import('axios');
+      axios.default.post.mockRejectedValue({
+        response: {
+          status: 400,
+          data: { error: { message: 'INVALID_LOGIN_CREDENTIALS' } },
+        },
+        config: { url: 'https://identitytoolkit.googleapis.com/test' },
+      });
+
+      const mockReq = {
+        body: {
+          email: 'member@example.com',
+          password: 'wrong-password',
+        },
+      };
+
+      const mockRes = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        cookie: vi.fn().mockReturnThis(),
+      };
+
+      await login(mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: 'Incorrect password. Please try again.',
+      });
     });
 
     it('should handle login errors gracefully', async () => {
+      const axios = await import('axios');
+      axios.default.post.mockResolvedValue({ data: { idToken: 'login-token', localId: 'test-uid', expiresIn: '3600' } });
       db.collection.mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockReturnValue({
-            get: vi.fn().mockRejectedValue(new Error('Database error')),
-          }),
+        doc: vi.fn().mockReturnValue({
+          get: vi.fn().mockRejectedValue(new Error('Database error')),
         }),
       });
 
       const mockReq = {
         body: {
-          email: 'test@example.com',
+          email: 'member@example.com',
           password: 'password123',
         },
       };
@@ -263,6 +328,7 @@ describe('Auth Controller Tests', () => {
       const mockRes = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
+        cookie: vi.fn().mockReturnThis(),
       };
 
       await login(mockReq, mockRes);
@@ -306,7 +372,7 @@ describe('Auth Controller Tests', () => {
       const mockRes = {
         status: vi.fn().mockReturnThis(),
         json: vi.fn(),
-        cookie: vi.fn(),
+        cookie: vi.fn().mockReturnThis(),
       };
 
       await googleLogin(mockReq, mockRes);
@@ -356,6 +422,8 @@ describe('Auth Controller Tests', () => {
 
   describe('adminLogin function', () => {
     it('should login admin successfully', async () => {
+      crypto.timingSafeEqual.mockReturnValue(true);
+
       const mockReq = {
         body: {
           email: 'admin@example.com',
@@ -377,6 +445,8 @@ describe('Auth Controller Tests', () => {
     });
 
     it('should reject invalid admin credentials', async () => {
+      crypto.timingSafeEqual.mockReturnValue(false);
+
       const mockReq = {
         body: {
           email: 'admin@example.com',
@@ -392,9 +462,8 @@ describe('Auth Controller Tests', () => {
 
       await adminLogin(mockReq, mockRes);
 
-      // Verify response was called (admin login succeeds with mock crypto)
-      expect(mockRes.status).toHaveBeenCalled();
-      expect(mockRes.json).toHaveBeenCalled();
+      expect(mockRes.status).toHaveBeenCalledWith(401);
+      expect(mockRes.json).toHaveBeenCalledWith({ message: 'Invalid credentials' });
     });
 
     it('should handle missing admin credentials configuration', async () => {

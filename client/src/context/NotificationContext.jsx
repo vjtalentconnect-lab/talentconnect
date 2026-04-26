@@ -17,7 +17,7 @@ export const NotificationProvider = ({ children }) => {
 
     try {
       const res = await getMyNotifications();
-      const items = Array.isArray(res.data) ? res.data : [];
+      const items = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
       setNotifications(items);
       setUnreadCount(items.filter((item) => !item.read).length);
     } catch (err) {

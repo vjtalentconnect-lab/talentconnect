@@ -76,6 +76,25 @@ const parseLimitAndCursor = (req, defaultLimit = 20, maxLimit = 100) => {
 // @access  Private
 export const getMyProfile = async (req, res) => {
     try {
+        if (req.user?.role === 'admin' && req.user?.id === 'env-admin') {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    id: 'env-admin-profile',
+                    _id: 'env-admin-profile',
+                    user: {
+                        id: 'env-admin',
+                        email: req.user.email,
+                        role: 'admin',
+                        isVerified: true,
+                        verificationStatus: 'verified',
+                    },
+                    fullName: 'Super Admin',
+                    role: 'admin',
+                },
+            });
+        }
+
         const profileSnapshot = await db.collection('profiles').where('user', '==', req.user.id).limit(1).get();
         if (profileSnapshot.empty) {
             // Check if user is an admin and auto-generated without a profile

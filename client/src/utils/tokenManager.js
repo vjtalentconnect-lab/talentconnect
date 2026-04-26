@@ -86,7 +86,6 @@ class TokenManager {
     }
 
     this.scheduleTokenRefresh();
-    window.dispatchEvent(new Event(TOKEN_REFRESH_EVENT));
   }
 
   /**

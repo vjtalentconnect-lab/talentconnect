@@ -1,14 +1,12 @@
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useState, useEffect, useMemo } from 'react';
 import { getAdminProjects, getAdminStats, updateProjectStatus, deleteProject } from '../services/adminService';
-import { getMyProfile } from '../services/profileService';
 import { Link } from 'react-router-dom';
 import socket from '../services/socket';
 
 const ProjectOversight = () => {
   const [projects, setProjects] = useState([]);
   const [stats, setStats] = useState(null);
-  const [adminProfile, setAdminProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState({ search: '', category: 'all', status: 'all' });
@@ -18,10 +16,9 @@ const ProjectOversight = () => {
     try {
       const results = await Promise.allSettled([
         getAdminProjects(),
-        getAdminStats(),
-        getMyProfile()
+        getAdminStats()
       ]);
-      const [projectsResult, statsResult, profileResult] = results;
+      const [projectsResult, statsResult] = results;
 
       // Handle projects - required
       if (projectsResult.status === 'fulfilled') {
@@ -34,11 +31,6 @@ const ProjectOversight = () => {
       // Handle stats - optional
       if (statsResult.status === 'fulfilled') {
         setStats(statsResult.value?.data || statsResult.value);
-      }
-
-      // Handle profile - optional
-      if (profileResult.status === 'fulfilled') {
-        setAdminProfile(profileResult.value?.data || profileResult.value);
       }
 
       setError(null);
@@ -112,11 +104,9 @@ const ProjectOversight = () => {
   ];
 
   const userData = {
-    name: adminProfile?.fullName || 'Admin',
+    name: 'Admin',
     roleTitle: 'Super Admin',
-    avatar: adminProfile?.profilePicture && adminProfile.profilePicture !== 'no-photo.jpg' 
-      ? adminProfile.profilePicture 
-      : `https://ui-avatars.com/api/?name=${adminProfile?.fullName || 'Admin'}&background=ee2b3b&color=fff`
+    avatar: `https://ui-avatars.com/api/?name=Admin&background=ee2b3b&color=fff`
   };
 
   if (loading) return (

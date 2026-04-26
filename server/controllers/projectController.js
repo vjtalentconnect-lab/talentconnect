@@ -17,52 +17,108 @@ const buildCursorQuery = async ({ collection, orderField = 'createdAt', directio
     return { query };
 };
 
+const sortByCreatedAtDesc = (items) => (
+    [...items].sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
+);
+
+const paginateInMemory = (items, limitVal, cursor) => {
+    const sortedItems = sortByCreatedAtDesc(items);
+
+    let startIndex = 0;
+    if (cursor) {
+        const cursorIndex = sortedItems.findIndex((item) => (item.id || item._id) === cursor);
+        if (cursorIndex === -1) {
+            return { error: 'Invalid cursor' };
+        }
+        startIndex = cursorIndex + 1;
+    }
+
+    const data = sortedItems.slice(startIndex, startIndex + limitVal);
+    const nextCursor = data.length === limitVal ? (data[data.length - 1]?.id || data[data.length - 1]?._id || null) : null;
+
+    return { data, nextCursor };
+};
+
+const filterProjectsInMemory = (projects, { title, director, location, budget }) => {
+    let filtered = [...projects];
+
+    if (title) {
+        const regex = new RegExp(title, 'i');
+        filtered = filtered.filter((project) => regex.test(project.title || ''));
+    }
+    if (director) {
+        filtered = filtered.filter((project) => project.director === director);
+    }
+    if (location) {
+        const regex = new RegExp(location, 'i');
+        filtered = filtered.filter((project) => regex.test(project.location || ''));
+    }
+    if (budget) {
+        const regex = new RegExp(budget, 'i');
+        filtered = filtered.filter((project) => regex.test(project.budget || ''));
+    }
+
+    return filtered;
+};
+
+const hydrateProjectsWithDirector = async (projects) => {
+    const directorIds = [...new Set(projects.map((project) => project.director).filter(Boolean))];
+    const directorRefs = directorIds.map((directorId) => db.collection('users').doc(directorId));
+    const directorDocs = directorRefs.length > 0 ? await db.getAll(...directorRefs) : [];
+    const directorMap = new Map(directorDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+
+    const profileIds = [...new Set(directorDocs.map((doc) => (doc.exists ? doc.data()?.profile : null)).filter(Boolean))];
+    const profileRefs = profileIds.map((profileId) => db.collection('profiles').doc(profileId));
+    const profileDocs = profileRefs.length > 0 ? await db.getAll(...profileRefs) : [];
+    const profileMap = new Map(profileDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
+
+    return projects.map((project) => {
+        const directorData = directorMap.get(project.director);
+        const directorProfileId = directorData?.profile || null;
+        const directorProfile = directorProfileId ? profileMap.get(directorProfileId) : null;
+
+        return {
+            ...project,
+            _id: project._id || project.id,
+            director: directorData ? {
+                id: project.director,
+                email: directorData.email,
+                role: directorData.role,
+                profileId: directorProfileId,
+                profile: directorProfile ? {
+                    id: directorProfileId,
+                    fullName: directorProfile.fullName || '',
+                    companyName: directorProfile.companyName || '',
+                    profilePicture: directorProfile.profilePicture || 'no-photo.jpg',
+                    location: directorProfile.location || '',
+                } : null,
+            } : project.director,
+        };
+    });
+};
+
 // @desc    Get all projects
 // @route   GET /api/projects
 // @access  Public
 export const getProjects = async (req, res) => {
     try {
-        const { category, location, budget } = req.query;
+        const { category, location, budget, title, director } = req.query;
         const limitVal = parseLimit(req.query.limit, 20, 100);
         const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
-        let baseQuery = db.collection('projects').where('status', '==', 'open');
+        const snapshot = await db.collection('projects').get();
+        let projects = snapshot.docs
+            .map((doc) => ({ id: doc.id, _id: doc.id, ...doc.data() }))
+            .filter((project) => project.status === 'open' || project.status === undefined || project.status === null || project.status === '');
 
-        if (category) baseQuery = baseQuery.where('category', '==', category);
-        const { query, error } = await buildCursorQuery({
-            collection: 'projects',
-            limitVal,
-            cursor,
-            baseQuery,
-        });
+        projects = filterProjectsInMemory(projects, { title, director, location, budget });
+        if (category) {
+            projects = projects.filter((project) => project.category === category);
+        }
+        const { data: pagedProjects, nextCursor, error } = paginateInMemory(projects, limitVal, cursor);
         if (error) {
             return res.status(400).json({ message: error });
         }
-
-        const snapshot = await query.get();
-        let projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Manual filtering for Regex fields
-        if (location) {
-            const regex = new RegExp(location, 'i');
-            projects = projects.filter(p => regex.test(p.location));
-        }
-        if (budget) {
-            const regex = new RegExp(budget, 'i');
-            projects = projects.filter(p => regex.test(p.budget));
-        }
-
-        // Populate director
-        const directorRefs = [...new Set(projects.map((project) => project.director).filter(Boolean))]
-            .map((directorId) => db.collection('users').doc(directorId));
-        const directorDocs = directorRefs.length > 0 ? await db.getAll(...directorRefs) : [];
-        const directorMap = new Map(directorDocs.map((doc) => [doc.id, doc.exists ? doc.data() : null]));
-
-        const populatedProjects = projects.map((project) => ({
-            ...project,
-            director: directorMap.get(project.director) ? { id: project.director } : project.director,
-        }));
-
-        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        const populatedProjects = await hydrateProjectsWithDirector(pagedProjects);
         res.status(200).json({ success: true, count: populatedProjects.length, nextCursor, data: populatedProjects });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -86,13 +142,30 @@ export const getProject = async (req, res) => {
         if (directorDoc.exists) {
             const directorData = directorDoc.data();
             let directorProfileId = directorData.profile || null;
+            let directorProfile = null;
             if (!directorProfileId) {
                 const profileSnap = await db.collection('profiles').where('user', '==', directorDoc.id).limit(1).get();
                 if (!profileSnap.empty) {
                     directorProfileId = profileSnap.docs[0].id;
+                    directorProfile = profileSnap.docs[0].data();
                 }
             }
-            director = { id: directorDoc.id, profileId: directorProfileId };
+            if (!directorProfile && directorProfileId) {
+                const profileDoc = await db.collection('profiles').doc(directorProfileId).get();
+                if (profileDoc.exists) directorProfile = profileDoc.data();
+            }
+            director = {
+                id: directorDoc.id,
+                email: directorData.email,
+                profileId: directorProfileId,
+                profile: directorProfile ? {
+                    id: directorProfileId,
+                    fullName: directorProfile.fullName || '',
+                    companyName: directorProfile.companyName || '',
+                    profilePicture: directorProfile.profilePicture || 'no-photo.jpg',
+                    location: directorProfile.location || '',
+                } : null,
+            };
         }
 
         res.status(200).json({ success: true, data: { id: projectDoc.id, ...projectData, director } });
@@ -281,23 +354,13 @@ export const getMyProjects = async (req, res) => {
     try {
         const limitVal = parseLimit(req.query.limit, 20, 100);
         const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
-        const baseQuery = db.collection('projects').where('director', '==', req.user.id);
-        const { query, error } = await buildCursorQuery({
-            collection: 'projects',
-            limitVal,
-            cursor,
-            baseQuery,
-        });
+        const snapshot = await db.collection('projects').where('director', '==', req.user.id).get();
+        const projects = snapshot.docs.map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }));
+        const { data, nextCursor, error } = paginateInMemory(projects, limitVal, cursor);
         if (error) {
             return res.status(400).json({ message: error });
         }
-
-        const snapshot = await query.get();
-        const projects = snapshot.docs
-            .map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }))
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
-        res.status(200).json({ success: true, count: projects.length, nextCursor, data: projects });
+        res.status(200).json({ success: true, count: data.length, nextCursor, data });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
@@ -627,19 +690,8 @@ export const getMyApplications = async (req, res) => {
     try {
         const limitVal = parseLimit(req.query.limit, 20, 100);
         const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0 ? req.query.cursor : null;
-        const baseQuery = db.collection('applications').where('talent', '==', req.user.id);
-        const { query, error } = await buildCursorQuery({
-            collection: 'applications',
-            limitVal,
-            cursor,
-            baseQuery,
-        });
-        if (error) {
-            return res.status(400).json({ message: error });
-        }
-
-        const snapshot = await query.get();
-        const applications = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const snapshot = await db.collection('applications').where('talent', '==', req.user.id).get();
+        const applications = snapshot.docs.map((doc) => ({ id: doc.id, _id: doc.id, ...doc.data() }));
         const projectRefs = [...new Set(applications.map((app) => app.project).filter(Boolean))]
             .map((projectId) => db.collection('projects').doc(projectId));
         const projectDocs = projectRefs.length > 0 ? await db.getAll(...projectRefs) : [];
@@ -662,10 +714,12 @@ export const getMyApplications = async (req, res) => {
             };
         });
 
-        populatedApplications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const { data, nextCursor, error } = paginateInMemory(populatedApplications, limitVal, cursor);
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
 
-        const nextCursor = snapshot.docs.length === limitVal ? snapshot.docs[snapshot.docs.length - 1].id : null;
-        res.status(200).json({ success: true, count: populatedApplications.length, nextCursor, data: populatedApplications });
+        res.status(200).json({ success: true, count: data.length, nextCursor, data });
     } catch (err) {
         res.status(400).json({ message: err.message });
     }

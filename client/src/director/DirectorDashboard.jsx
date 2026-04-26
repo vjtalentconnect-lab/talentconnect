@@ -16,13 +16,17 @@ const DirectorDashboard = () => {
   const fetchInitialData = async () => {
     try {
       const { getMyProjects, getDirectorApplications } = await import('../services/projectService');
-      const [profileData, projectsData, applicationsData] = await Promise.all([
+      const [profileResult, projectsResult, applicationsResult] = await Promise.allSettled([
         getMyProfile(),
         getMyProjects(),
         getDirectorApplications()
       ]);
-      setProfile(profileData.data);
-      const rawProjects = projectsData.data || [];
+
+      if (profileResult.status === 'fulfilled') {
+        setProfile(profileResult.value.data);
+      }
+
+      const rawProjects = projectsResult.status === 'fulfilled' ? (projectsResult.value.data || []) : [];
       const normalizedProjects = rawProjects.map((project) => ({
         ...project,
         _id: project._id || project.id,
@@ -30,21 +34,18 @@ const DirectorDashboard = () => {
       }));
       setProjects(normalizedProjects);
       
-      const applications = applicationsData.data || [];
+      const applications = applicationsResult.status === 'fulfilled' ? (applicationsResult.value.data || []) : [];
       const shortlisted = applications.filter(app => app.status === 'shortlisted' || app.status === 'selected').length;
       const pending = applications.filter(app => app.status === 'applied').length;
       
       setStats({
           shortlisted,
           pending,
-          activeProjects: (projectsData.data || []).length
+          activeProjects: rawProjects.length
       });
       
       // Get the most recent 4 applications for the talent showcase
       setRecentApplications(applications.slice(0, 4));
-      
-    } catch (err) {
-      console.error('Error fetching director data:', err);
     } finally {
       setLoading(false);
     }
@@ -162,7 +163,7 @@ const DirectorDashboard = () => {
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                to="/director/profile"
+                to="/director/portfolio"
                 className="flex-1 text-center px-4 py-3 bg-[#ee2b3b] text-white font-black rounded-2xl uppercase text-[10px] tracking-[0.5em] shadow-lg"
               >
                 Edit Profile

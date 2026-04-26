@@ -120,11 +120,11 @@ const RegisterDirector = () => {
         mobile: formData.mobile,
       };
 
-      const registered = await register(userData);
-      setSessionFromAuthResponse(registered);
-      // Auto-login so directors immediately start their free trial experience
-      const loggedIn = await login(formData.email, formData.password);
-      setSessionFromAuthResponse(loggedIn);
+      let authData = await register(userData);
+      if (!authData?.token) {
+        authData = await login(formData.email, formData.password);
+      }
+      setSessionFromAuthResponse(authData);
       setSubmitAttempts(0);
       setLockUntil(null);
       navigate('/dashboard/director');

@@ -42,10 +42,11 @@ const PublicDirectorProfile = () => {
 
                 // Fetch their posted projects
                 try {
-                    const projRes = await getProjects({ director: p.user?._id || id });
+                    const directorUserId = p.user?.id || p.user?._id || p.user || id;
+                    const projRes = await getProjects({ director: directorUserId, limit: 24 });
                     setProjects((projRes.data || projRes || []).slice(0, 6));
                 } catch {
-                    // Projects optional – don't block if API doesn't support filter
+                    // Keep the profile visible even if the project feed fails.
                 }
             } catch (err) {
                 console.error(err);
@@ -129,7 +130,7 @@ const PublicDirectorProfile = () => {
                                 </div>
                                 {/* Message button */}
                                 <Link
-                                    to={`/talent/messages/${profile?.user?._id || profile?.user || id}`}
+                                    to={`/talent/messages/${profile?.user?.id || profile?.user?._id || profile?.user || id}`}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:brightness-110 transition-all shadow-lg shadow-primary/30 shrink-0"
                                 >
                                     <span className="material-symbols-outlined text-base">chat</span>
@@ -286,7 +287,7 @@ const PublicDirectorProfile = () => {
                             <p className="text-sm font-black mb-1">{openProjects.length > 0 ? `${openProjects.length} Open Role${openProjects.length > 1 ? 's' : ''}` : 'No open roles'}</p>
                             <p className="text-[10px] opacity-75 mb-4">Direct message to express interest</p>
                             <Link
-                                to={`/talent/messages/${profile?.user?._id || profile?.user || id}`}
+                                to={`/talent/messages/${profile?.user?.id || profile?.user?._id || profile?.user || id}`}
                                 className="inline-block w-full py-2.5 bg-white text-primary text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all"
                             >
                                 Send Message

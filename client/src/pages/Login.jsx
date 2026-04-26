@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login, loginAdmin, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin, requestPasswordReset, resendEmailVerification } from '../services/authService';
+import { login, loginWithGoogle, getLinkedInAuthUrl, autoLinkedInLogin, requestPasswordReset, resendEmailVerification } from '../services/authService';
 import { getMyProfile } from '../services/profileService';
 import { useAuth } from '../context/AuthContext';
 
@@ -71,17 +71,6 @@ const Login = () => {
     setError('');
 
     try {
-      // Try env-admin first so admins can log in from here
-      try {
-        const adminData = await loginAdmin(email, password);
-        setSessionFromAuthResponse(adminData);
-        setAttempts(0);
-        navigate('/dashboard/admin');
-        return;
-      } catch (adminErr) {
-        // fall back to regular auth
-      }
-
       const data = await login(email, password);
       setSessionFromAuthResponse(data);
       setAttempts(0);

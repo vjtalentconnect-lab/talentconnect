@@ -1,7 +1,5 @@
 import { auth as adminAuth, db } from '../lib/firebaseAdmin.js';
-import { auth as clientAuth } from '../lib/firebase.js';
 import { addWithBackup, setWithBackup, updateWithBackup } from '../lib/textBackup.js';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../lib/jwtSecret.js';
 import axios from 'axios';
@@ -9,6 +7,73 @@ import crypto from 'crypto';
 import { sendEmail } from '../lib/email.js';
 
 const FRONTEND_URL = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+
+const buildEnvAdminResponse = (email) => {
+    const token = jwt.sign(
+        {
+            id: 'env-admin',
+            email,
+            role: 'admin',
+            isEnvAdmin: true,
+        },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+    );
+
+    return {
+        token,
+        issuedAt: new Date().toISOString(),
+        expiresIn: 8 * 60 * 60 * 1000,
+        user: {
+            id: 'env-admin',
+            email,
+            role: 'admin',
+            verificationStatus: 'verified',
+        },
+    };
+};
+
+const matchesEnvAdminCredentials = (email, password) => {
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+        return false;
+    }
+
+    const hashedEmail = crypto.createHash('sha256').update(email || '').digest();
+    const envEmailHash = crypto.createHash('sha256').update(process.env.ADMIN_EMAIL).digest();
+    const hashedPassword = crypto.createHash('sha256').update(password || '').digest();
+    const envPasswordHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
+
+    try {
+        return (
+            crypto.timingSafeEqual(hashedEmail, envEmailHash) &&
+            crypto.timingSafeEqual(hashedPassword, envPasswordHash)
+        );
+    } catch (e) {
+        return false;
+    }
+};
+
+const signInWithPassword = async (email, password) => {
+    if (!FIREBASE_API_KEY) {
+        console.warn('Missing FIREBASE_API_KEY in server environment');
+    }
+
+    const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY || ''}`;
+    const response = await axios.post(url, {
+        email,
+        password,
+        returnSecureToken: true,
+    }, {
+        headers: { 'Content-Type': 'application/json' },
+    });
+
+    return {
+        idToken: response.data.idToken,
+        localId: response.data.localId,
+        expiresInMs: parseInt(response.data.expiresIn, 10) * 1000,
+    };
+};
 
 const generateToken = () => crypto.randomBytes(32).toString('hex');
 const getCookieOptions = (days = 30) => ({
@@ -312,10 +377,12 @@ export const register = async (req, res) => {
 
         // Sign the user in immediately so the frontend receives a valid Firebase ID token
         // This avoids an extra /login call and ensures protected routes (e.g. profile upload) work right after signup
-        let idToken;
+        let idToken = null;
+        let expiresIn = 3600000;
         try {
-            const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
-            idToken = await userCredential.user.getIdToken();
+            const signin = await signInWithPassword(email, password);
+            idToken = signin.idToken;
+            expiresIn = signin.expiresInMs;
         } catch (signinErr) {
             console.warn('Post-registration sign-in failed; user will need to login manually:', signinErr);
         }
@@ -324,7 +391,7 @@ export const register = async (req, res) => {
             success: true,
             token: idToken,
             issuedAt: new Date().toISOString(),
-            expiresIn: 3600000, // 1 hour in milliseconds
+            expiresIn,
             user: { id: uid, email, role: userDoc.role }
         });
     } catch (err) {
@@ -511,13 +578,27 @@ export const login = async (req, res) => {
     }
 
     try {
-        // Use Firebase Client SDK for login on server-side if needed to maintain REST structure
-        const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
-        const user = userCredential.user;
-        const idToken = await user.getIdToken();
+        if (matchesEnvAdminCredentials(email, password)) {
+            console.info('[SECURITY] Successful env-admin login via /login from IP:', req.ip);
+            const adminSession = buildEnvAdminResponse(email);
+            return res
+                .status(200)
+                .cookie('token', adminSession.token, getCookieOptions(30))
+                .json({
+                    success: true,
+                    token: adminSession.token,
+                    issuedAt: adminSession.issuedAt,
+                    expiresIn: adminSession.expiresIn,
+                    user: adminSession.user,
+                });
+        }
+
+        const signin = await signInWithPassword(email, password);
+        const idToken = signin.idToken;
+        const uid = signin.localId;
 
         // Get user roles/data from Firestore
-        const userDoc = await db.collection('users').doc(user.uid).get();
+        const userDoc = await db.collection('users').doc(uid).get();
         if (!userDoc.exists) {
             return res.status(404).json({ message: 'User data not found' });
         }
@@ -529,25 +610,31 @@ export const login = async (req, res) => {
             success: true,
             token: idToken,
             issuedAt: new Date().toISOString(),
-            expiresIn: 3600000, // 1 hour in milliseconds
+            expiresIn: signin.expiresInMs,
             user: {
-                id: user.uid,
-                email: user.email,
+                id: uid,
+                email,
                 role: userData.role,
                 verificationStatus: userData.verificationStatus,
             },
         });
     } catch (err) {
-        console.error('Login error:', err);
-        // Provide more specific error messages
+        const errorCode = err.response?.data?.error?.message || err.code || err.message;
+        console.error('Login error:', {
+            code: errorCode,
+            status: err.response?.status,
+            url: err.config?.url,
+        });
         let message = 'Invalid credentials';
-        if (err.code === 'auth/user-not-found') {
+        if (errorCode === 'EMAIL_NOT_FOUND') {
             message = 'Email not found. Please register first.';
-        } else if (err.code === 'auth/wrong-password') {
+        } else if (errorCode === 'INVALID_PASSWORD' || errorCode === 'INVALID_LOGIN_CREDENTIALS') {
             message = 'Incorrect password. Please try again.';
-        } else if (err.code === 'auth/invalid-email') {
+        } else if (errorCode === 'USER_DISABLED') {
+            message = 'This account has been disabled. Contact support.';
+        } else if (errorCode === 'INVALID_EMAIL') {
             message = 'Invalid email format.';
-        } else if (err.code === 'auth/too-many-requests') {
+        } else if (errorCode === 'TOO_MANY_ATTEMPTS_TRY_LATER') {
             message = 'Too many login attempts. Please try again later.';
         }
         res.status(401).json({ message });
@@ -563,6 +650,24 @@ export const refreshToken = async (req, res) => {
         
         if (!currentToken) {
             return res.status(401).json({ message: 'No token provided' });
+        }
+
+        try {
+            const decodedJwt = jwt.verify(currentToken, JWT_SECRET);
+            if (decodedJwt.isEnvAdmin && decodedJwt.email === process.env.ADMIN_EMAIL) {
+                const adminSession = buildEnvAdminResponse(decodedJwt.email);
+                return res.status(200)
+                    .cookie('token', adminSession.token, getCookieOptions(30))
+                    .json({
+                        success: true,
+                        token: adminSession.token,
+                        issuedAt: adminSession.issuedAt,
+                        expiresIn: adminSession.expiresIn,
+                        user: adminSession.user,
+                    });
+            }
+        } catch (jwtErr) {
+            // Not an env-admin JWT, continue with Firebase token refresh.
         }
 
         // Verify current token is still somewhat valid (even if close to expiry)
@@ -738,22 +843,7 @@ export const adminLogin = async (req, res) => {
         return res.status(500).json({ message: 'Admin credentials not configured' });
     }
 
-    const hashedEmail = crypto.createHash('sha256').update(email || '').digest();
-    const envEmailHash = crypto.createHash('sha256').update(process.env.ADMIN_EMAIL).digest();
-    const hashedPassword = crypto.createHash('sha256').update(password || '').digest();
-    const envPasswordHash = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD).digest();
-
-    let emailMatch = false;
-    let passwordMatch = false;
-    try {
-        emailMatch = crypto.timingSafeEqual(hashedEmail, envEmailHash);
-        passwordMatch = crypto.timingSafeEqual(hashedPassword, envPasswordHash);
-    } catch (e) {
-        emailMatch = false;
-        passwordMatch = false;
-    }
-
-    if (!emailMatch || !passwordMatch) {
+    if (!matchesEnvAdminCredentials(email, password)) {
         console.warn('[SECURITY] Failed admin login attempt from IP:', req.ip, 'at', new Date().toISOString());
         await new Promise((resolve) => setTimeout(resolve, 200));
         return res.status(401).json({ message: 'Invalid credentials' });
@@ -761,23 +851,14 @@ export const adminLogin = async (req, res) => {
 
     console.info('[SECURITY] Successful admin login from IP:', req.ip);
 
-    const token = jwt.sign(
-        {
-            id: 'env-admin',
-            email,
-            role: 'admin',
-            isEnvAdmin: true,
-        },
-        JWT_SECRET,
-        { expiresIn: '8h' }
-    );
+    const adminSession = buildEnvAdminResponse(email);
 
     await new Promise((resolve) => setTimeout(resolve, 200));
     res.status(200).json({ 
         success: true, 
-        token,
-        issuedAt: new Date().toISOString(),
-        expiresIn: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
+        token: adminSession.token,
+        issuedAt: adminSession.issuedAt,
+        expiresIn: adminSession.expiresIn,
     });
 };
 

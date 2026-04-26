@@ -6,13 +6,18 @@ import { updateWithBackup, batchUpdateWithBackup } from '../lib/textBackup.js';
 // @access  Private
 export const getMyNotifications = async (req, res) => {
     try {
+        if (req.user?.role === 'admin' && req.user?.id === 'env-admin') {
+            return res.status(200).json({ success: true, data: [] });
+        }
+
         const snapshot = await db.collection('notifications')
             .where('user', '==', req.user.id)
-            .orderBy('createdAt', 'desc')
-            .limit(20)
             .get();
         
-        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const notifications = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
+            .slice(0, 20);
         res.status(200).json({ success: true, data: notifications });
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -50,6 +55,10 @@ export const markAsRead = async (req, res) => {
 // @access  Private
 export const markAllRead = async (req, res) => {
     try {
+        if (req.user?.role === 'admin' && req.user?.id === 'env-admin') {
+            return res.status(200).json({ success: true, message: 'All marked as read' });
+        }
+
         const snapshot = await db.collection('notifications')
             .where('user', '==', req.user.id)
             .where('read', '==', false)

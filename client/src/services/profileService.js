@@ -1,14 +1,73 @@
 import api from './api';
 import { validateFileForUpload } from '../utils/fileValidation';
+import { updateStoredProfile, updateStoredUser, getStoredUser, getStoredProfile } from '../utils/authStorage';
+
+const mergeProfilePayload = (payload) => {
+    const currentProfile = getStoredProfile();
+    const nextProfile = payload?.data || payload;
+
+    if (!nextProfile || typeof nextProfile !== 'object') {
+        return payload;
+    }
+
+    const mergedProfile = {
+        ...(currentProfile || {}),
+        ...nextProfile,
+        user: {
+            ...(currentProfile?.user || {}),
+            ...(nextProfile?.user || {}),
+        },
+        socialLinks: {
+            ...(currentProfile?.socialLinks || {}),
+            ...(nextProfile?.socialLinks || {}),
+        },
+        verificationState: {
+            ...(currentProfile?.verificationState || {}),
+            ...(nextProfile?.verificationState || {}),
+        },
+    };
+
+    if (payload && typeof payload === 'object' && 'data' in payload) {
+        return { ...payload, data: mergedProfile };
+    }
+
+    return mergedProfile;
+};
+
+const syncCurrentUserProfile = (payload) => {
+    const mergedPayload = mergeProfilePayload(payload);
+    const profile = mergedPayload?.data || mergedPayload;
+    if (!profile || typeof profile !== 'object') return;
+
+    updateStoredProfile(profile);
+
+    const storedUser = getStoredUser();
+    if (!storedUser) return;
+
+    updateStoredUser({
+        ...storedUser,
+        fullName: profile.fullName || storedUser.fullName,
+        profilePicture: profile.profilePicture || storedUser.profilePicture,
+        location: profile.location || storedUser.location,
+        companyName: profile.companyName || storedUser.companyName,
+        talentCategory: profile.talentCategory || storedUser.talentCategory,
+        verificationStatus: profile?.user?.verificationStatus || storedUser.verificationStatus,
+        isVerified: profile?.user?.isVerified ?? storedUser.isVerified,
+    });
+};
 
 export const getMyProfile = async () => {
     const response = await api.get('/profile/me');
-    return response.data;
+    const mergedPayload = mergeProfilePayload(response.data);
+    syncCurrentUserProfile(mergedPayload);
+    return mergedPayload;
 };
 
 export const updateProfile = async (profileData) => {
     const response = await api.put('/profile', profileData);
-    return response.data;
+    const mergedPayload = mergeProfilePayload(response.data);
+    syncCurrentUserProfile(mergedPayload);
+    return mergedPayload;
 };
 
 export const getProfileById = async (id) => {
@@ -89,7 +148,14 @@ export const uploadMedia = async (mediaFile, type, metadata = {}) => {
   }
 
   const response = await api.post('/profile/upload', data);
-  return response.data;
+  if (type === 'profilePicture') {
+    const currentProfile = getStoredProfile();
+    syncCurrentUserProfile({
+      ...(currentProfile || {}),
+      profilePicture: response.data?.data?.profilePicture || response.data?.profilePicture || response.profilePicture,
+    });
+  }
+  return mergeProfilePayload(response.data);
 };
 
 export const submitForVerification = async () => {

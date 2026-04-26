@@ -1,19 +1,41 @@
 import { db } from '../lib/firebaseAdmin.js';
 
+const parseLimit = (value, defaultLimit = 20, maxLimit = 100) =>
+    Math.min(Math.max(1, parseInt(value, 10) || defaultLimit), maxLimit);
+
+const sortByCreatedAtDesc = (items) =>
+    [...items].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+const isIndexError = (err) => err?.code === 9 || /index/i.test(err?.message || '');
+
 // @desc    Get all workshops
 // @route   GET /api/workshops
 // @access  Public
 export const getWorkshops = async (req, res) => {
     try {
-        const { type, limit: rawLimit } = req.query;
-        const limit = parseInt(rawLimit) || 20;
+        const { type } = req.query;
+        const limit = parseLimit(req.query.limit);
 
         let query = db.collection('workshops');
         if (type) {
             query = query.where('type', '==', type);
         }
 
-        const snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get();
+        let snapshot;
+        try {
+            snapshot = await query.orderBy('createdAt', 'desc').limit(limit).get();
+        } catch (err) {
+            if (!isIndexError(err)) throw err;
+
+            const fallbackSnapshot = await db.collection('workshops').limit(Math.max(limit * 5, 50)).get();
+            let workshops = fallbackSnapshot.docs.map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }));
+            if (type) {
+                workshops = workshops.filter((workshop) => workshop.type === type);
+            }
+            workshops = sortByCreatedAtDesc(workshops).slice(0, limit);
+            return res.status(200).json({ success: true, count: workshops.length, data: workshops });
+        }
+
         const workshops = snapshot.docs.map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }));
 
         res.status(200).json({ success: true, count: workshops.length, data: workshops });
@@ -27,13 +49,27 @@ export const getWorkshops = async (req, res) => {
 // @access  Public
 export const getFeaturedWorkshops = async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 6;
+        const limit = parseLimit(req.query.limit, 6);
 
-        const snapshot = await db.collection('workshops')
-            .where('featured', '==', true)
-            .orderBy('createdAt', 'desc')
-            .limit(limit)
-            .get();
+        let snapshot;
+        try {
+            snapshot = await db.collection('workshops')
+                .where('featured', '==', true)
+                .orderBy('createdAt', 'desc')
+                .limit(limit)
+                .get();
+        } catch (err) {
+            if (!isIndexError(err)) throw err;
+
+            const fallbackSnapshot = await db.collection('workshops').limit(Math.max(limit * 5, 50)).get();
+            const workshops = sortByCreatedAtDesc(
+                fallbackSnapshot.docs
+                    .map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }))
+                    .filter((workshop) => workshop.featured === true)
+            ).slice(0, limit);
+
+            return res.status(200).json({ success: true, count: workshops.length, data: workshops });
+        }
 
         const workshops = snapshot.docs.map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }));
 
@@ -48,13 +84,27 @@ export const getFeaturedWorkshops = async (req, res) => {
 // @access  Public
 export const getOnDemandClasses = async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 20;
+        const limit = parseLimit(req.query.limit);
 
-        const snapshot = await db.collection('workshops')
-            .where('type', '==', 'on-demand')
-            .orderBy('createdAt', 'desc')
-            .limit(limit)
-            .get();
+        let snapshot;
+        try {
+            snapshot = await db.collection('workshops')
+                .where('type', '==', 'on-demand')
+                .orderBy('createdAt', 'desc')
+                .limit(limit)
+                .get();
+        } catch (err) {
+            if (!isIndexError(err)) throw err;
+
+            const fallbackSnapshot = await db.collection('workshops').limit(Math.max(limit * 5, 50)).get();
+            const classes = sortByCreatedAtDesc(
+                fallbackSnapshot.docs
+                    .map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }))
+                    .filter((workshop) => workshop.type === 'on-demand')
+            ).slice(0, limit);
+
+            return res.status(200).json({ success: true, count: classes.length, data: classes });
+        }
 
         const classes = snapshot.docs.map(doc => ({ id: doc.id, _id: doc.id, ...doc.data() }));
 

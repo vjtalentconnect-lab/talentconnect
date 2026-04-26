@@ -2,7 +2,6 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
 import { getAdminUsers, verifyUser, updateUserRole, deleteUser, getAdminStats } from '../services/adminService';
-import { getMyProfile } from '../services/profileService';
 import socket from '../services/socket';
 
 const UserDetail = () => {
@@ -11,7 +10,6 @@ const UserDetail = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [adminProfile, setAdminProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState({ search: '', role: 'all', status: 'all' });
   const [error, setError] = useState(null);
@@ -20,17 +18,11 @@ const UserDetail = () => {
     setLoading(true);
     try {
       const results = await Promise.allSettled([
-        getMyProfile(),
         getAdminUsers(),
         getAdminStats()
       ]);
 
-      const [profileResult, usersResult, statsResult] = results;
-
-      // Handle profile - optional
-      if (profileResult.status === 'fulfilled') {
-        setAdminProfile(profileResult.value?.data || profileResult.value);
-      }
+      const [usersResult, statsResult] = results;
       
       // Handle users - required
       if (usersResult.status === 'fulfilled') {
@@ -139,11 +131,9 @@ const UserDetail = () => {
   ];
 
   const userData = {
-    name: adminProfile?.fullName || 'Admin',
+    name: 'Admin',
     roleTitle: 'Super Admin',
-    avatar: adminProfile?.profilePicture && adminProfile.profilePicture !== 'no-photo.jpg' 
-      ? adminProfile.profilePicture 
-      : `https://ui-avatars.com/api/?name=${adminProfile?.fullName || 'Admin'}&background=ee2b3b&color=fff`
+    avatar: `https://ui-avatars.com/api/?name=Admin&background=ee2b3b&color=fff`
   };
 
   if (loading) return (

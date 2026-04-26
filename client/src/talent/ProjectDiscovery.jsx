@@ -48,20 +48,24 @@ const ProjectDiscovery = () => {
             setLoading(true);
         }
         try {
-            const [profileRes, projectsRes, appsRes] = await Promise.all([
+            const [profileResult, projectsResult, appsResult] = await Promise.allSettled([
                 getMyProfile(),
                 getProjects({ ...currentFilters, cursor, limit: 12 }),
                 getMyApplications(),
             ]);
-            setProfile(profileRes.data);
-            setProjects((prev) => append ? [...prev, ...(projectsRes.data || [])] : (projectsRes.data || []));
-            setNextCursor(projectsRes.nextCursor || null);
+
+            if (profileResult.status === 'fulfilled') {
+                setProfile(profileResult.value.data);
+            }
+
+            const projectItems = projectsResult.status === 'fulfilled' ? (projectsResult.value.data || []) : [];
+            setProjects((prev) => append ? [...prev, ...projectItems] : projectItems);
+            setNextCursor(projectsResult.status === 'fulfilled' ? (projectsResult.value.nextCursor || null) : null);
+
             const applied = new Set(
-                (appsRes.data || []).map((a) => projectIdOf(a.project) || a.project)
+                ((appsResult.status === 'fulfilled' ? appsResult.value.data : []) || []).map((a) => projectIdOf(a.project) || a.project)
             );
             setAppliedIds(applied);
-        } catch (err) {
-            console.error('Error fetching discovery data:', err);
         } finally {
             if (!append) {
                 setLoading(false);

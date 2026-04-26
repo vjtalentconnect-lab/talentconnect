@@ -4,6 +4,27 @@ import { cloudinary } from '../config/cloudinary.js';
 import { sendVerificationApprovedEmail } from '../lib/emailTemplates.js';
 
 const parseLimit = (value, defaultLimit, maxLimit) => Math.min(Math.max(1, parseInt(value, 10) || defaultLimit), maxLimit);
+const sortByCreatedAtDesc = (items) => (
+    [...items].sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0))
+);
+
+const paginateInMemory = (items, limitVal, cursor) => {
+    const sortedItems = sortByCreatedAtDesc(items);
+
+    let startIndex = 0;
+    if (cursor) {
+        const cursorIndex = sortedItems.findIndex((item) => (item.id || item._id) === cursor);
+        if (cursorIndex === -1) {
+            return { error: 'Invalid cursor' };
+        }
+        startIndex = cursorIndex + 1;
+    }
+
+    const data = sortedItems.slice(startIndex, startIndex + limitVal);
+    const nextCursor = data.length === limitVal ? (data[data.length - 1]?.id || data[data.length - 1]?._id || null) : null;
+
+    return { data, nextCursor };
+};
 
 const MAX_GLOBAL_SEARCH_RESULTS = 50;
 
@@ -80,17 +101,7 @@ export const getUsers = async (req, res) => {
     try {
         const limitVal = parseLimit(req.query.limit, 50, 100);
         const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null;
-
-        let query = db.collection('users').orderBy('createdAt', 'desc').limit(limitVal);
-        if (cursor) {
-            const cursorDoc = await db.collection('users').doc(cursor).get();
-            if (!cursorDoc.exists) {
-                return res.status(400).json({ message: 'Invalid cursor' });
-            }
-            query = query.startAfter(cursorDoc);
-        }
-
-        const snapshot = await query.get();
+        const snapshot = await db.collection('users').get();
         const users = snapshot.docs.map((doc) => ({ id: doc.id, _id: doc.id, ...doc.data() }));
         const profileRefs = [...new Set(users.map((user) => user.profile).filter(Boolean))]
             .map((profileId) => db.collection('profiles').doc(profileId));
@@ -100,14 +111,17 @@ export const getUsers = async (req, res) => {
             ...user,
             profile: user.profile ? profileMap.get(user.profile) || null : null,
         }));
+        const { data, nextCursor, error } = paginateInMemory(populatedUsers, limitVal, cursor);
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
 
-        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        console.info('[Admin] getUsers fetched', populatedUsers.length, 'users');
+        console.info('[Admin] getUsers fetched', data.length, 'users');
         res.status(200).json({
             success: true,
-            count: populatedUsers.length,
-            nextCursor: lastDoc ? lastDoc.id : null,
-            data: populatedUsers
+            count: data.length,
+            nextCursor,
+            data
         });
     } catch (err) {
         console.error(`[AdminController] Error fetching users: ${err.message}`);
@@ -248,18 +262,8 @@ export const getAdminProjects = async (req, res) => {
     try {
         const limitVal = parseLimit(req.query.limit, 50, 100);
         const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null;
-
-        let query = db.collection('projects').orderBy('createdAt', 'desc').limit(limitVal);
-        if (cursor) {
-            const cursorDoc = await db.collection('projects').doc(cursor).get();
-            if (!cursorDoc.exists) {
-                return res.status(400).json({ message: 'Invalid cursor' });
-            }
-            query = query.startAfter(cursorDoc);
-        }
-
-        const snapshot = await query.get();
-        const projects = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const snapshot = await db.collection('projects').get();
+        const projects = snapshot.docs.map((doc) => ({ id: doc.id, _id: doc.id, ...doc.data() }));
         const directorRefs = [...new Set(projects.map((project) => project.director).filter(Boolean))]
             .map((directorId) => db.collection('users').doc(directorId));
         const directorDocs = directorRefs.length > 0 ? await db.getAll(...directorRefs) : [];
@@ -271,13 +275,16 @@ export const getAdminProjects = async (req, res) => {
                 director: directorData ? { id: project.director, email: directorData.email, profile: directorData.profile } : null,
             };
         });
+        const { data, nextCursor, error } = paginateInMemory(populatedProjects, limitVal, cursor);
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
 
-        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
         res.status(200).json({
             success: true,
-            count: populatedProjects.length,
-            nextCursor: lastDoc ? lastDoc.id : null,
-            data: populatedProjects
+            count: data.length,
+            nextCursor,
+            data
         });
     } catch (err) {
         res.status(400).json({ message: err.message });

@@ -15,20 +15,22 @@ const MyProjects = () => {
         const fetchInitialData = async () => {
             try {
                 const { getMyProjects } = await import('../services/projectService');
-                const [profileRes, projectsRes] = await Promise.all([
+                const [profileResult, projectsResult] = await Promise.allSettled([
                     getMyProfile(),
                     getMyProjects()
                 ]);
-                setProfile(profileRes.data);
-                const rawProjects = (projectsRes?.data || []);
+
+                if (profileResult.status === 'fulfilled') {
+                    setProfile(profileResult.value.data);
+                }
+
+                const rawProjects = projectsResult.status === 'fulfilled' ? (projectsResult.value.data || []) : [];
                 const normalizedProjects = rawProjects.map((project) => ({
                     ...project,
                     _id: project._id || project.id,
                     id: project.id || project._id,
                 }));
                 setProjects(normalizedProjects);
-            } catch (err) {
-                console.error('Error fetching director data:', err);
             } finally {
                 setLoading(false);
             }
